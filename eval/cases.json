@@ -288,6 +288,22 @@
   "text": "impots.gouv.fr: Après recalcul, vous avez droit à un remboursement de 312,40 €. Confirmez vos coordonnées bancaires avant le 30/09: https://impots-remboursement-fr.info"
  },
  {
+  "id": "scam-boss-gift-card-request",
+  "kind": "scam",
+  "expect": "scam",
+  "set": "core",
+  "pattern": "boss-gift-card-request",
+  "text": "Are you at your desk? I need a quick favour, I'm in a meeting and can't talk. Can you get 4 Apple gift cards of £100 for a client and send me photos of the codes? I'll pay you back today. - Sarah"
+ },
+ {
+  "id": "scam-streaming-payment-failed",
+  "kind": "scam",
+  "expect": "scam",
+  "set": "core",
+  "pattern": "streaming-payment-failed",
+  "text": "Netflix: We couldn't process your last payment. Your account is on hold. Update your billing details within 24 hours to avoid cancellation: https://netflix-billing-update.com"
+ },
+ {
   "id": "legit-bank-fraud-alert",
   "kind": "legit",
   "expect": "safe",
