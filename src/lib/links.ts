@@ -242,7 +242,7 @@ export async function inspectUrl(input: string): Promise<LinkReport> {
     if (age.ageDays < 30) flags.push({code: 'new-domain', severity: 'high', detail: `Registered ${age.ageDays} days ago (${age.registered}). Real companies' sites are years old.`})
     else if (age.ageDays < 180) flags.push({code: 'young-domain', severity: 'medium', detail: `Registered ${age.ageDays} days ago (${age.registered}).`})
   }
-  const phish = await isKnownPhish([url.toString(), finalUrl ?? '', host, finalHost])
+  const phish = await isKnownPhish([url.toString(), finalUrl ?? ''])
   if (phish) flags.push({code: 'known-phish', severity: 'high', detail: `On a public phishing blocklist (${phish}).`})
   if (b.official && flags.every((f) => f.severity !== 'high')) {
     flags.push({code: 'official-domain', severity: 'info', detail: `${finalHost} really belongs to ${b.brand?.brand}.`})
