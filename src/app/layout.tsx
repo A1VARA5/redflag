@@ -1,34 +1,34 @@
 import type {Metadata, Viewport} from 'next'
-import {Inter, Instrument_Serif, JetBrains_Mono, Caveat} from 'next/font/google'
+import {IBM_Plex_Sans, IBM_Plex_Mono} from 'next/font/google'
 import './globals.css'
+import {Header} from '@/components/Header'
 import {Footer} from '@/components/Footer'
 
-const inter = Inter({variable: '--font-inter', subsets: ['latin']})
-const serif = Instrument_Serif({variable: '--font-serif', weight: '400', subsets: ['latin']})
-const mono = JetBrains_Mono({variable: '--font-mono-jb', subsets: ['latin']})
-const hand = Caveat({variable: '--font-hand', subsets: ['latin']})
+const plex = IBM_Plex_Sans({variable: '--font-plex', weight: ['400', '500', '600', '700'], subsets: ['latin', 'latin-ext']})
+const plexMono = IBM_Plex_Mono({variable: '--font-plex-mono', weight: ['400', '500'], subsets: ['latin']})
 
 const url = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 
 export const metadata: Metadata = {
   metadataBase: new URL(url),
-  title: 'Red Flag: is this message a scam?',
-  description: 'Paste it, screenshot it or forward it. Red Flag marks the exact words that give a scam away, has AI read the message or screenshot, backs it with hard checks on every link, and tells you what to do next.',
-  openGraph: {title: 'Red Flag', description: 'Is this message a scam? Get a marked-up answer in seconds.', type: 'website'},
+  title: 'Red Flag: check a message before you click',
+  description: 'Paste a text, email or screenshot. Red Flag shows the exact words that give a scam away, checks every link against Google Safe Browsing and 566,000 known phishing sites, and tells you what to do next.',
+  openGraph: {title: 'Red Flag', description: 'Check a message before you click.', type: 'website'},
 }
 
 export const viewport: Viewport = {
   themeColor: [
-    {media: '(prefers-color-scheme: light)', color: '#f5f1e8'},
-    {media: '(prefers-color-scheme: dark)', color: '#12100d'},
+    {media: '(prefers-color-scheme: light)', color: '#f6f7f9'},
+    {media: '(prefers-color-scheme: dark)', color: '#0b1220'},
   ],
 }
 
 export default function RootLayout({children}: LayoutProps<'/'>) {
   return (
-    <html lang="en-GB" className={`${inter.variable} ${serif.variable} ${mono.variable} ${hand.variable} antialiased`}>
-      <body className="min-h-dvh">
-        {children}
+    <html lang="en-GB" className={`${plex.variable} ${plexMono.variable}`}>
+      <body className="flex min-h-dvh flex-col">
+        <Header />
+        <div className="flex-1">{children}</div>
         <Footer />
       </body>
     </html>

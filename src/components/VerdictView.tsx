@@ -4,26 +4,27 @@ import {useMemo, useState} from 'react'
 import type {Verdict} from '@/lib/verdict'
 import type {LinkReport} from '@/lib/links'
 import {SITUATIONS, respondFor, type Region, type Situation} from '@/lib/respond'
+import {External, ShieldAlert, ShieldCheck, ShieldQ, ShieldX} from './Icons'
 
 const LOOK = {
-  scam: {word: 'Scam', sub: 'Do not reply, click or pay.', fg: 'text-red', bg: 'bg-red-wash', ring: 'border-red'},
-  suspicious: {word: 'Suspicious', sub: 'Treat it as a scam until you have checked.', fg: 'text-amber', bg: 'bg-amber-wash', ring: 'border-amber'},
-  unclear: {word: "Can't tell", sub: 'Not enough to go on. Check it the safe way below.', fg: 'text-slate', bg: 'bg-slate-wash', ring: 'border-slate'},
-  safe: {word: 'No red flags found', sub: 'Nothing here looks like a scam. No checker can promise that, so stay alert.', fg: 'text-calm', bg: 'bg-calm-wash', ring: 'border-calm'},
+  scam: {title: 'This is a scam', sub: "Don't reply, click or pay.", Icon: ShieldX, fg: 'text-danger', bg: 'bg-danger-bg', line: 'border-danger-line', solid: 'bg-danger'},
+  suspicious: {title: 'This looks suspicious', sub: 'Treat it as a scam until you have checked it yourself.', Icon: ShieldAlert, fg: 'text-warn', bg: 'bg-warn-bg', line: 'border-warn-line', solid: 'bg-warn'},
+  unclear: {title: "We can't tell", sub: "There isn't enough to go on. Check it the safe way below.", Icon: ShieldQ, fg: 'text-ink-2', bg: 'bg-muted-bg', line: 'border-line-2', solid: 'bg-ink-2'},
+  safe: {title: 'No red flags found', sub: 'Nothing here looks like a scam. No checker can promise that, so stay alert.', Icon: ShieldCheck, fg: 'text-safe', bg: 'bg-safe-bg', line: 'border-safe-line', solid: 'bg-safe'},
 } as const
 
 const KIND: Record<string, string> = {
-  urgency: 'Rush',
-  secrecy: 'Secrecy',
-  payment: 'Money',
-  link: 'Link',
-  impersonation: 'Pretending',
-  too_good: 'Too good',
-  personal_info: 'Your details',
-  pressure: 'Pressure',
+  urgency: 'Rushing you',
+  secrecy: 'Asking for secrecy',
+  payment: 'Asking for money',
+  link: 'Suspicious link',
+  impersonation: 'Pretending to be someone',
+  too_good: 'Too good to be true',
+  personal_info: 'Asking for your details',
+  pressure: 'Pressure or threats',
   mismatch: "Doesn't add up",
-  odd_contact: 'Odd contact',
-  other: 'Warning',
+  odd_contact: 'Unexpected contact',
+  other: 'Warning sign',
 }
 
 function Marked({text, highlights}: {text: string; highlights: Verdict['highlights']}) {
@@ -32,71 +33,23 @@ function Marked({text, highlights}: {text: string; highlights: Verdict['highligh
   highlights.forEach((h, i) => {
     if (h.start > at) parts.push(text.slice(at, h.start))
     parts.push(
-      <mark key={i} className="pen bg-transparent text-inherit" style={{animationDelay: `${150 + i * 180}ms`}} title={h.why}>
+      <mark key={i} className="flagged text-inherit" title={h.why}>
         {text.slice(h.start, h.end)}
-        <span className="pen-num">{i + 1}</span>
+        <span className="flag-n">{i + 1}</span>
       </mark>,
     )
     at = h.end
   })
   if (at < text.length) parts.push(text.slice(at))
-  return <p className="whitespace-pre-wrap break-words text-[17px] leading-8">{parts}</p>
+  return <p className="whitespace-pre-wrap break-words text-[17px] leading-8 text-ink">{parts}</p>
 }
 
-const SEV = {high: 'bg-red text-white', medium: 'bg-amber text-white', low: 'bg-rule text-ink', info: 'bg-calm-wash text-calm'} as const
-
-export function LinkPanel({links, pending, fromImage}: {links: LinkReport[] | null; pending?: boolean; fromImage?: boolean}) {
-  if (!links) {
-    return (
-      <div className="rounded-2xl border border-rule bg-sheet p-5">
-        <Label>Hard checks on the links</Label>
-        <p className="mt-2 font-mono text-sm text-ink-3">Google Safe Browsing, 566k-site blocklist, domain age, redirects…</p>
-      </div>
-    )
-  }
-  return (
-    <div className="rise rounded-2xl border border-rule bg-sheet p-5">
-      <div className="flex items-baseline justify-between gap-3">
-        <Label>Hard checks on the links</Label>
-        <span className="font-mono text-[11px] uppercase tracking-wider text-ink-3">hard evidence</span>
-      </div>
-      {links.length === 0 && (
-        <p className="mt-2 text-sm text-ink-2">
-          {pending && fromImage ? 'Reading your screenshot first. Any links in it get checked as soon as it has been read.' : `No links in this message.${pending ? ' Reading the words now.' : ''}`}
-        </p>
-      )}
-      <ul className="mt-3 space-y-4">
-        {links.map((l) => (
-          <li key={l.url} className="min-w-0">
-            <div className="font-mono text-sm break-all">
-              <span className="text-ink">{l.host || l.input}</span>
-              {l.finalUrl && l.finalUrl !== l.url && (
-                <span className="text-ink-3">
-                  {' '}
-                  → {safeHost(l.finalUrl)}
-                </span>
-              )}
-            </div>
-            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] text-ink-3">
-              {l.ageDays !== null && <span>registered {l.registered} ({l.ageDays}d)</span>}
-              {l.hops.length > 0 && <span>{l.hops.length} redirect{l.hops.length > 1 ? 's' : ''}</span>}
-              {l.brand && <span>{l.official ? `real ${l.brand} domain` : `claims to be ${l.brand}`}</span>}
-            </div>
-            <ul className="mt-2 space-y-1.5">
-              {l.flags.map((f) => (
-                <li key={f.code} className="flex gap-2 text-sm leading-snug">
-                  <span className={`mt-0.5 h-fit shrink-0 rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase ${SEV[f.severity]}`}>{f.severity}</span>
-                  <span className="text-ink-2">{f.detail}</span>
-                </li>
-              ))}
-              {l.flags.length === 0 && <li className="text-sm text-ink-3">Nothing unusual found about this link.</li>}
-            </ul>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}
+const SEV = {
+  high: {label: 'Danger', cls: 'bg-danger-bg text-danger border-danger-line'},
+  medium: {label: 'Warning', cls: 'bg-warn-bg text-warn border-warn-line'},
+  low: {label: 'Note', cls: 'bg-muted-bg text-ink-2 border-line-2'},
+  info: {label: 'OK', cls: 'bg-safe-bg text-safe border-safe-line'},
+} as const
 
 function safeHost(u: string) {
   try {
@@ -106,8 +59,37 @@ function safeHost(u: string) {
   }
 }
 
-function Label({children}: {children: React.ReactNode}) {
-  return <h3 className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-3">{children}</h3>
+export function LinkPanel({links}: {links: LinkReport[]}) {
+  return (
+    <section className="rounded-xl border border-line bg-card p-5 sm:p-6">
+      <h3 className="text-lg font-semibold">Link checks</h3>
+      <p className="mt-1 text-sm text-ink-3">Google Safe Browsing, 566,000 known phishing sites, domain age, look-alike brand names and redirects. Plain code, not AI.</p>
+      {links.length === 0 && <p className="mt-4 text-[15px] text-ink-2">There are no links in this message.</p>}
+      <ul className="mt-4 divide-y divide-line">
+        {links.map((l) => (
+          <li key={l.url} className="min-w-0 py-3 first:pt-0 last:pb-0">
+            <div className="break-all font-mono text-[14px] text-ink">
+              {l.host || l.input}
+              {l.finalUrl && l.finalUrl !== l.url && <span className="text-ink-3"> → {safeHost(l.finalUrl)}</span>}
+            </div>
+            <div className="mt-0.5 flex flex-wrap gap-x-3 text-[13px] text-ink-3">
+              {l.registered && <span>Registered {l.registered}</span>}
+              {l.brand && <span>{l.official ? `Real ${l.brand} address` : `Uses the name ${l.brand}`}</span>}
+            </div>
+            <ul className="mt-2 space-y-1.5">
+              {l.flags.map((f) => (
+                <li key={f.code} className="flex items-start gap-2 text-[14px] leading-snug">
+                  <span className={`mt-px shrink-0 rounded border px-1.5 py-px text-[11px] font-semibold ${SEV[f.severity].cls}`}>{SEV[f.severity].label}</span>
+                  <span className="text-ink-2">{f.detail}</span>
+                </li>
+              ))}
+              {l.flags.length === 0 && <li className="text-[14px] text-ink-3">Nothing unusual found about this link.</li>}
+            </ul>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
 }
 
 export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: string; shared?: boolean; image?: string}) {
@@ -118,186 +100,196 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
     () => respondFor(region, situation, {text: v.text, impersonating: v.impersonating, pattern: v.pattern_id, source: v.source, hasLinks: v.links.length > 0}),
     [region, situation, v],
   )
-  const [copied, setCopied] = useState(false)
-  // Margin notes follow the order the marks appear in the message; unmatched flags go last.
+  const [shareState, setShareState] = useState<'idle' | 'copied' | 'error'>('idle')
   const flags = v.red_flags
     .slice(0, 6)
     .map((f) => ({...f, n: v.highlights.findIndex((h) => h.why === f.why)}))
     .sort((a, b) => (a.n < 0 ? 99 : a.n) - (b.n < 0 ? 99 : b.n))
 
   async function share() {
-    if (!shared) {
-      const res = await fetch('/api/share', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({verdict: v, sig})})
-      if (!res.ok) return
-    }
-    const url = `${location.origin}/v/${v.id}`
-    const text = `I checked this message with Red Flag: ${look.word}. ${v.headline}`
     try {
+      if (!shared) {
+        const res = await fetch('/api/share', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({verdict: v, sig})})
+        if (!res.ok) throw new Error()
+      }
+      const url = `${location.origin}/v/${v.id}`
+      const text = `I checked this message with Red Flag: ${look.title}. ${v.headline}`
       if (navigator.share) await navigator.share({title: 'Red Flag', text, url})
       else {
         await navigator.clipboard.writeText(`${text} ${url}`)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
+        setShareState('copied')
+        setTimeout(() => setShareState('idle'), 2500)
       }
-    } catch {}
+    } catch {
+      setShareState('error')
+    }
   }
 
   return (
-    <section className="space-y-5">
+    <section className="fade-in space-y-5">
       {/* Verdict */}
-      <div className={`rise rounded-2xl border-2 ${look.ring} ${look.bg} p-5 sm:p-6`}>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className={`stamp font-display text-5xl leading-none sm:text-6xl ${look.fg}`}>{look.word}</div>
-          {(v.verdict === 'scam' || v.verdict === 'suspicious') && (
-            <div className="font-mono text-xs text-ink-2">
-              <span className="text-2xl font-semibold text-ink tabular-nums">{v.confidence}</span>% sure
+      <div className={`rounded-xl border ${look.line} ${look.bg} p-5 sm:p-6`}>
+        <div className="flex items-start gap-4">
+          <look.Icon className={`h-11 w-11 shrink-0 ${look.fg}`} />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h2 className={`text-2xl font-bold tracking-tight sm:text-[28px] ${look.fg}`}>{look.title}</h2>
+              {(v.verdict === 'scam' || v.verdict === 'suspicious') && <span className="text-sm font-medium text-ink-2">{v.confidence}% confident</span>}
             </div>
-          )}
+            <p className="mt-1.5 text-[17px] font-medium text-ink">{v.headline}</p>
+            <p className="mt-1 text-[15px] text-ink-2">{look.sub}</p>
+          </div>
         </div>
-        <p className="mt-3 text-xl font-semibold leading-snug">{v.headline}</p>
-        <p className="mt-1 text-sm text-ink-2">{look.sub}</p>
         {v.overrides.length > 0 && (
-          <div className="mt-3 rounded-lg border border-dashed border-ink-3 px-3 py-2 text-sm text-ink-2">
-            <span className="font-semibold text-ink">Checks overruled the AI: </span>
+          <div className="mt-4 rounded-lg border border-line-2 bg-card px-4 py-3 text-[14px] text-ink-2">
+            <span className="font-semibold text-ink">Our link checks overruled the AI. </span>
             {v.overrides.join(' ')}
           </div>
         )}
       </div>
 
-      {/* The marked-up message */}
-      <div className="rise grid gap-5 lg:grid-cols-[1fr_300px]" style={{animationDelay: '80ms'}}>
-        <div className="relative rounded-2xl border border-rule bg-sheet p-5 shadow-[0_1px_0_var(--rule),0_12px_30px_-18px_rgba(0,0,0,0.25)] sm:p-7">
-          <div className="mb-3 flex items-center justify-between">
-            <Label>{v.inputHadImage ? 'Text read from your screenshot' : 'The message'}</Label>
-            {v.impersonating && <span className="rounded-full bg-red-wash px-2.5 py-0.5 text-xs font-medium text-red">pretending to be {v.impersonating}</span>}
+      {/* Message and warning signs */}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <section className="rounded-xl border border-line bg-card p-5 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-lg font-semibold">{v.inputHadImage ? 'Text from your screenshot' : 'Your message'}</h3>
+            {v.impersonating && <span className="rounded-md border border-danger-line bg-danger-bg px-2 py-0.5 text-[13px] font-medium text-danger">Pretending to be {v.impersonating}</span>}
           </div>
-          <div className={image ? 'grid gap-5 sm:grid-cols-[1fr_150px]' : ''}>
+          <div className={`mt-4 ${image ? 'grid gap-5 sm:grid-cols-[minmax(0,1fr)_140px]' : ''}`}>
             <Marked text={v.text} highlights={v.highlights} />
             {image && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={image} alt="Your screenshot" className="hidden max-h-72 w-full rounded-xl border border-rule object-contain object-top sm:block" />
+              <img src={image} alt="Your screenshot" className="hidden max-h-72 w-full rounded-lg border border-line object-contain object-top sm:block" />
             )}
           </div>
-        </div>
-        <ol className="space-y-3">
-          {flags.length === 0 && <li className="text-sm text-ink-2">No warning signs marked.</li>}
-          {flags.map((f, i) => {
-            const n = f.n
-            return (
-              <li key={i} className="rise flex gap-3" style={{animationDelay: `${200 + i * 120}ms`}}>
-                <span className="font-hand text-3xl leading-6 text-red">{n >= 0 ? n + 1 : '•'}</span>
+        </section>
+        <section className="rounded-xl border border-line bg-card p-5 sm:p-6">
+          <h3 className="text-lg font-semibold">{flags.length ? `${flags.length} warning sign${flags.length > 1 ? 's' : ''}` : 'Warning signs'}</h3>
+          {flags.length === 0 && <p className="mt-3 text-[15px] text-ink-2">None found.</p>}
+          <ol className="mt-4 space-y-4">
+            {flags.map((f, i) => (
+              <li key={i} className="flex gap-3">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-danger text-[12px] font-bold text-white">{f.n >= 0 ? f.n + 1 : '•'}</span>
                 <div className="min-w-0">
-                  <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-red">{KIND[f.kind] ?? f.kind}</div>
-                  <p className="font-hand text-[22px] leading-6 text-ink">{f.why}</p>
+                  <div className="text-[14px] font-semibold text-ink">{KIND[f.kind] ?? 'Warning sign'}</div>
+                  <p className="text-[14px] leading-snug text-ink-2">{f.why}</p>
                 </div>
               </li>
-            )
-          })}
+            ))}
+          </ol>
           {v.good_signs.length > 0 && (
-            <li className="pt-2">
-              <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-calm">In its favour</div>
-              <ul className="mt-1 space-y-1 text-sm text-ink-2">
+            <div className="mt-5 border-t border-line pt-4">
+              <div className="text-[14px] font-semibold text-safe">In its favour</div>
+              <ul className="mt-1.5 space-y-1 text-[14px] text-ink-2">
                 {v.good_signs.map((g, i) => (
-                  <li key={i}>+ {g}</li>
+                  <li key={i}>{g}</li>
                 ))}
               </ul>
-            </li>
+            </div>
           )}
-        </ol>
+        </section>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        {/* What it is */}
-        <div className="rise rounded-2xl border border-rule bg-sheet p-5" style={{animationDelay: '160ms'}}>
-          <Label>What's going on</Label>
-          {v.pattern && <div className="mt-2 font-display text-3xl leading-tight">{v.pattern.name}</div>}
+      <div className={`grid gap-5 ${v.links.length ? 'lg:grid-cols-2' : ''}`}>
+        <section className="rounded-xl border border-line bg-card p-5 sm:p-6">
+          <h3 className="text-lg font-semibold">{v.pattern ? v.pattern.name : "What's going on"}</h3>
           {v.trending && (
-            <a href="/radar" className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-red px-2.5 py-0.5 text-xs font-semibold text-white">
-              ● {v.trending.status === 'new' ? 'New this week' : v.trending.status === 'rising' ? 'Rising this week' : 'Doing the rounds this week'}
+            <a href="/radar" className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-danger-bg px-2 py-0.5 text-[13px] font-medium text-danger">
+              <span className="h-1.5 w-1.5 rounded-full bg-danger" />
+              {v.trending.status === 'new' ? 'New this week' : v.trending.status === 'rising' ? 'Rising this week' : 'Going around this week'}
             </a>
           )}
-          <p className="mt-2 leading-relaxed text-ink-2">{v.summary}</p>
-          {v.pattern?.aiAngle && <p className="mt-2 text-sm text-ink-2"><span className="font-semibold text-ink">Why it's getting worse: </span>{v.pattern.aiAngle}</p>}
+          <p className="mt-2 text-[15px] leading-relaxed text-ink-2">{v.summary}</p>
+          {v.pattern?.aiAngle && (
+            <p className="mt-3 text-[14px] leading-relaxed text-ink-2">
+              <span className="font-semibold text-ink">Why it's getting harder to spot: </span>
+              {v.pattern.aiAngle}
+            </p>
+          )}
+          <div className="mt-4 rounded-lg bg-muted-bg p-4">
+            <div className="text-[13px] font-semibold text-ink-2">Check it yourself, safely</div>
+            <p className="mt-1 text-[15px] font-medium text-ink">{v.check_it_yourself}</p>
+          </div>
           {v.pattern && v.pattern.sources.length > 0 && (
-            <div className="mt-3 border-t border-rule pt-3">
-              <div className="text-xs text-ink-3">Official warnings about this scam</div>
-              <ul className="mt-1 space-y-1">
+            <div className="mt-4">
+              <div className="text-[13px] font-semibold text-ink-2">Official warnings about this scam</div>
+              <ul className="mt-1.5 space-y-1">
                 {v.pattern.sources.map((s) => (
                   <li key={s.url}>
-                    <a className="text-sm underline decoration-rule underline-offset-4 hover:decoration-ink" href={s.url} target="_blank" rel="noreferrer">
-                      {s.publisher}: {s.title} ↗
+                    <a className="text-[14px] text-navy underline decoration-line-2 underline-offset-4 hover:decoration-navy" href={s.url} target="_blank" rel="noreferrer">
+                      {s.publisher}: {s.title}
+                      <External className="ml-1 inline h-3.5 w-3.5 align-[-2px]" />
                     </a>
                   </li>
                 ))}
               </ul>
             </div>
           )}
-          <div className="mt-4 rounded-xl bg-paper p-4">
-            <div className="text-xs font-semibold uppercase tracking-wider text-ink-3">Check it yourself, safely</div>
-            <p className="mt-1 font-medium">{v.check_it_yourself}</p>
-          </div>
-        </div>
-
-        <LinkPanel links={v.links} />
+        </section>
+        {v.links.length > 0 && <LinkPanel links={v.links} />}
       </div>
+      {v.links.length === 0 && <p className="-mt-2 px-1 text-[14px] text-ink-3">No links in this message, so there was nothing to check against Google Safe Browsing or the phishing lists.</p>}
 
-      {/* What to do */}
       {v.verdict !== 'safe' && (
-        <div className="rise rounded-2xl bg-ink p-5 text-paper sm:p-6" style={{animationDelay: '240ms'}}>
+        <section className="rounded-xl bg-navy p-5 text-white sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="font-display text-3xl">What to do now</h3>
-            <div className="flex gap-1 rounded-full bg-paper/10 p-1 text-xs">
+            <h3 className="text-xl font-semibold">What to do now</h3>
+            <div className="flex rounded-lg bg-white/10 p-0.5 text-[13px] font-medium">
               {(['UK', 'US', 'EU'] as Region[]).map((r) => (
-                <button key={r} onClick={() => setRegion(r)} className={`rounded-full px-3 py-1 ${region === r ? 'bg-paper text-ink' : 'text-paper/80'}`}>
+                <button key={r} onClick={() => setRegion(r)} className={`rounded-md px-3 py-1 ${region === r ? 'bg-white text-navy' : 'text-white/80 hover:text-white'}`}>
                   {r}
                 </button>
               ))}
             </div>
           </div>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             {SITUATIONS.map((s) => (
               <button
                 key={s.id}
                 onClick={() => setSituation(s.id)}
-                className={`rounded-full border px-3 py-1 text-sm ${situation === s.id ? 'border-paper bg-paper text-ink' : 'border-paper/30 text-paper/85 hover:border-paper/70'}`}
+                className={`rounded-lg border px-3 py-1.5 text-[14px] font-medium ${situation === s.id ? 'border-white bg-white text-navy' : 'border-white/25 text-white/85 hover:border-white/60'}`}
               >
                 {s.label}
               </button>
             ))}
           </div>
-          <ol className="mt-4 space-y-2">
+          <ol className="mt-5 space-y-2.5">
             {steps.map((s, i) => (
-              <li key={i} className="flex gap-3">
-                <span className="font-mono text-sm text-paper/50">{String(i + 1).padStart(2, '0')}</span>
-                <span className="leading-snug">{s}</span>
+              <li key={i} className="flex gap-3 text-[16px] leading-snug">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/15 text-[13px] font-semibold">{i + 1}</span>
+                <span className="pt-0.5">{s}</span>
               </li>
             ))}
           </ol>
           {report.length > 0 && (
             <>
-              <div className="mt-6 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-paper/60">Report it</div>
+              <div className="mt-6 text-[14px] font-semibold text-white/70">Report it</div>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 {report.map((c) => (
-                  <a key={c.id} href={c.url} target="_blank" rel="noreferrer" className="group rounded-xl border border-paper/20 p-3 hover:border-paper/60">
-                    <div className="font-semibold leading-snug group-hover:underline">{c.name} ↗</div>
-                    <div className="mt-0.5 text-sm leading-snug text-paper/75">{c.how}</div>
+                  <a key={c.id} href={c.url} target="_blank" rel="noreferrer" className="group rounded-lg border border-white/20 p-3.5 hover:border-white/60 hover:bg-white/5">
+                    <div className="flex items-center gap-1.5 font-semibold">
+                      {c.name} <External className="h-3.5 w-3.5 opacity-70" />
+                    </div>
+                    <div className="mt-0.5 text-[14px] leading-snug text-white/75">{c.how}</div>
                   </a>
                 ))}
               </div>
             </>
           )}
-        </div>
+        </section>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs text-ink-3">
-        <span className="font-mono">
-          {v.model} · {(v.ms / 1000).toFixed(1)}s · {new Date(v.createdAt).toLocaleString('en-GB', {dateStyle: 'medium', timeStyle: 'short'})}
-          {shared ? ' · shared verdict, signed by Red Flag' : ' · not saved unless you share it'}
-        </span>
-        <button onClick={share} className="rounded-full border border-ink px-4 py-2 text-sm font-medium text-ink hover:bg-ink hover:text-paper">
-          {copied ? 'Link copied' : 'Send this to someone'}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-card px-5 py-4">
+        <div className="text-[15px] text-ink-2">
+          {shared ? 'This result was shared with you. It is signed by Red Flag, so it hasn\'t been edited.' : 'Know someone who would fall for this? Send them the result.'}
+        </div>
+        <button onClick={share} className="rounded-lg bg-navy px-4 py-2 text-[15px] font-semibold text-white hover:bg-navy-2">
+          {shareState === 'copied' ? 'Link copied' : shareState === 'error' ? 'Try again' : shared ? 'Share again' : 'Share the result'}
         </button>
       </div>
+      <p className="text-[13px] text-ink-3">
+        Checked {new Date(v.createdAt).toLocaleString('en-GB', {dateStyle: 'medium', timeStyle: 'short'})} in {(v.ms / 1000).toFixed(1)}s.{shared ? '' : ' Not stored unless you share it.'}
+      </p>
     </section>
   )
 }
