@@ -59,7 +59,7 @@ export async function POST(req: Request) {
         await edit({
           embeds: [
             {
-              title: `${WORD[v.verdict]}${v.verdict === 'safe' ? '' : ` · ${v.confidence}% sure`}`,
+              title: `${WORD[v.verdict]}${v.verdict === 'scam' || v.verdict === 'suspicious' ? ` · ${v.confidence}% sure` : ''}`,
               description: `**${v.headline}**\n${v.summary}`,
               color: COLOR[v.verdict],
               fields: [

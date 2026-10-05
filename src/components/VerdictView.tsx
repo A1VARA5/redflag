@@ -141,7 +141,7 @@ export function VerdictView({v, sig, shared = false}: {v: Verdict; sig?: string;
       <div className={`rise rounded-2xl border-2 ${look.ring} ${look.bg} p-5 sm:p-6`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className={`stamp font-display text-5xl leading-none sm:text-6xl ${look.fg}`}>{look.word}</div>
-          {v.verdict !== 'safe' && (
+          {(v.verdict === 'scam' || v.verdict === 'suspicious') && (
             <div className="font-mono text-xs text-ink-2">
               <span className="text-2xl font-semibold text-ink tabular-nums">{v.confidence}</span>% sure
             </div>

@@ -93,7 +93,7 @@ const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 export function renderReply(v: Verdict, url: string): {text: string; html: string} {
   const linkFlags = v.links.flatMap((l) => l.flags.filter((f) => f.severity === 'high' || f.severity === 'medium').map((f) => `${l.host}: ${f.detail}`))
   const text = [
-    `Red Flag verdict: ${WORD[v.verdict]}${v.verdict === 'safe' ? '' : ` (${v.confidence}% sure)`}`,
+    `Red Flag verdict: ${WORD[v.verdict]}${v.verdict === 'scam' || v.verdict === 'suspicious' ? ` (${v.confidence}% sure)` : ''}`,
     '',
     v.headline,
     '',
@@ -122,7 +122,7 @@ export function renderReply(v: Verdict, url: string): {text: string; html: strin
 <div style="font-weight:600;font-size:14px;color:#d7261e">&#9873; Red Flag</div>
 <div style="margin-top:12px;border:2px solid ${c};border-radius:14px;background:#fffdf8;padding:18px">
 <div style="font-family:Georgia,serif;font-size:34px;line-height:1;color:${c}">${WORD[v.verdict]}</div>
-${v.verdict === 'safe' ? '' : `<div style="font-size:12px;color:#5b554c;margin-top:4px">${v.confidence}% sure</div>`}
+${v.verdict === 'scam' || v.verdict === 'suspicious' ? `<div style="font-size:12px;color:#5b554c;margin-top:4px">${v.confidence}% sure</div>` : ''}
 <div style="font-size:18px;font-weight:600;margin-top:10px">${esc(v.headline)}</div>
 <div style="font-size:14px;color:#5b554c;margin-top:6px;line-height:1.5">${esc(v.summary)}</div>
 ${v.overrides.length ? `<div style="margin-top:10px;font-size:13px;border:1px dashed #8f887c;border-radius:8px;padding:8px">${esc(v.overrides.join(' '))}</div>` : ''}
