@@ -14,6 +14,6 @@ export async function POST(req: Request) {
 
   const {text} = (await req.json().catch(() => ({}))) as {text?: string}
   const urls = extractUrls(String(text ?? '').slice(0, 8000)).slice(0, 5)
-  const links = await Promise.all(urls.map(inspectUrl))
+  const links = await Promise.all(urls.map((u) => inspectUrl(u)))
   return Response.json({links})
 }

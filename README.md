@@ -75,6 +75,8 @@ npm run dev
 | `CRON_SECRET` | daily radar (`/api/cron/radar`) |
 | `FEATHERLESS_API_KEY` | only for the baseline in the test runner |
 | `GOOGLE_SAFE_BROWSING_KEY` | Google Safe Browsing lookups (optional) |
+| `VIRUSTOTAL_API_KEY` | VirusTotal URL reputation (optional, rationed to 4/min) |
+| `URLSCAN_API_KEY` | urlscan.io sandbox screenshots (optional) |
 | `URLHAUS_AUTH_KEY` | optional URLhaus API lookups |
 
 ## Stack
@@ -86,6 +88,7 @@ Next.js 16 (App Router) on Vercel with Blob (private) and Cron · Anthropic Type
 - Claude Opus 5.5 (Anthropic); baseline Qwen2.5-72B-Instruct via Featherless AI.
 - Agentboxd (email inbox, webhooks, phishing/injection scoring).
 - Google Safe Browsing Lookup API v4 (the list behind Chrome's warning page).
+- VirusTotal API v3 (70+ engines) and urlscan.io (sandboxed screenshot of the page). Only links that don't belong to a known brand are sent; urlscan scans are unlisted.
 - Phishing blocklists (combined daily, ~566k entries in 64 hashed shards): OpenPhish, PhishTank, URLhaus (abuse.ch), Phishing.Database, Phishing Army. Official brand domains are never blocked whole, and on shared platforms (docs.google.com, dropbox.com, bit.ly) only exact URLs are matched.
 - RDAP via rdap.org; tldts.
 - Radar sources: FTC Consumer Alerts and press releases, FBI IC3, NCSC, FCA, GOV.UK, Which?, Europol, CISA, r/Scams.

@@ -105,9 +105,9 @@ function applyOverrides(v: ModelVerdictT, links: LinkReport[]): {verdict: ModelV
   const overrides: string[] = []
   let {verdict, confidence} = v
   const high = links.flatMap((l) => l.flags.filter((f) => f.severity === 'high').map((f) => ({...f, host: l.host})))
-  const knownPhish = high.find((f) => f.code === 'known-phish' || f.code === 'google-safe-browsing')
+  const knownPhish = high.find((f) => ['known-phish', 'google-safe-browsing', 'virustotal', 'urlscan'].includes(f.code))
   if (knownPhish && verdict !== 'scam') {
-    overrides.push(`${knownPhish.host} is on ${knownPhish.code === 'google-safe-browsing' ? 'Google Safe Browsing' : 'a public phishing blocklist'}, so this is marked as a scam whatever the wording says.`)
+    overrides.push(`${knownPhish.host} is flagged by ${{'google-safe-browsing': 'Google Safe Browsing', virustotal: 'security engines on VirusTotal', urlscan: 'urlscan.io', 'known-phish': 'a public phishing blocklist'}[knownPhish.code]}, so this is marked as a scam whatever the wording says.`)
     verdict = 'scam'
     confidence = Math.max(confidence, 95)
   }
@@ -141,7 +141,7 @@ export async function check(input: CheckInput): Promise<Verdict> {
   const situation = input.situation ?? 'received_only'
   const text = input.text.slice(0, 8000)
 
-  const links = await inspectAll(text)
+  const links = await inspectAll(text, true)
   input.onLinks?.(links)
   const forensics = links.length
     ? links
@@ -181,7 +181,7 @@ export async function check(input: CheckInput): Promise<Verdict> {
   // Screenshot links only appear in the transcript, so run forensics on those too.
   let allLinks = links
   if (input.image && mv.transcript) {
-    const extra = (await inspectAll(mv.transcript)).filter((l) => !links.some((k) => k.url === l.url))
+    const extra = (await inspectAll(mv.transcript, true)).filter((l) => !links.some((k) => k.url === l.url))
     allLinks = [...links, ...extra]
   }
   const shownText = text || mv.transcript || ''

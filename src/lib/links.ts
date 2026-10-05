@@ -7,6 +7,8 @@ import {isIP} from 'node:net'
 import brands from '@/data/brands.json'
 import {isKnownPhish} from './feeds'
 import {safeBrowsing} from './safebrowsing'
+import {virusTotal, type VtResult} from './virustotal'
+import {recentScan, submitScan, type Scan} from './urlscan'
 
 export type Severity = 'high' | 'medium' | 'low' | 'info'
 export type LinkFlag = {code: string; severity: Severity; detail: string}
@@ -23,6 +25,8 @@ export type LinkReport = {
   brand: string | null
   official: boolean
   flags: LinkFlag[]
+  vt?: VtResult | null
+  scan?: Scan | null
 }
 
 type Brand = {brand: string; domains: string[]; keywords: string[]}
@@ -216,7 +220,8 @@ async function domainAge(domain: string): Promise<{ageDays: number | null; regis
   }
 }
 
-export async function inspectUrl(input: string): Promise<LinkReport> {
+// deep = also ask VirusTotal and urlscan.io (rationed APIs), used by the full check, not the instant one.
+export async function inspectUrl(input: string, deep = false): Promise<LinkReport> {
   const flags: LinkFlag[] = []
   let url: URL
   try {
@@ -283,9 +288,24 @@ export async function inspectUrl(input: string): Promise<LinkReport> {
     flags.push({code: 'official-domain', severity: 'info', detail: `${finalHost} really belongs to ${b.brand?.brand}.`})
   }
 
-  return {input, url: url.toString(), host, domain, finalUrl, hops, ageDays: age.ageDays, registered: age.registered, brand: b.brand?.brand ?? null, official: b.official, flags}
+  let vt: VtResult | null = null
+  let scan: Scan | null = null
+  const dead = flags.some((f) => f.code === 'dead-domain')
+  if (deep && !b.official) {
+    const target = finalUrl ?? url.toString()
+    ;[vt, scan] = await Promise.all([virusTotal(target), recentScan(finalHost)])
+    if (!scan && !dead) scan = await submitScan(target)
+    if (vt) {
+      const bad = vt.malicious + vt.suspicious
+      if (vt.malicious >= 2) flags.push({code: 'virustotal', severity: 'high', detail: `${vt.malicious} of ${vt.total} security engines on VirusTotal flag this link as malicious.`})
+      else if (bad > 0) flags.push({code: 'virustotal', severity: 'medium', detail: `${bad} of ${vt.total} security engines on VirusTotal flag this link.`})
+    }
+    if (scan?.malicious) flags.push({code: 'urlscan', severity: 'high', detail: 'urlscan.io opened this page in a sandbox and judged it malicious.'})
+  }
+
+  return {input, url: url.toString(), host, domain, finalUrl, hops, ageDays: age.ageDays, registered: age.registered, brand: b.brand?.brand ?? null, official: b.official, flags, vt, scan}
 }
 
-export async function inspectAll(text: string): Promise<LinkReport[]> {
-  return Promise.all(extractUrls(text).map(inspectUrl))
+export async function inspectAll(text: string, deep = false): Promise<LinkReport[]> {
+  return Promise.all(extractUrls(text).map((u) => inspectUrl(u, deep)))
 }

@@ -40,7 +40,7 @@ function Diagram({sites, kinds}: {sites: string; kinds: number}) {
         <Box x={10} y={168} w={190} h={64} title="Email" lines={['forward to Red Flag']} />
         <Box x={10} y={296} w={190} h={64} title="Discord" lines={['right-click a message']} />
         <path d="M200 72 L270 150 M200 200 L270 200 M200 328 L270 250" stroke="var(--ink-3)" strokeWidth="1.5" fill="none" markerEnd="url(#a)" />
-        <Box x={275} y={20} w={330} h={110} title="1  Link checks (code)" lines={['Google Safe Browsing', `${sites} known phishing sites`, 'domain age, look-alike brand names']} />
+        <Box x={275} y={20} w={330} h={110} title="1  Link checks (code)" lines={['Google Safe Browsing, VirusTotal, urlscan', `${sites} known phishing sites`, 'domain age, look-alike brand names']} />
         <Box x={275} y={145} w={330} h={110} title="2  Claude reads the message" lines={['text or screenshot, as untrusted data', `compares with ${kinds} known scam types`, 'quotes the exact giveaway words']} />
         <Box x={275} y={270} w={330} h={110} title="3  Evidence beats opinion" tone="danger" lines={['known bad link: scam', 'fake brand address: never "safe"', 'text aimed at the checker: scam']} />
         <path d="M605 200 L680 200" stroke="var(--ink-3)" strokeWidth="1.5" markerEnd="url(#a)" />
@@ -75,6 +75,9 @@ export default async function How() {
             <strong className="font-semibold text-ink">{sites} known phishing sites and links</strong> from five public lists (OpenPhish, PhishTank, URLhaus, Phishing.Database, Phishing Army), rebuilt every morning.
           </li>
           <li>
+            <strong className="font-semibold text-ink">VirusTotal</strong>, which asks more than 70 security companies&apos; engines about the link, and <strong className="font-semibold text-ink">urlscan.io</strong>, which opens it in a sandboxed browser so you can see what the page looks like without visiting it.
+          </li>
+          <li>
             <strong className="font-semibold text-ink">Who really owns the address.</strong> Red Flag knows the real web addresses of {(brands as unknown[]).length} banks, couriers, shops and government services in the UK, US and EU, so &ldquo;royalmail-redelivery.info&rdquo; stands out.
           </li>
           <li>
@@ -99,7 +102,7 @@ export default async function How() {
         <ul className="list-disc space-y-2 pl-5">
           <li>Nothing you paste is stored. A result is saved only if you press &ldquo;Share the result&rdquo;, in private storage reachable only through this site.</li>
           <li>Shared results are signed, so nobody can edit one into a fake &ldquo;no red flags&rdquo; result for their own scam.</li>
-          <li>Links are never opened. Only the address is checked.</li>
+          <li>Red Flag never opens links itself. Links that don&apos;t belong to a known brand are sent to VirusTotal and urlscan.io (as an unlisted scan) so security tools can look at them; links to real banks and services are never sent, so your genuine account or password-reset links stay private.</li>
           <li>The best result you can get is &ldquo;No red flags found&rdquo;, never &ldquo;safe&rdquo;. No checker can promise that.</li>
         </ul>
       </Section>
@@ -124,7 +127,7 @@ export default async function How() {
       <Section title="Built with">
         <ul className="list-disc space-y-1.5 pl-5">
           <li>Claude Opus 5.5 by Anthropic, for reading messages and screenshots.</li>
-          <li>Google Safe Browsing API; OpenPhish, PhishTank, URLhaus, Phishing.Database and Phishing Army; registry RDAP via IANA.</li>
+          <li>Google Safe Browsing API, VirusTotal API, urlscan.io API; OpenPhish, PhishTank, URLhaus, Phishing.Database and Phishing Army; registry RDAP via IANA.</li>
           <li>Agentboxd for the email inbox; Discord interactions for the Discord app.</li>
           <li>Weekly scam reports from the FTC, FBI IC3, NCSC, FCA, GOV.UK, Which?, Europol, CISA and r/Scams.</li>
           <li>Next.js on Vercel. Type: IBM Plex.</li>

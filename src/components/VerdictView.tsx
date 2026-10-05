@@ -5,6 +5,7 @@ import type {Verdict} from '@/lib/verdict'
 import type {LinkReport} from '@/lib/links'
 import {SITUATIONS, respondFor, type Region, type Situation} from '@/lib/respond'
 import {External, ShieldAlert, ShieldCheck, ShieldQ, ShieldX} from './Icons'
+import {ScanShot} from './ScanShot'
 
 const LOOK = {
   scam: {title: 'This is a scam', sub: "Don't reply, click or pay.", Icon: ShieldX, fg: 'text-danger', bg: 'bg-danger-bg', line: 'border-danger-line', solid: 'bg-danger'},
@@ -63,7 +64,7 @@ export function LinkPanel({links}: {links: LinkReport[]}) {
   return (
     <section className="rounded-xl border border-line bg-card p-5 sm:p-6">
       <h3 className="text-lg font-semibold">Link checks</h3>
-      <p className="mt-1 text-sm text-ink-3">Google Safe Browsing, 566,000 known phishing sites, domain age, look-alike brand names and redirects. Plain code, not AI.</p>
+      <p className="mt-1 text-sm text-ink-3">Google Safe Browsing, VirusTotal, 566,000 known phishing sites, domain age, look-alike brand names and redirects. Plain code, not AI.</p>
       {links.length === 0 && <p className="mt-4 text-[15px] text-ink-2">There are no links in this message.</p>}
       <ul className="mt-4 divide-y divide-line">
         {links.map((l) => (
@@ -85,6 +86,12 @@ export function LinkPanel({links}: {links: LinkReport[]}) {
               ))}
               {l.flags.length === 0 && <li className="text-[14px] text-ink-3">Nothing unusual found about this link.</li>}
             </ul>
+            {l.vt && (
+              <a href={l.vt.link} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[13px] text-ink-3 hover:text-navy">
+                VirusTotal: {l.vt.malicious + l.vt.suspicious} of {l.vt.total} engines flag it{l.vt.scannedAt ? `, last scanned ${l.vt.scannedAt}` : ''} <External className="h-3 w-3" />
+              </a>
+            )}
+            {l.scan && <ScanShot scan={l.scan} host={l.host} />}
           </li>
         ))}
       </ul>
