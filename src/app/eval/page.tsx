@@ -20,8 +20,8 @@ function Stat({label, rf, base, note}: {label: string; rf: number; base?: number
       <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-3">{label}</div>
       <div className="mt-2 flex items-baseline gap-3">
         <span className="font-display text-6xl leading-none">{pct(rf)}</span>
-        {base !== undefined && <span className="font-mono text-sm text-ink-3">plain model {pct(base)}</span>}
       </div>
+      {base !== undefined && <div className="mt-1 font-mono text-xs text-ink-3">plain model {pct(base)}</div>}
       <p className="mt-2 text-sm text-ink-2">{note}</p>
     </div>
   )
@@ -29,7 +29,8 @@ function Stat({label, rf, base, note}: {label: string; rf: number; base?: number
 
 export default function Eval() {
   const misses = results.filter((r) => !r.redflag_correct)
-  const counts = (k: string) => results.filter((r) => r.kind === k).length
+  const counts = (k: string, set?: string) => results.filter((r) => r.kind === k && (!set || r.set === set)).length
+  const baseMisses = results.filter((r) => !r.baseline_correct)
   return (
     <main className="mx-auto w-full max-w-5xl px-4 pb-24 sm:px-6">
       <header className="flex items-center justify-between py-5">
@@ -44,7 +45,7 @@ export default function Eval() {
 
       <h1 className="pt-8 font-display text-6xl leading-[1.02]">Test results</h1>
       <p className="mt-4 max-w-3xl text-lg text-ink-2">
-        {summary.n} made-up messages: {counts('scam')} scams (one per known pattern), {counts('legit')} genuine messages chosen to look scary (a real bank fraud alert, a genuine Royal Mail customs fee, 2FA codes) and {counts('injection')} prompt-injection attacks that try to talk the checker into saying &ldquo;safe&rdquo;. The same messages went to a plain open model ({summary.baselineModel}, one-word answer, no link checks) for comparison. Run {new Date(summary.ranAt).toLocaleDateString('en-GB', {dateStyle: 'medium'})}.
+        {summary.n} made-up messages: {counts('scam', 'core')} scams (one per known pattern), {counts('legit', 'core')} genuine messages chosen to look scary (a real bank fraud alert, a genuine Royal Mail customs fee, 2FA codes), {counts('injection')} prompt-injection attacks, and {summary.hard.n} hard cases written separately (below) that try to talk the checker into saying &ldquo;safe&rdquo;. The same messages went to a plain open model ({summary.baselineModel}, one-word answer, no link checks) for comparison. Run {new Date(summary.ranAt).toLocaleDateString('en-GB', {dateStyle: 'medium'})}.
       </p>
 
       <div className="mt-8 rounded-2xl border-2 border-ink bg-sheet p-5 sm:p-6">
@@ -64,6 +65,25 @@ export default function Eval() {
         <Stat label="Genuine left alone" rf={summary.redflag.legitCleared} base={summary.baseline.legitCleared} note="Not marked scam or suspicious. False alarms teach people to ignore warnings." />
         <Stat label="Right scam named" rf={summary.redflag.patternMatch} note={`Matched the exact pattern it was written for. Median time ${(summary.redflag.medianMs / 1000).toFixed(1)}s.`} />
       </div>
+
+      {baseMisses.length > 0 && (
+        <>
+          <h2 className="mt-14 font-display text-4xl">Where a plain AI model got it wrong</h2>
+          <p className="mt-2 max-w-3xl text-ink-2">Same messages, asked to a capable open model with no link checks, no knowledge base and no defence against injection. These are the kind of mistakes Red Flag is built to avoid.</p>
+          <ul className="mt-4 grid gap-3 md:grid-cols-2">
+            {baseMisses.map((r) => (
+              <li key={r.id} className="rounded-2xl border border-rule bg-sheet p-4">
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="rounded-full bg-rule px-2 py-0.5">{KIND[r.kind as keyof typeof KIND]}</span>
+                  <span className={`rounded-full px-2 py-0.5 font-semibold ${CHIP[r.baseline] ?? CHIP.error}`}>plain model: {r.baseline}</span>
+                  <span className={`rounded-full px-2 py-0.5 font-semibold ${CHIP[r.redflag]}`}>Red Flag: {r.redflag}</span>
+                </div>
+                <p className="mt-2 line-clamp-4 text-sm text-ink-2">{r.text}</p>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
       <h2 className="mt-14 font-display text-4xl">Every miss</h2>
       {misses.length === 0 ? (
