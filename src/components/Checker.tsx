@@ -73,6 +73,7 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
   const [drag, setDrag] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [wasImage, setWasImage] = useState(false)
+  const [country, setCountry] = useState<string | null>(null)
   const resultRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -80,9 +81,19 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
     try {
       const r = localStorage.getItem('rf-region')
       if (r === 'UK' || r === 'US' || r === 'EU') setRegion(r)
-      else if (Intl.DateTimeFormat().resolvedOptions().timeZone.startsWith('America')) setRegion('US')
-      else if (/^Europe\/(?!London|Dublin)/.test(Intl.DateTimeFormat().resolvedOptions().timeZone)) setRegion('EU')
     } catch {}
+    // Default advice region from the visitor's country (the server sees it; nothing is stored).
+    fetch('/api/geo')
+      .then((r) => r.json())
+      .then((g: {country: string | null; region: 'UK' | 'US' | 'EU'}) => {
+        setCountry(g.country)
+        try {
+          if (!localStorage.getItem('rf-region')) setRegion(g.region)
+        } catch {
+          setRegion(g.region)
+        }
+      })
+      .catch(() => {})
   }, [])
 
   useEffect(() => {

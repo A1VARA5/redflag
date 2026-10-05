@@ -12,7 +12,7 @@ const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif
 export async function POST(req: Request) {
   const limited = rateLimited(req)
   if (limited) return limited
-  let body: {text?: string; image?: {mediaType?: string; data?: string} | null; region?: string; situation?: string}
+  let body: {text?: string; image?: {mediaType?: string; data?: string} | null; region?: string; situation?: string; country?: string}
   try {
     body = await req.json()
   } catch {
@@ -34,6 +34,7 @@ export async function POST(req: Request) {
         situation: SITUATIONS.has(body.situation ?? '') ? (body.situation as Situation) : 'received_only',
         source: 'web',
         onLinks: (links) => send({type: 'links', links}),
+        country: /^[A-Z]{2}$/.test(body.country ?? '') ? body.country! : req.headers.get('x-vercel-ip-country'),
       }
       try {
         // Nothing is stored here. The message is kept only if the person chooses to share it.

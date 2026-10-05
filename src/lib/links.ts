@@ -88,7 +88,9 @@ export function extractUrls(text: string): string[] {
     // Only keep bare tokens that end in a real public suffix, so "e.g" and "file.txt" stay out.
     if (p.domain && p.isIcann && !/\.(txt|png|jpe?g|pdf|docx?|zip)$/i.test(candidate)) found.add('https://' + candidate)
   }
-  return [...found].slice(0, 8)
+  // Scammers pad messages with decoy links; with many, check the first four and the last four.
+  const all = [...found]
+  return all.length > 8 ? [...all.slice(0, 4), ...all.slice(-4)] : all
 }
 
 function trimUrl(u: string) {
@@ -262,7 +264,7 @@ export async function inspectUrl(input: string, deep = false): Promise<LinkRepor
       if (finalDomain && finalDomain !== domain) flags.push({code: 'redirects-elsewhere', severity: isShort ? 'info' : 'low', detail: `Redirects to a different site: ${finalHost}.`})
     } catch {}
   }
-  if (error === 'host not resolvable') flags.push({code: 'dead-domain', severity: 'medium', detail: 'The domain does not resolve. Phishing sites get taken down fast, so this often means it was reported.'})
+  if (error === 'host not resolvable') flags.push({code: 'dead-domain', severity: 'low', detail: "This address doesn't load right now. Scam sites are often taken down within days, but it could also just be offline."})
 
   const b = brandFor(finalHost, finalDomain)
   flags.push(...b.flags)

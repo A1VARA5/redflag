@@ -66,6 +66,8 @@ export type Verdict = ModelVerdictT & {
   steps: {text: string; url?: string}[]
   ms: number
   inputHadImage: boolean
+  truncated: boolean
+  country: string | null
   trending: {title: string; status: string} | null
   engine: 'claude' | 'backup'
 }
@@ -162,15 +164,19 @@ export type CheckInput = {
   source?: Verdict['source']
   extraSignals?: string | null
   onLinks?: (links: LinkReport[]) => void
+  country?: string | null
 }
 
 export async function check(input: CheckInput): Promise<Verdict> {
   const t0 = Date.now()
   const region = input.region ?? 'UK'
   const situation = input.situation ?? 'received_only'
-  const text = input.text.slice(0, 8000)
+  // Long messages: links are found in the whole text; the model reads the start and the end, where scams hide.
+  const full = input.text.slice(0, 60_000)
+  const truncated = full.length > 8000
+  const text = truncated ? `${full.slice(0, 5000)}\n\n[… ${full.length - 8000} characters in the middle not shown …]\n\n${full.slice(-3000)}` : full
 
-  const links = await inspectAll(text, true)
+  const links = await inspectAll(full, true)
   input.onLinks?.(links)
   const forensics = links.length
     ? links
@@ -179,7 +185,7 @@ export async function check(input: CheckInput): Promise<Verdict> {
     : 'No links found in the text.'
 
   const userText = [
-    `Reader's region: ${region}. What they have done so far: ${situation.replace(/_/g, ' ')}.`,
+    `The advice will be shown for: ${region}. This only picks the reporting steps; don't assume where the reader or the message is from. What they have done so far: ${situation.replace(/_/g, ' ')}.`,
     input.image ? 'A screenshot is attached. Read all text in it into transcript and judge the screenshot.' : '',
     `<link_forensics>\n${forensics}\n</link_forensics>`,
     input.extraSignals ? `<mail_signals>\n${input.extraSignals}\n</mail_signals>` : '',
@@ -252,9 +258,11 @@ export async function check(input: CheckInput): Promise<Verdict> {
     links: allLinks,
     pattern,
     overrides,
-    steps: verdict === 'safe' ? [] : stepsFor(region, situation, {text: shownText, impersonating: mv.impersonating, pattern: mv.pattern_id, source: input.source ?? 'web', hasLinks: allLinks.length > 0}),
+    steps: verdict === 'safe' ? [] : stepsFor(region, situation, {text: shownText, impersonating: mv.impersonating, pattern: mv.pattern_id, source: input.source ?? 'web', hasLinks: allLinks.length > 0, verdict, country: input.country ?? null}),
     ms: Date.now() - t0,
     inputHadImage: Boolean(input.image),
+    truncated,
+    country: input.country ?? null,
     trending: hot ? {title: hot.title, status: hot.status} : null,
   }
 }

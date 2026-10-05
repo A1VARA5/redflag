@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   hits.set(ip, [...recent, now])
 
   const {text} = (await req.json().catch(() => ({}))) as {text?: string}
-  const urls = extractUrls(String(text ?? '').slice(0, 8000)).slice(0, 5)
+  const urls = extractUrls(String(text ?? '').slice(0, 60_000)).slice(0, 5)
   const links = await Promise.all(urls.map((u) => inspectUrl(u)))
   return Response.json({links})
 }

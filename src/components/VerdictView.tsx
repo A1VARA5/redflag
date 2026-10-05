@@ -104,7 +104,7 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
   const [region, setRegion] = useState<Region>(v.region)
   const [situation, setSituation] = useState<Situation>(v.situation)
   const {steps, report} = useMemo(
-    () => respondFor(region, situation, {text: v.text, impersonating: v.impersonating, pattern: v.pattern_id, source: v.source, hasLinks: v.links.length > 0}),
+    () => respondFor(region, situation, {text: v.text, impersonating: v.impersonating, pattern: v.pattern_id, source: v.source, hasLinks: v.links.length > 0, verdict: v.verdict, country: v.country ?? null}),
     [region, situation, v],
   )
   const [shareState, setShareState] = useState<'idle' | 'copied' | 'error'>('idle')
@@ -162,6 +162,9 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
             <h3 className="text-lg font-semibold">{v.inputHadImage ? 'Text from your screenshot' : 'Your message'}</h3>
             {v.impersonating && <span className="rounded-md border border-danger-line bg-danger-bg px-2 py-0.5 text-[13px] font-medium text-danger">Pretending to be {v.impersonating}</span>}
           </div>
+          {v.truncated && (
+            <p className="mt-2 text-[14px] text-ink-3">This is a long message. Every link in it was checked; the AI read the beginning and the end, where scams usually put the request.</p>
+          )}
           <div className={`mt-4 ${image ? 'grid gap-5 sm:grid-cols-[minmax(0,1fr)_140px]' : ''}`}>
             <Marked text={v.text} highlights={v.highlights} />
             {image && (

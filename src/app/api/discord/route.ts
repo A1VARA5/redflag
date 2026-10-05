@@ -52,7 +52,11 @@ export async function POST(req: Request) {
           if (r.ok) image = {mediaType: (img.content_type!.split(';')[0]) as 'image/png', data: Buffer.from(await r.arrayBuffer()).toString('base64')}
         }
         if (!text && !image) throw new Error('That message has no text or image to check.')
-        const v = await check({text, image, source: 'discord', region: 'UK'})
+        // Discord tells us the user's language; use it to pick the advice region.
+        const loc = String(i.locale ?? '')
+        const EU_LOC: Record<string, string> = {de: 'DE', fr: 'FR', nl: 'NL', 'es-ES': 'ES', it: 'IT', lt: 'LT', pl: 'PL', da: 'DK', fi: 'FI', 'sv-SE': 'SE', cs: 'CZ', ro: 'RO', hu: 'HU', el: 'GR', bg: 'BG', hr: 'HR'}
+        const region = loc === 'en-US' || loc === 'es-419' ? 'US' : EU_LOC[loc] ? 'EU' : 'UK'
+        const v = await check({text, image, source: 'discord', region, country: EU_LOC[loc] ?? (region === 'US' ? 'US' : 'GB')})
         await saveVerdict(v)
         const site = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin
         const links = v.links.flatMap((l) => l.flags.filter((f) => f.severity === 'high').map((f) => `\`${l.host}\` ${f.detail}`)).slice(0, 3)
