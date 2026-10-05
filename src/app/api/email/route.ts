@@ -25,7 +25,9 @@ export async function POST(req: Request) {
 
   after(async () => {
     try {
-      const m = (thin.text || thin.html ? thin : await getMessage(inboxId, thin.id)) ?? thin
+      const held = thin.screening?.state === 'held' || Boolean(thin.withheld) || !(thin.text || thin.html)
+      const m = (held ? await getMessage(thin.id) : thin) ?? thin
+      const heldReason = thin.screening?.reason ?? thin.withheld?.reason ?? null
       const from = senderOf(m)
       // Never answer ourselves, bounces or auto-replies: that is how mail loops start.
       if (!from || from === inboxAddress || /mailer-daemon|postmaster|no-?reply/i.test(from) || /^(re: )?red flag verdict/i.test(m.subject ?? '')) return
@@ -36,6 +38,10 @@ export async function POST(req: Request) {
 
       // The full text, not extracted_text: a forward's whole point is the quoted original underneath.
       const body = (m.text?.trim() || (m.html ? htmlToText(m.html) : '') || m.extracted_text || '').slice(0, 8000)
+      if (!body && !m.attachments?.length) {
+        console.error('[email] no readable content', m.id, heldReason)
+        return
+      }
       const text = m.subject ? `Subject: ${m.subject}\n\n${body}` : body
       const imgAtt = m.attachments?.find((a) => /^image\/(png|jpeg|webp|gif)$/.test(a.content_type ?? ''))
       const img = imgAtt ? await downloadAttachment(imgAtt.id) : null
@@ -43,6 +49,7 @@ export async function POST(req: Request) {
       const signals = [
         m.ai?.risk?.phishing !== undefined ? `Agentboxd phishing score for this email: ${m.ai.risk.phishing}` : '',
         m.ai?.risk?.injection !== undefined ? `Agentboxd prompt-injection score: ${m.ai.risk.injection}` : '',
+        heldReason ? `The mail provider quarantined this email before any agent could read it (reason: ${heldReason}).` : '',
         'This email was most likely forwarded by the person asking. The forwarder is not the suspect; judge the forwarded content underneath. Sender authentication results describe the forward, not the original.',
       ]
         .filter(Boolean)

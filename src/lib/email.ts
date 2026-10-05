@@ -16,6 +16,8 @@ export function verifyMailroom(raw: string, ts: string | null, sig: string | nul
 
 export type MailMessage = {
   id: string
+  screening?: {state?: string; reason?: string}
+  withheld?: {state?: string; reason?: string}
   thread_id?: string
   from?: string | {address?: string; email?: string; name?: string}
   subject?: string
@@ -31,8 +33,11 @@ function auth() {
   return {Authorization: `Bearer ${process.env.AGENTBOXD_API_KEY}`, 'content-type': 'application/json'}
 }
 
-export async function getMessage(inboxId: string, messageId: string): Promise<MailMessage | null> {
-  const res = await fetch(`${API}/inboxes/${inboxId}/messages/${messageId}`, {headers: auth(), signal: AbortSignal.timeout(10_000)})
+// Agentboxd quarantines ("holds") mail it thinks is phishing, and hides the content from agents.
+// A scam checker is the one agent that should read it, so we ask for held content explicitly
+// (needs an API key with the messages:release permission).
+export async function getMessage(messageId: string): Promise<MailMessage | null> {
+  const res = await fetch(`${API}/messages/${messageId}?include_held=true&include_unscreened=true`, {headers: auth(), signal: AbortSignal.timeout(10_000)})
   if (!res.ok) return null
   const j = await res.json()
   return (j.data ?? j) as MailMessage
