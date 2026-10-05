@@ -180,10 +180,32 @@ async function unwrap(url: string): Promise<{finalUrl: string | null; hops: stri
   return {finalUrl: current, hops, error: 'too many redirects'}
 }
 
-// Domain registration date from RDAP (the modern WHOIS). Free, no key.
+// Domain registration date from RDAP (the modern WHOIS), asked straight from the registry for that ending.
+// IANA publishes which registry serves which TLD; the rdap.org proxy refuses server requests, so we skip it.
+let bootstrap: {at: number; map: Map<string, string>} | null = null
+async function rdapBase(tld: string): Promise<string | null> {
+  if (!bootstrap || Date.now() - bootstrap.at > 86_400_000) {
+    try {
+      const res = await fetch('https://data.iana.org/rdap/dns.json', {signal: AbortSignal.timeout(5000)})
+      const data = (await res.json()) as {services: [string[], string[]][]}
+      const map = new Map<string, string>()
+      for (const [tlds, urls] of data.services) for (const t of tlds) map.set(t, urls.find((u) => u.startsWith('https')) ?? urls[0])
+      bootstrap = {at: Date.now(), map}
+    } catch {
+      return null
+    }
+  }
+  return bootstrap.map.get(tld) ?? null
+}
+
 async function domainAge(domain: string): Promise<{ageDays: number | null; registered: string | null}> {
   try {
-    const res = await fetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`, {signal: AbortSignal.timeout(4000), headers: {accept: 'application/rdap+json'}})
+    const base = await rdapBase(domain.split('.').pop()!)
+    if (!base) return {ageDays: null, registered: null}
+    const res = await fetch(`${base.replace(/\/$/, '')}/domain/${encodeURIComponent(domain)}`, {
+      signal: AbortSignal.timeout(4000),
+      headers: {accept: 'application/rdap+json', 'user-agent': 'RedFlag/1.0 (+https://getredflag.vercel.app)'},
+    })
     if (!res.ok) return {ageDays: null, registered: null}
     const data = (await res.json()) as {events?: {eventAction: string; eventDate: string}[]}
     const reg = data.events?.find((e) => e.eventAction === 'registration')?.eventDate
@@ -232,13 +254,23 @@ export async function inspectUrl(input: string): Promise<LinkReport> {
     try {
       finalHost = new URL(finalUrl).hostname.toLowerCase()
       finalDomain = parse(finalHost).domain ?? null
-      if (finalDomain && finalDomain !== domain) flags.push({code: 'redirects-elsewhere', severity: isShort ? 'info' : 'medium', detail: `Redirects to a different site: ${finalHost}.`})
+      if (finalDomain && finalDomain !== domain) flags.push({code: 'redirects-elsewhere', severity: isShort ? 'info' : 'low', detail: `Redirects to a different site: ${finalHost}.`})
     } catch {}
   }
   if (error === 'host not resolvable') flags.push({code: 'dead-domain', severity: 'medium', detail: 'The domain does not resolve. Phishing sites get taken down fast, so this often means it was reported.'})
 
   const b = brandFor(finalHost, finalDomain)
   flags.push(...b.flags)
+  // A look-alike name on a domain that has existed for years (model.com vs Yodel, post.de vs bpost) is a coincidence,
+  // not a fresh fake. Keep the note, drop the alarm.
+  if (age.ageDays !== null && age.ageDays > 3 * 365) {
+    for (const f of flags) {
+      if (f.code === 'lookalike-domain') {
+        f.severity = 'low'
+        f.detail = `${f.detail.replace(' That is how fake sites hide.', '')} But this domain has existed since ${age.registered?.slice(0, 4)}, so it is probably just a similar name.`
+      }
+    }
+  }
   if (age.ageDays !== null && !b.official) {
     if (age.ageDays < 30) flags.push({code: 'new-domain', severity: 'high', detail: `Registered ${age.ageDays} days ago (${age.registered}). Real companies' sites are years old.`})
     else if (age.ageDays < 180) flags.push({code: 'young-domain', severity: 'medium', detail: `Registered ${age.ageDays} days ago (${age.registered}).`})

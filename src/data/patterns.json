@@ -675,5 +675,143 @@
       {"title": "Charity Scams", "url": "https://consumer.ftc.gov/all-scams/charity-scams", "publisher": "FTC Consumer Advice"},
       {"title": "Charity donation fraud", "url": "https://www.reportfraud.police.uk/charity-donation-fraud/", "publisher": "Report Fraud (City of London Police)"}
     ]
+  },
+  {
+    "id": "eu-parcel-customs-fee",
+    "name": "Parcel customs or delivery fee text (EU)",
+    "channels": ["sms", "email", "whatsapp"],
+    "regions": ["EU"],
+    "audience": "everyone, especially online shoppers who order from outside the EU",
+    "summary": "A text or email pretends to be PostNL, DHL, DPD, InPost or a national post office and says a parcel is stuck until you pay a small customs, clearance or redelivery fee through a link. The fake payment page steals card details.",
+    "tells": [
+      "Asks you to pay a customs, clearance or 'change delivery date' fee through a link in the message (PostNL says its payment SMS never contains a link, only a barcode to look up yourself)",
+      "No real tracking number, or one that does not show up when you type it into the courier's own site or app",
+      "Link is not on the courier's real domain (e.g. postnl.nl, dhl.de, dhl.com, inpost.pl)",
+      "Sender is a random mobile number or a generic name like 'Delivery'",
+      "You were not expecting a parcel from outside the EU",
+      "Pressure: 'pay within 24 hours or the parcel is returned'"
+    ],
+    "impersonates": ["PostNL", "DHL", "Deutsche Post", "DPD", "InPost", "La Poste", "Correos", "Poste Italiane", "An Post", "Omniva"],
+    "example": "PostNL: Your parcel is held at customs. Pay the €2.99 clearance fee within 24 hours or it will be returned: hxxps://postnl-douane-betaling[.]info/pay",
+    "aiAngle": "Phishing kits translate the same text into every EU language and spin up a new lookalike domain per country, so a message in perfect Dutch, German or Polish proves nothing.",
+    "sources": [
+      {"title": "Betaalverzoek van PostNL", "url": "https://www.postnl.nl/phishing-internetfraude-herkennen/betaalverzoek-van-postnl/", "publisher": "PostNL"},
+      {"title": "Fraud Awareness (Ireland)", "url": "https://www.dhl.com/ie-en/home/footer/fraud-awareness.html", "publisher": "DHL"},
+      {"title": "Uwaga na fałszywe SMS-y podszywające się pod firmę kurierską", "url": "https://moje.cert.pl/komunikaty/2026/49/uwaga-na-falszywe-sms-y-podszywajace-sie-pod-firme-kurierska/", "publisher": "CERT Polska"}
+    ]
+  },
+  {
+    "id": "booking-hotel-chat-payment",
+    "name": "Hotel booking 're-confirm your card' message",
+    "channels": ["web", "email", "whatsapp", "sms"],
+    "regions": ["EU", "UK", "US"],
+    "audience": "travellers and families who book hotels or holiday rentals online",
+    "summary": "After you book a hotel, a message that seems to come from the property or Booking.com says your reservation will be cancelled unless you re-confirm your card or pay through a link. It knows your real booking details, which makes it convincing.",
+    "tells": [
+      "Urgent deadline: 'confirm within 24 hours or your booking is cancelled'",
+      "Asks for card details or a payment that is not in the payment policy on your booking confirmation",
+      "Link goes to a site that does not end in booking.com",
+      "Asks you to move the conversation to WhatsApp, text or email",
+      "Asks for a bank transfer or gift cards (Booking.com says no real payment needs gift cards)"
+    ],
+    "impersonates": ["Booking.com", "hotels", "holiday rentals", "Airbnb"],
+    "example": "Dear guest, your reservation at Hotel Aurora (12-15 May) is at risk. Our bank could not verify your card. Please re-confirm within 24h to avoid cancellation: hxxps://booking-guest-verify[.]com/r/48213",
+    "aiAngle": "Criminals use real booking details and AI-written messages in the guest's own language, so the message reads exactly like the hotel.",
+    "sources": [
+      {"title": "Safety Tips for Travelers", "url": "https://www.booking.com/trust_and_safety/travellers.html", "publisher": "Booking.com"},
+      {"title": "How to spot and avoid hotel scams", "url": "https://www.booking.com/articles/avoid-hotel-scams.html", "publisher": "Booking.com"}
+    ]
+  },
+  {
+    "id": "eu-marketplace-receive-payment-link",
+    "name": "'Receive your payment' link for sellers (OLX, Vinted, Kleinanzeigen)",
+    "channels": ["web", "whatsapp", "email", "sms"],
+    "regions": ["EU", "UK"],
+    "audience": "teens and adults selling second-hand items on Vinted, OLX, Allegro, Kleinanzeigen, Marktplaats or Leboncoin",
+    "summary": "A 'buyer' says they have already paid through the platform's safe delivery and sends a link so you can 'receive the money'. The page copies your real listing, then asks for your card or online banking login and SMS codes.",
+    "tells": [
+      "Buyer agrees instantly without asking questions, then wants to move to WhatsApp, text or email",
+      "Says payment is waiting and you must click a link to 'receive', 'confirm' or 'unlock' it",
+      "Page shows your real item and photo but is not on the marketplace's own domain",
+      "Asks for your card number, CVC, bank login or an SMS code to 'receive' money",
+      "Sends a payment 'screenshot' as proof (easy to fake)",
+      "Money never appears in the real app or your bank account"
+    ],
+    "impersonates": ["Vinted", "OLX", "Allegro", "Kleinanzeigen", "Marktplaats", "Leboncoin", "Wallapop", "InPost", "DPD"],
+    "example": "Hi! I bought your jacket with Vinted secure delivery. The courier is booked, you just need to confirm to receive €45: hxxps://vinted-receive-funds[.]eu/item/77310",
+    "aiAngle": "Scam kits auto-generate a fake 'payment received' page from your real listing in seconds, in any language.",
+    "sources": [
+      {"title": "How to avoid and report phishing messages & scams", "url": "https://www.vinted.co.uk/help/628-recognise-spoof-and-phishing-messages", "publisher": "Vinted"},
+      {"title": "Oszustwa na portalach z ogłoszeniami (Classiscam)", "url": "https://cert.pl/posts/2022/04/classiscam/", "publisher": "CERT Polska"}
+    ]
+  },
+  {
+    "id": "eu-bank-sms-fake-agent",
+    "name": "Bank 'suspicious payment' text then fake bank call (EU)",
+    "channels": ["sms", "phone", "web"],
+    "regions": ["EU"],
+    "audience": "everyone with a bank or fintech app, especially N26, ING, Revolut and Sparkasse customers",
+    "summary": "A text says there is a suspicious payment or your account is blocked and gives a link to 'verify'. The link copies your bank's login page. Then a fake bank agent may call to get you to approve a payment or share a code in your app.",
+    "tells": [
+      "Text with a link about a blocked account or a payment you did not make (N26 says it never sends links by SMS)",
+      "Time pressure or an ultimatum to log in now",
+      "Login page is not your bank's real address (the bank name inside a URL does not make it real)",
+      "A call soon after from 'your bank' that knows your name, and the caller ID may even match the real bank",
+      "Caller asks you to read out an SMS code or approve a payment or new device in your app",
+      "Asks you to install an app or 'security update' from a link"
+    ],
+    "impersonates": ["N26", "ING", "Revolut", "Sparkasse", "Deutsche Bank", "ABN AMRO", "Rabobank", "BNP Paribas", "Santander", "Swedbank", "SEB", "PKO BP"],
+    "example": "N26: A payment of €489.00 to an electronics store is waiting for approval. Not you? Cancel it here: hxxps://n26-secure-cancel[.]com",
+    "aiAngle": "Spoofed caller ID and AI voice tools make the follow-up 'bank' call sound and look official.",
+    "sources": [
+      {"title": "What is phishing?", "url": "https://support.n26.com/en-eu/security/account-protection/what-is-phishing", "publisher": "N26"},
+      {"title": "How can I prevent fraud via SMS?", "url": "https://support.n26.com/en-eu/security/account-protection/how-can-i-prevent-frauds-via-sms", "publisher": "N26"},
+      {"title": "Security (beware of fake apps)", "url": "https://ing.com/pages/security", "publisher": "ING"},
+      {"title": "Phishing-Radar: Aktuelle Warnungen", "url": "https://www.verbraucherzentrale.de/wissen/digitale-welt/phishingradar/phishingradar-aktuelle-warnungen-6059", "publisher": "Verbraucherzentrale"}
+    ]
+  },
+  {
+    "id": "wangiri-missed-call",
+    "name": "One-ring missed call from a foreign number (Wangiri)",
+    "channels": ["phone"],
+    "regions": ["EU"],
+    "audience": "everyone with a mobile phone",
+    "summary": "Your phone rings once from an unusual international number and stops. If you call back, you are connected to an expensive premium-rate line and charged for the call.",
+    "tells": [
+      "Missed call that rang only once",
+      "Unusual international country code you do not recognise",
+      "Comes at night or during working hours when you are unlikely to answer",
+      "No voicemail left (a real caller would leave a message or ring again)"
+    ],
+    "impersonates": ["unknown international callers"],
+    "example": "Missed call (1 ring) from +375 XX XXX XXXX at 02:14. No voicemail.",
+    "aiAngle": null,
+    "sources": [
+      {"title": "Wangiri: a telephone scam", "url": "https://www.europol.europa.eu/sites/default/files/documents/wangiri_final_2.pdf", "publisher": "Europol EC3"},
+      {"title": "Scam calls and texts", "url": "https://www.comreg.ie/advice-information/scam-calls/", "publisher": "ComReg (Ireland)"}
+    ]
+  },
+  {
+    "id": "eu-tax-refund",
+    "name": "Tax refund or tax debt message (EU)",
+    "channels": ["sms", "email", "whatsapp", "phone"],
+    "regions": ["EU"],
+    "audience": "adults who file taxes, and parents",
+    "summary": "A message pretends to be the tax office (Revenue, impots.gouv.fr, Belastingdienst, Finanzamt and others) and says you are owed a refund, or must pay a tax bill now, through a link or QR code. The page steals card or bank details.",
+    "tells": [
+      "Refund or debt announced by text or email with a link (Revenue Ireland says it never tells you about a refund or bill by email, SMS or phone)",
+      "Asks for your card number to receive a refund (the French tax office says it never asks for it)",
+      "Direct payment link or QR code to pay a tax debt (Belastingdienst says it never sends direct payment requests)",
+      "Threats of bailiffs, seizure or police if you do not pay today",
+      "Link not on the real tax site (revenue.ie, impots.gouv.fr, belastingdienst.nl, elster.de)"
+    ],
+    "impersonates": ["Revenue (Ireland)", "impots.gouv.fr", "Belastingdienst", "Finanzamt / ELSTER", "Agencia Tributaria", "Agenzia delle Entrate", "VMI"],
+    "example": "impots.gouv.fr: Après recalcul, vous avez droit à un remboursement de 312,40 €. Confirmez vos coordonnées bancaires avant le 30/09: hxxps://impots-remboursement-fr[.]info",
+    "aiAngle": "AI translation lets one gang run the same refund scam against tax offices in many countries at once, with correct local wording.",
+    "sources": [
+      {"title": "Fraudulent emails, SMS (text messages) and phone calls", "url": "https://www.revenue.ie/en/corporate/communications/fraudulent-emails/index.aspx", "publisher": "Revenue (Ireland)"},
+      {"title": "Courriels et SMS frauduleux (hameçonnage ou phishing)", "url": "https://www.impots.gouv.fr/courriels-et-sms-frauduleux-hameconnage-ou-phishing", "publisher": "impots.gouv.fr (DGFiP)"},
+      {"title": "Valse WhatsApp-berichten, sms-berichten, mails, apps, brieven of telefoontjes", "url": "https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/standaard_functies/prive/contact/fraude_misdaad_en_misstanden_melden/valse_mail_brieven_telf_app/", "publisher": "Belastingdienst"}
+    ]
   }
 ]

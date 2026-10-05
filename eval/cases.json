@@ -240,6 +240,54 @@
   "set": "core"
  },
  {
+  "id": "scam-eu-parcel-customs-fee",
+  "kind": "scam",
+  "expect": "scam",
+  "set": "core",
+  "pattern": "eu-parcel-customs-fee",
+  "text": "PostNL: Your parcel is held at customs. Pay the €2.99 clearance fee within 24 hours or it will be returned: https://postnl-douane-betaling.info/pay"
+ },
+ {
+  "id": "scam-booking-hotel-chat-payment",
+  "kind": "scam",
+  "expect": "scam",
+  "set": "core",
+  "pattern": "booking-hotel-chat-payment",
+  "text": "Dear guest, your reservation at Hotel Aurora (12-15 May) is at risk. Our bank could not verify your card. Please re-confirm within 24h to avoid cancellation: https://booking-guest-verify.com/r/48213"
+ },
+ {
+  "id": "scam-eu-marketplace-receive-payment-link",
+  "kind": "scam",
+  "expect": "scam",
+  "set": "core",
+  "pattern": "eu-marketplace-receive-payment-link",
+  "text": "Hi! I bought your jacket with Vinted secure delivery. The courier is booked, you just need to confirm to receive €45: https://vinted-receive-funds.eu/item/77310"
+ },
+ {
+  "id": "scam-eu-bank-sms-fake-agent",
+  "kind": "scam",
+  "expect": "scam",
+  "set": "core",
+  "pattern": "eu-bank-sms-fake-agent",
+  "text": "N26: A payment of €489.00 to an electronics store is waiting for approval. Not you? Cancel it here: https://n26-secure-cancel.com"
+ },
+ {
+  "id": "scam-wangiri-missed-call",
+  "kind": "scam",
+  "expect": "scam",
+  "set": "core",
+  "pattern": "wangiri-missed-call",
+  "text": "Missed call (1 ring) from +375 XX XXX XXXX at 02:14. No voicemail."
+ },
+ {
+  "id": "scam-eu-tax-refund",
+  "kind": "scam",
+  "expect": "scam",
+  "set": "core",
+  "pattern": "eu-tax-refund",
+  "text": "impots.gouv.fr: Après recalcul, vous avez droit à un remboursement de 312,40 €. Confirmez vos coordonnées bancaires avant le 30/09: https://impots-remboursement-fr.info"
+ },
+ {
   "id": "legit-bank-fraud-alert",
   "kind": "legit",
   "expect": "safe",
