@@ -11,6 +11,7 @@ export default function Home() {
         <nav className="flex gap-5 text-sm text-ink-2">
           <a href="/radar" className="hover:text-ink">This week</a>
           <a href="/how" className="hover:text-ink">How it works</a>
+          <a href="/eval" className="hidden hover:text-ink sm:inline">Test results</a>
         </nav>
       </header>
 
