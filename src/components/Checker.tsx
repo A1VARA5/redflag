@@ -1,60 +1,53 @@
-"use client";
+'use client'
 
-import { useEffect, useRef, useState } from "react";
-import type { Verdict } from "@/lib/verdict";
-import type { LinkReport } from "@/lib/links";
-import { SAMPLES } from "@/lib/samples";
-import { VerdictView } from "./VerdictView";
-import { Check, Image as ImageIcon, Lock, Spinner } from "./Icons";
+import {useEffect, useRef, useState} from 'react'
+import type {Verdict} from '@/lib/verdict'
+import type {LinkReport} from '@/lib/links'
+import {SAMPLES} from '@/lib/samples'
+import {VerdictView} from './VerdictView'
+import {LiveLinks} from './LiveLinks'
+import {Check, Image as ImageIcon, Lock, Spinner} from './Icons'
 
 type Img = {
-  mediaType: "image/png" | "image/jpeg" | "image/webp" | "image/gif";
-  data: string;
-  preview: string;
-};
-type Phase = "idle" | "checking" | "done" | "error";
+  mediaType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif'
+  data: string
+  preview: string
+}
+type Phase = 'idle' | 'checking' | 'done' | 'error'
 
 async function fileToImg(file: File): Promise<Img | null> {
-  if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) return null;
+  if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) return null
   if (file.size > 4 * 1024 * 1024) {
-    const bmp = await createImageBitmap(file);
-    const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
-    const c = document.createElement("canvas");
-    c.width = Math.round(bmp.width * scale);
-    c.height = Math.round(bmp.height * scale);
-    c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height);
-    const url = c.toDataURL("image/jpeg", 0.85);
-    return { mediaType: "image/jpeg", data: url.split(",")[1], preview: url };
+    const bmp = await createImageBitmap(file)
+    const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height))
+    const c = document.createElement('canvas')
+    c.width = Math.round(bmp.width * scale)
+    c.height = Math.round(bmp.height * scale)
+    c.getContext('2d')!.drawImage(bmp, 0, 0, c.width, c.height)
+    const url = c.toDataURL('image/jpeg', 0.85)
+    return {mediaType: 'image/jpeg', data: url.split(',')[1], preview: url}
   }
   const url = await new Promise<string>((res) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result as string);
-    r.readAsDataURL(file);
-  });
+    const r = new FileReader()
+    r.onload = () => res(r.result as string)
+    r.readAsDataURL(file)
+  })
   return {
-    mediaType: file.type as Img["mediaType"],
-    data: url.split(",")[1],
+    mediaType: file.type as Img['mediaType'],
+    data: url.split(',')[1],
     preview: url,
-  };
+  }
 }
 
-function Step({
-  state,
-  children,
-}: {
-  state: "done" | "active" | "todo";
-  children: React.ReactNode;
-}) {
+function Step({state, children}: {state: 'done' | 'active' | 'todo'; children: React.ReactNode}) {
   return (
-    <li
-      className={`flex items-start gap-3 ${state === "todo" ? "text-ink-3" : "text-ink"}`}
-    >
+    <li className={`flex items-start gap-3 ${state === 'todo' ? 'text-ink-3' : 'text-ink'}`}>
       <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
-        {state === "done" ? (
+        {state === 'done' ? (
           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-safe text-white">
             <Check className="h-3.5 w-3.5" />
           </span>
-        ) : state === "active" ? (
+        ) : state === 'active' ? (
           <Spinner className="h-5 w-5 text-navy" />
         ) : (
           <span className="h-2 w-2 rounded-full bg-line-2" />
@@ -62,169 +55,148 @@ function Step({
       </span>
       <span>{children}</span>
     </li>
-  );
+  )
 }
 
-export function Checker({
-  blocklistSize,
-  patternCount,
-}: {
-  blocklistSize: string;
-  patternCount: number;
-}) {
-  const [text, setText] = useState("");
-  const [img, setImg] = useState<Img | null>(null);
-  const [region, setRegion] = useState<"UK" | "US" | "EU">("UK");
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [links, setLinks] = useState<LinkReport[] | null>(null);
+export function Checker({blocklistSize, patternCount}: {blocklistSize: string; patternCount: number}) {
+  const [text, setText] = useState('')
+  const [img, setImg] = useState<Img | null>(null)
+  const [region, setRegion] = useState<'UK' | 'US' | 'EU'>('UK')
+  const [phase, setPhase] = useState<Phase>('idle')
+  const [links, setLinks] = useState<LinkReport[] | null>(null)
   const [result, setResult] = useState<{
-    v: Verdict;
-    sig: string;
-    image?: string;
-  } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [drag, setDrag] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const [wasImage, setWasImage] = useState(false);
-  const resultRef = useRef<HTMLDivElement>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+    v: Verdict
+    sig: string
+    image?: string
+  } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [drag, setDrag] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
+  const [wasImage, setWasImage] = useState(false)
+  const resultRef = useRef<HTMLDivElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     try {
-      const r = localStorage.getItem("rf-region");
-      if (r === "UK" || r === "US" || r === "EU") setRegion(r);
-      else if (
-        Intl.DateTimeFormat().resolvedOptions().timeZone.startsWith("America")
-      )
-        setRegion("US");
-      else if (
-        /^Europe\/(?!London|Dublin)/.test(
-          Intl.DateTimeFormat().resolvedOptions().timeZone,
-        )
-      )
-        setRegion("EU");
+      const r = localStorage.getItem('rf-region')
+      if (r === 'UK' || r === 'US' || r === 'EU') setRegion(r)
+      else if (Intl.DateTimeFormat().resolvedOptions().timeZone.startsWith('America')) setRegion('US')
+      else if (/^Europe\/(?!London|Dublin)/.test(Intl.DateTimeFormat().resolvedOptions().timeZone)) setRegion('EU')
     } catch {}
-  }, []);
+  }, [])
 
   useEffect(() => {
     const onPaste = async (e: ClipboardEvent) => {
-      const file = [...(e.clipboardData?.files ?? [])].find((f) =>
-        f.type.startsWith("image/"),
-      );
+      const file = [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith('image/'))
       if (file) {
-        e.preventDefault();
-        setImg(await fileToImg(file));
+        e.preventDefault()
+        setImg(await fileToImg(file))
       }
-    };
-    window.addEventListener("paste", onPaste);
-    return () => window.removeEventListener("paste", onPaste);
-  }, []);
+    }
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+  }, [])
 
   useEffect(() => {
-    if (phase !== "checking") return;
-    const start = Date.now();
-    setElapsed(0);
-    const t = setInterval(
-      () => setElapsed(Math.floor((Date.now() - start) / 1000)),
-      250,
-    );
-    return () => clearInterval(t);
-  }, [phase]);
+    if (phase !== 'checking') return
+    const start = Date.now()
+    setElapsed(0)
+    const t = setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 250)
+    return () => clearInterval(t)
+  }, [phase])
 
   async function runSampleImage() {
-    const blob = await (await fetch("/sample-sms")).blob();
-    const sample = await fileToImg(
-      new File([blob], "sample.png", { type: "image/png" }),
-    );
-    if (!sample) return;
-    setText("");
-    setImg(sample);
-    run(undefined, sample);
+    const blob = await (await fetch('/sample-sms')).blob()
+    const sample = await fileToImg(new File([blob], 'sample.png', {type: 'image/png'}))
+    if (!sample) return
+    setText('')
+    setImg(sample)
+    run(undefined, sample)
   }
 
   async function run(override?: string, imgOverride?: Img) {
-    const useImg = imgOverride ?? (override !== undefined ? null : img);
+    const useImg = imgOverride ?? (override !== undefined ? null : img)
     const body = {
-      text: override ?? (imgOverride ? "" : text),
-      image: useImg ? { mediaType: useImg.mediaType, data: useImg.data } : null,
+      text: override ?? (imgOverride ? '' : text),
+      image: useImg ? {mediaType: useImg.mediaType, data: useImg.data} : null,
       region,
-    };
-    if (!body.text.trim() && !body.image) return;
+    }
+    if (!body.text.trim() && !body.image) return
     if (override !== undefined && !imgOverride) {
-      setText(override);
-      setImg(null);
+      setText(override)
+      setImg(null)
     }
     try {
-      localStorage.setItem("rf-region", region);
+      localStorage.setItem('rf-region', region)
     } catch {}
-    setWasImage(Boolean(useImg));
-    setPhase("checking");
-    setLinks(null);
-    setResult(null);
-    setError(null);
+    setWasImage(Boolean(useImg))
+    setPhase('checking')
+    setLinks(null)
+    setResult(null)
+    setError(null)
     setTimeout(
       () =>
         resultRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
+          behavior: 'smooth',
+          block: 'start',
         }),
       50,
-    );
+    )
     try {
-      const res = await fetch("/api/check", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
+      const res = await fetch('/api/check', {
+        method: 'POST',
+        headers: {'content-type': 'application/json'},
         body: JSON.stringify(body),
-      });
+      })
       if (!res.ok || !res.body) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j.error ?? `Error ${res.status}`);
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j.error ?? `Error ${res.status}`)
       }
-      const reader = res.body.getReader();
-      const dec = new TextDecoder();
-      let buf = "";
+      const reader = res.body.getReader()
+      const dec = new TextDecoder()
+      let buf = ''
       for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += dec.decode(value, { stream: true });
-        let nl;
-        while ((nl = buf.indexOf("\n")) >= 0) {
-          const line = buf.slice(0, nl);
-          buf = buf.slice(nl + 1);
-          if (!line.trim()) continue;
-          const ev = JSON.parse(line);
-          if (ev.type === "links") setLinks(ev.links);
-          else if (ev.type === "verdict") {
-            setResult({ v: ev.verdict, sig: ev.sig, image: useImg?.preview });
-            setPhase("done");
-          } else if (ev.type === "error") throw new Error(ev.error);
+        const {done, value} = await reader.read()
+        if (done) break
+        buf += dec.decode(value, {stream: true})
+        let nl
+        while ((nl = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, nl)
+          buf = buf.slice(nl + 1)
+          if (!line.trim()) continue
+          const ev = JSON.parse(line)
+          if (ev.type === 'links') setLinks(ev.links)
+          else if (ev.type === 'verdict') {
+            setResult({v: ev.verdict, sig: ev.sig, image: useImg?.preview})
+            setPhase('done')
+          } else if (ev.type === 'error') throw new Error(ev.error)
         }
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
-      setPhase("error");
+      setError(e instanceof Error ? e.message : 'Something went wrong.')
+      setPhase('error')
     }
   }
 
-  const busy = phase === "checking";
-  const linkCount = links?.length ?? 0;
+  const busy = phase === 'checking'
+  const linkCount = links?.length ?? 0
 
   return (
     <div>
       <div className="max-w-3xl">
         <div
           onDragOver={(e) => {
-            e.preventDefault();
-            setDrag(true);
+            e.preventDefault()
+            setDrag(true)
           }}
           onDragLeave={() => setDrag(false)}
           onDrop={async (e) => {
-            e.preventDefault();
-            setDrag(false);
-            const f = e.dataTransfer.files[0];
-            if (f) setImg(await fileToImg(f));
+            e.preventDefault()
+            setDrag(false)
+            const f = e.dataTransfer.files[0]
+            if (f) setImg(await fileToImg(f))
           }}
-          className={`overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_rgba(13,27,42,0.06),0_8px_24px_-12px_rgba(13,27,42,0.18)] transition-colors ${drag ? "border-navy ring-2 ring-navy/20" : "border-line-2"}`}
+          className={`overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_rgba(13,27,42,0.06),0_8px_24px_-12px_rgba(13,27,42,0.18)] transition-colors ${drag ? 'border-navy ring-2 ring-navy/20' : 'border-line-2'}`}
         >
           <label htmlFor="msg" className="sr-only">
             The message you are unsure about
@@ -234,7 +206,7 @@ export function Checker({
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) run();
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) run()
             }}
             rows={5}
             placeholder="Paste the text, email or message here…"
@@ -243,16 +215,9 @@ export function Checker({
           {img && (
             <div className="mx-4 mb-3 flex items-center gap-3 rounded-lg border border-line bg-bg p-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={img.preview}
-                alt="Your screenshot"
-                className="h-14 w-14 rounded-md object-cover"
-              />
+              <img src={img.preview} alt="Your screenshot" className="h-14 w-14 rounded-md object-cover" />
               <span className="text-sm text-ink-2">Screenshot added</span>
-              <button
-                onClick={() => setImg(null)}
-                className="ml-auto rounded-md px-2 py-1 text-sm text-ink-3 hover:bg-muted-bg hover:text-ink"
-              >
+              <button onClick={() => setImg(null)} className="ml-auto rounded-md px-2 py-1 text-sm text-ink-3 hover:bg-muted-bg hover:text-ink">
                 Remove
               </button>
             </div>
@@ -270,9 +235,9 @@ export function Checker({
               accept="image/png,image/jpeg,image/webp,image/gif"
               className="hidden"
               onChange={async (e) => {
-                const f = e.target.files?.[0];
-                if (f) setImg(await fileToImg(f));
-                e.target.value = "";
+                const f = e.target.files?.[0]
+                if (f) setImg(await fileToImg(f))
+                e.target.value = ''
               }}
             />
             <select
@@ -295,11 +260,13 @@ export function Checker({
                   <Spinner className="h-4 w-4" /> Checking
                 </>
               ) : (
-                "Check message"
+                'Check message'
               )}
             </button>
           </div>
         </div>
+
+        {phase !== 'checking' && <LiveLinks text={text} />}
 
         <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm">
           <span className="text-ink-3">Try an example:</span>
@@ -322,8 +289,7 @@ export function Checker({
           ))}
         </div>
         <p className="mt-2 flex items-center gap-1.5 text-sm text-ink-3">
-          <Lock className="h-4 w-4" /> Nothing you paste is stored unless you
-          choose to share the result.
+          <Lock className="h-4 w-4" /> Nothing you paste is stored unless you choose to share the result.
         </p>
       </div>
 
@@ -335,48 +301,35 @@ export function Checker({
               <div className="text-sm tabular-nums text-ink-3">{elapsed}s</div>
             </div>
             <ol className="mt-4 space-y-3 text-[15px]">
-              <Step state="done">
-                {wasImage ? "Screenshot received" : "Message received"}
-              </Step>
-              <Step state={links ? "done" : "active"}>
+              <Step state="done">{wasImage ? 'Screenshot received' : 'Message received'}</Step>
+              <Step state={links ? 'done' : 'active'}>
                 {links
                   ? linkCount === 0
                     ? wasImage
-                      ? "Links inside the screenshot will be checked once it has been read"
-                      : "No links to check"
-                    : `Checked ${linkCount} link${linkCount > 1 ? "s" : ""} against Google Safe Browsing and ${blocklistSize} known phishing sites`
-                  : "Looking for links and checking them against Google Safe Browsing and known phishing sites"}
+                      ? 'Links inside the screenshot will be checked once it has been read'
+                      : 'No links to check'
+                    : `Checked ${linkCount} link${linkCount > 1 ? 's' : ''} against Google Safe Browsing and ${blocklistSize} known phishing sites`
+                  : 'Looking for links and checking them against Google Safe Browsing and known phishing sites'}
               </Step>
-              <Step state={links ? "active" : "todo"}>
-                {wasImage
-                  ? "Reading the screenshot and comparing it with "
-                  : "Reading the message and comparing it with "}
+              <Step state={links ? 'active' : 'todo'}>
+                {wasImage ? 'Reading the screenshot and comparing it with ' : 'Reading the message and comparing it with '}
                 {patternCount} known scam types
               </Step>
               <Step state="todo">Marking the warning signs</Step>
             </ol>
           </div>
         )}
-        {phase === "error" && (
+        {phase === 'error' && (
           <div className="rounded-xl border border-warn-line bg-warn-bg p-5">
-            <p className="font-semibold text-ink">
-              We couldn't finish this check.
-            </p>
+            <p className="font-semibold text-ink">We couldn't finish this check.</p>
             <p className="mt-1 text-sm text-ink-2">{error}</p>
             <p className="mt-2 text-sm text-ink-2">
-              If you're worried right now: don't click, reply or pay. Contact
-              the company yourself using a number or app you already trust.
+              If you're worried right now: don't click, reply or pay. Contact the company yourself using a number or app you already trust.
             </p>
           </div>
         )}
-        {result && (
-          <VerdictView
-            v={result.v}
-            sig={result.sig}
-            image={result.v.inputHadImage ? result.image : undefined}
-          />
-        )}
+        {result && <VerdictView v={result.v} sig={result.sig} image={result.v.inputHadImage ? result.image : undefined} />}
       </div>
     </div>
-  );
+  )
 }
