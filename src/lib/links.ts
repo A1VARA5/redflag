@@ -6,6 +6,7 @@ import {lookup} from 'node:dns/promises'
 import {isIP} from 'node:net'
 import brands from '@/data/brands.json'
 import {isKnownPhish} from './feeds'
+import {safeBrowsing} from './safebrowsing'
 
 export type Severity = 'high' | 'medium' | 'low' | 'info'
 export type LinkFlag = {code: string; severity: Severity; detail: string}
@@ -242,7 +243,9 @@ export async function inspectUrl(input: string): Promise<LinkReport> {
     if (age.ageDays < 30) flags.push({code: 'new-domain', severity: 'high', detail: `Registered ${age.ageDays} days ago (${age.registered}). Real companies' sites are years old.`})
     else if (age.ageDays < 180) flags.push({code: 'young-domain', severity: 'medium', detail: `Registered ${age.ageDays} days ago (${age.registered}).`})
   }
-  const phish = await isKnownPhish([url.toString(), finalUrl ?? ''])
+  const [phish, google] = await Promise.all([isKnownPhish([url.toString(), finalUrl ?? '']), safeBrowsing([url.toString(), finalUrl ?? ''])])
+  const g = google.get(url.toString()) ?? (finalUrl ? google.get(finalUrl) : undefined)
+  if (g) flags.push({code: 'google-safe-browsing', severity: 'high', detail: `Google Safe Browsing lists this as ${g}. Chrome would show a red warning page.`})
   if (phish) flags.push({code: 'known-phish', severity: 'high', detail: `On a public phishing blocklist (${phish}).`})
   if (b.official && flags.every((f) => f.severity !== 'high')) {
     flags.push({code: 'official-domain', severity: 'info', detail: `${finalHost} really belongs to ${b.brand?.brand}.`})

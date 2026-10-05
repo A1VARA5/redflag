@@ -105,9 +105,9 @@ function applyOverrides(v: ModelVerdictT, links: LinkReport[]): {verdict: ModelV
   const overrides: string[] = []
   let {verdict, confidence} = v
   const high = links.flatMap((l) => l.flags.filter((f) => f.severity === 'high').map((f) => ({...f, host: l.host})))
-  const knownPhish = high.find((f) => f.code === 'known-phish')
+  const knownPhish = high.find((f) => f.code === 'known-phish' || f.code === 'google-safe-browsing')
   if (knownPhish && verdict !== 'scam') {
-    overrides.push(`${knownPhish.host} is on a public phishing blocklist, so this is marked as a scam whatever the wording says.`)
+    overrides.push(`${knownPhish.host} is on ${knownPhish.code === 'google-safe-browsing' ? 'Google Safe Browsing' : 'a public phishing blocklist'}, so this is marked as a scam whatever the wording says.`)
     verdict = 'scam'
     confidence = Math.max(confidence, 95)
   }
