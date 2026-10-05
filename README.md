@@ -25,7 +25,7 @@ Built for ForgeHacks 2026, AI + Cybersecurity track: *help people recognise, pre
  web / email / Discord
           │
           ▼
- 1. Link forensics (no AI)  ── redirects, RDAP age, brands' real domains, punycode, 560k-entry blocklist, risky TLDs
+ 1. Link forensics (no AI)  ── redirects, Google Safe Browsing, 560k-entry blocklist, RDAP age, brands' real domains, punycode
           │  streamed to the page first
           ▼
  2. Claude Opus 5.5         ── structured output: verdict, exact quotes, pattern from a 30-pattern knowledge base
@@ -74,7 +74,8 @@ npm run dev
 | `DISCORD_APPLICATION_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_BOT_TOKEN` | Discord command (`npx tsx scripts/register-discord.mts`) |
 | `CRON_SECRET` | daily radar (`/api/cron/radar`) |
 | `FEATHERLESS_API_KEY` | only for the baseline in the test runner |
-| `URLHAUS_AUTH_KEY` | optional second blocklist |
+| `GOOGLE_SAFE_BROWSING_KEY` | Google Safe Browsing lookups (optional) |
+| `URLHAUS_AUTH_KEY` | optional URLhaus API lookups |
 
 ## Stack
 
@@ -84,6 +85,7 @@ Next.js 16 (App Router) on Vercel with Blob (private) and Cron · Anthropic Type
 
 - Claude Opus 5.5 (Anthropic); baseline Qwen2.5-72B-Instruct via Featherless AI.
 - Agentboxd (email inbox, webhooks, phishing/injection scoring).
+- Google Safe Browsing Lookup API v4 (the list behind Chrome's warning page).
 - Phishing blocklists (combined daily, ~566k entries in 64 hashed shards): OpenPhish, PhishTank, URLhaus (abuse.ch), Phishing.Database, Phishing Army. Official brand domains are never blocked whole, and on shared platforms (docs.google.com, dropbox.com, bit.ly) only exact URLs are matched.
 - RDAP via rdap.org; tldts.
 - Radar sources: FTC Consumer Alerts and press releases, FBI IC3, NCSC, FCA, GOV.UK, Which?, Europol, CISA, r/Scams.

@@ -31,7 +31,7 @@ function Diagram() {
         <rect x="320" y="64" width="380" height="88" rx="12" className={box} strokeWidth="1.5" />
         <text x="336" y="90" fontWeight="600">1 · Hard checks on every link</text>
         <text x="336" y="112" fontSize="12.5" fill="var(--ink-2)">redirect unwrapping · RDAP domain age · punycode</text>
-        <text x="336" y="132" fontSize="12.5" fill="var(--ink-2)">look-alike brands · 5 blocklists (560k+ sites) · risky TLDs</text>
+        <text x="336" y="132" fontSize="12.5" fill="var(--ink-2)">Google Safe Browsing · 5 blocklists (560k+) · look-alikes</text>
 
         <rect x="320" y="166" width="380" height="88" rx="12" className={box} strokeWidth="1.5" />
         <text x="336" y="192" fontWeight="600">2 · AI reads it: Claude Opus 5.5</text>
@@ -40,7 +40,7 @@ function Diagram() {
 
         <rect x="320" y="268" width="380" height="64" rx="12" fill="var(--red-wash)" stroke="var(--red)" strokeWidth="1.5" />
         <text x="336" y="294" fontWeight="600" fill="var(--red)">3 · Checks can overrule the AI (only upwards)</text>
-        <text x="336" y="316" fontSize="12.5" fill="var(--ink-2)">blocklist hit → scam · fake brand domain → never "safe"</text>
+        <text x="336" y="316" fontSize="12.5" fill="var(--ink-2)">Google / blocklist hit → scam · fake brand → never "safe"</text>
 
         <rect x="320" y="344" width="380" height="44" rx="12" className={box} strokeWidth="1.5" />
         <text x="336" y="371" fontSize="12.5" fill="var(--ink-2)">+ region steps (23 official channels) · trending badge</text>
@@ -114,6 +114,7 @@ export default function How() {
       <ul className="mt-3 space-y-1.5 text-sm leading-relaxed text-ink-2">
         <li>Verdicts: Claude Opus 5.5 by Anthropic (Anthropic TypeScript SDK, structured outputs). Baseline in the test: Qwen2.5-72B-Instruct via Featherless AI.</li>
         <li>Email inbox, webhook and phishing/injection scores: Agentboxd.</li>
+        <li>Google Safe Browsing (Lookup API v4), the list behind Chrome's red warning page.</li>
         <li>Phishing blocklists, combined daily into one list of 560,000+ sites and links: OpenPhish, PhishTank, URLhaus (abuse.ch), Phishing.Database, Phishing Army. Real brand domains are never blocked even if a feed lists them. Domain ages: RDAP via rdap.org. Domain parsing: tldts.</li>
         <li>Radar sources: FTC Consumer Alerts and press releases, FBI IC3, NCSC, FCA, GOV.UK, Which?, Europol, CISA, r/Scams (public RSS).</li>
         <li>Scam patterns and what-to-do steps cite official sources on each card: Report Fraud (formerly Action Fraud), NCSC, FCA, HMRC, Royal Mail, FTC, FBI IC3, CISA, Europol, Discord, Steam, Apple, PayPal and others.</li>
