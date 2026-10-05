@@ -106,8 +106,10 @@ function brandFor(host: string, domain: string | null): {brand: Brand | null; of
   for (const b of BRANDS) {
     for (const kw of b.keywords) {
       const k = skeleton(kw)
-      if (k.length < 4) continue
-      if (starts.some((s) => s.startsWith(k))) {
+      if (k.length < 3) continue
+      // Short names (ups, meta, apple) must be a whole word, or "metal.com" and "applebees.com" would match.
+      const hit = k.length <= 5 ? tokens.includes(k) : starts.some((s) => s.startsWith(k))
+      if (hit) {
         flags.push({
           code: 'brand-not-official',
           severity: 'high',

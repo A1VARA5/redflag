@@ -8,7 +8,7 @@ let openphish: Cache | null = null
 let loading: Promise<Cache> | null = null
 
 async function loadOpenPhish(): Promise<Cache> {
-  const res = await fetch('https://openphish.com/feed.txt', {signal: AbortSignal.timeout(6000)})
+  const res = await fetch('https://raw.githubusercontent.com/openphish/public_feed/refs/heads/main/feed.txt', {signal: AbortSignal.timeout(6000)})
   if (!res.ok) throw new Error(`openphish ${res.status}`)
   const lines = (await res.text()).split('\n').map((l) => l.trim()).filter(Boolean)
   const hosts = new Set<string>()

@@ -1,1 +1,679 @@
-[{"id":"parcel-redelivery-fee","name":"Parcel redelivery fee","channels":["sms","email"],"regions":["UK","US"],"audience":"everyone","summary":"A text says a parcel could not be delivered and asks for a small fee to redeliver. The link steals card details.","tells":["Small fee like £1.45","Link not on the courier's real site","Urgency"],"impersonates":["Royal Mail","Evri"],"example":"","aiAngle":null,"sources":[{"title":"Royal Mail scam guidance","url":"https://www.royalmail.com/help/scam-awareness","publisher":"Royal Mail"}]}]
+[
+  {
+    "id": "uk-parcel-redelivery-fee",
+    "name": "Parcel redelivery fee text (UK)",
+    "channels": ["sms", "email", "whatsapp"],
+    "regions": ["UK"],
+    "audience": "everyone, especially online shoppers and older parents",
+    "summary": "A text or email pretends to be Royal Mail, Evri or DPD and says a parcel is held until you pay a small fee through a link. The link steals card details.",
+    "tells": [
+      "Asks you to pay a redelivery, dispatch or 'unpaid postage' fee through a link (DPD says it never does this; Royal Mail leaves a grey 'Fee to Pay' card for underpaid post)",
+      "Sender is a random mobile number or email address instead of the courier's name",
+      "Link is not on the courier's real domain (royalmail.com, evri.com / evri.link, dpd.co.uk)",
+      "Shortened or odd-looking link, e.g. bit.ly or a long hyphenated domain",
+      "You were not expecting a parcel, or never asked for tracking updates",
+      "Pressure: 'parcel will be returned to sender today'"
+    ],
+    "impersonates": ["Royal Mail", "Evri", "DPD", "Parcelforce"],
+    "example": "Royal Mail: Your parcel is on hold due to an unpaid shipping fee of £1.45. Pay before 23:59 to avoid return: hxxps://royalmail-redelivery[.]info/pay",
+    "aiAngle": "Kits generate thousands of convincing lookalike domains and perfectly written texts, so spelling mistakes are no longer a reliable tell.",
+    "sources": [
+      {"title": "Help with online security (scam protection)", "url": "https://www.royalmail.com/help/scam-protection", "publisher": "Royal Mail"},
+      {"title": "Is this Evri Text/Email Genuine?", "url": "https://www.evri.com/faqs/receiving-a-parcel/is-this-evri-text-email-genuine", "publisher": "Evri"},
+      {"title": "Cyber Security (phishing and smishing)", "url": "https://www.dpd.co.uk/content/about_dpd/phishing.jsp", "publisher": "DPD UK"}
+    ]
+  },
+  {
+    "id": "usps-package-smishing",
+    "name": "USPS package tracking text",
+    "channels": ["sms", "email"],
+    "regions": ["US"],
+    "audience": "everyone in the US, online shoppers",
+    "summary": "A text claims USPS cannot deliver a package because of an incomplete address or unpaid fee, and sends you to a fake site to 'update' details and pay.",
+    "tells": [
+      "Unsolicited text about a delivery problem (USPS says it does not text you unless you requested tracking, and those texts have no link)",
+      "Link to a domain that is not usps.com",
+      "Asks for card details or a small redelivery payment",
+      "Tells you to reply 'Y' and reopen the message to activate the link",
+      "Urgent deadline such as 'within 12 hours'"
+    ],
+    "impersonates": ["USPS", "UPS", "FedEx"],
+    "example": "USPS: Your package could not be delivered due to an incomplete address. Update within 12 hours: hxxps://usps-redelivery-center[.]com/track (Reply Y then reopen this message to activate the link)",
+    "aiAngle": "Smishing kits sold as a service let one crew run thousands of fresh domains a day, outpacing blocklists.",
+    "sources": [
+      {"title": "Smishing: Package Tracking Text Scams", "url": "https://www.uspis.gov/news/scam-article/smishing-package-tracking-text-scams", "publisher": "U.S. Postal Inspection Service"},
+      {"title": "How to Recognize and Report Spam Text Messages", "url": "https://consumer.ftc.gov/articles/how-recognize-and-report-spam-text-messages", "publisher": "FTC Consumer Advice"}
+    ]
+  },
+  {
+    "id": "missed-delivery-email",
+    "name": "Missed delivery / reschedule email",
+    "channels": ["email", "sms"],
+    "regions": ["global"],
+    "audience": "everyone",
+    "summary": "An email says a courier tried to deliver and you must 'reschedule' or confirm details via a link or attachment, leading to a fake login, card form or malware.",
+    "tells": [
+      "Generic greeting like 'Dear Customer'",
+      "Attachment (zip, html, pdf) you are told to open to see 'delivery details'",
+      "Asks you to log in or enter card details to rebook",
+      "Sender address does not end in the courier's real domain",
+      "No real tracking number, or one that does not work on the courier's own site"
+    ],
+    "impersonates": ["DHL", "DPD", "Royal Mail", "FedEx", "UPS", "Amazon"],
+    "example": "We missed you! Your parcel DX-48213 could not be delivered today. Choose a new delivery slot here: hxxps://dhl-reschedule-portal[.]net/rebook",
+    "aiAngle": "AI writes fluent, branded emails in any language, so poor grammar is rarer.",
+    "sources": [
+      {"title": "Phishing scams: how to spot and report them", "url": "https://www.ncsc.gov.uk/collection/phishing-scams", "publisher": "National Cyber Security Centre (UK)"},
+      {"title": "How To Recognize and Avoid Phishing Scams", "url": "https://consumer.ftc.gov/articles/how-recognize-and-avoid-phishing-scams", "publisher": "FTC Consumer Advice"}
+    ]
+  },
+  {
+    "id": "hi-mum-new-number",
+    "name": "\"Hi Mum/Dad, new number\"",
+    "channels": ["whatsapp", "sms"],
+    "regions": ["UK", "global"],
+    "audience": "parents and grandparents",
+    "summary": "A message from an unknown number claims to be your child with a broken or lost phone, then asks you to urgently pay a bill or lend money.",
+    "tells": [
+      "Unknown number starting 'Hi Mum' or 'Hi Dad' without using a name",
+      "Claims their phone is broken, lost or 'this is my new number'",
+      "Quickly asks for money for an urgent bill, often to someone else's account",
+      "Gives a reason they cannot call or voice note right now",
+      "Asks you to keep it quick or not tell anyone"
+    ],
+    "impersonates": ["family members"],
+    "example": "Hi Mum it's me, dropped my phone down the loo so this is my new number. Can you save it? Also I've got a bill I need to pay today but my banking app won't work on this phone x",
+    "aiAngle": "Scammers can follow up with an AI voice clone of the child, made from a few seconds of social media audio.",
+    "sources": [
+      {"title": "How to spot a WhatsApp scam", "url": "https://www.which.co.uk/consumer-rights/advice/how-to-spot-a-whatsapp-scam-a7Lyx1W6HCVK", "publisher": "Which?"},
+      {"title": "How to report suspicious messages, calls and websites", "url": "https://www.reportfraud.police.uk/how-to-report-suspicious-activity/", "publisher": "Report Fraud (City of London Police)"}
+    ]
+  },
+  {
+    "id": "bank-safe-account",
+    "name": "Bank impersonation / \"safe account\"",
+    "channels": ["phone", "sms", "whatsapp"],
+    "regions": ["UK", "US", "EU"],
+    "audience": "everyone, especially older adults",
+    "summary": "Someone posing as your bank's fraud team (or the police) says your account is under attack and talks you into moving money to a 'safe account' they control.",
+    "tells": [
+      "Asks you to move money to a 'safe' or 'holding' account (banks never do this)",
+      "Caller ID or text appears in your bank's real message thread (spoofing)",
+      "Asks for a one-time passcode, PIN or full password",
+      "Tells you not to speak to branch staff or family",
+      "Text about a 'new payee' or suspicious payment followed by a call",
+      "Pressure to act before you can hang up and check"
+    ],
+    "impersonates": ["Barclays", "HSBC", "Lloyds", "NatWest", "Santander", "Monzo", "Revolut", "Chase", "Bank of America", "Wells Fargo", "police"],
+    "example": "NatWest: A payment of £1,250.00 to a new payee was attempted from your account. If this was NOT you, call our fraud team immediately on 0203 000 0000.",
+    "aiAngle": "Report Fraud's 2025/26 assessment notes victims who believe AI-cloned voices were used to get past telephone banking security.",
+    "sources": [
+      {"title": "Impersonation scams", "url": "https://www.takefive-stopfraud.org.uk/protect-yourself/impersonation-fraud/", "publisher": "Take Five to Stop Fraud (UK Finance)"},
+      {"title": "159 Phone number", "url": "https://stopscamsuk.org.uk/159", "publisher": "Stop Scams UK"},
+      {"title": "FTC Data Show People Reported Losing $3.5 Billion to Imposter Scams in 2025", "url": "https://www.ftc.gov/news-events/news/press-releases/2026/06/ftc-data-show-people-reported-losing-3-point-5-billion-imposter-scams-2025", "publisher": "Federal Trade Commission"}
+    ]
+  },
+  {
+    "id": "tax-refund-or-threat",
+    "name": "HMRC / IRS tax refund or threat",
+    "channels": ["sms", "email", "phone"],
+    "regions": ["UK", "US"],
+    "audience": "adults, self-employed, students with first jobs",
+    "summary": "A message says you are owed a tax refund, or that you owe tax and face arrest or legal action, and asks for bank details or immediate payment.",
+    "tells": [
+      "Offers a tax refund by text or email (HMRC says it never does this)",
+      "Threatens arrest, a lawsuit or 'press 1 to speak to a caseworker'",
+      "Email not from an @hmrc.gov.uk / irs.gov address, or display name only says 'HMRC'",
+      "Asks for card details, bank login or payment by gift card or crypto",
+      "Link to a page that copies GOV.UK or IRS styling on another domain"
+    ],
+    "impersonates": ["HMRC", "GOV.UK", "IRS", "US Treasury"],
+    "example": "HMRC: You are eligible for a tax refund of £326.18 from the 2025-26 tax year. Claim before it expires: hxxps://hmrc-refund-claim[.]uk/gov",
+    "aiAngle": "Automated robocalls and AI voices make 'HMRC caseworker' calls cheap to run at scale.",
+    "sources": [
+      {"title": "Examples of phishing emails, suspicious phone calls and texts (HMRC)", "url": "https://www.gov.uk/government/publications/phishing-and-bogus-emails-hm-revenue-and-customs-examples/phishing-emails-and-bogus-contact-hm-revenue-and-customs-examples", "publisher": "HMRC / GOV.UK"},
+      {"title": "Recognize tax scams and fraud", "url": "https://www.irs.gov/newsroom/tax-scams-consumer-alerts", "publisher": "Internal Revenue Service"},
+      {"title": "Report fake IRS, Treasury or tax-related emails and messages", "url": "https://www.irs.gov/privacy-disclosure/report-phishing", "publisher": "Internal Revenue Service"}
+    ]
+  },
+  {
+    "id": "toll-road-unpaid",
+    "name": "Unpaid toll text (E-ZPass etc.)",
+    "channels": ["sms"],
+    "regions": ["US"],
+    "audience": "drivers in the US",
+    "summary": "A text says you owe a small unpaid toll and will face late fees or lose your registration unless you pay now through a link.",
+    "tells": [
+      "Unexpected text about unpaid tolls with a small exact amount",
+      "Threat of late fees, licence or registration suspension",
+      "Link that is not your state toll agency's real website",
+      "Names a toll brand from a state you have not driven in",
+      "Asks for card details and sometimes your driver's licence number"
+    ],
+    "impersonates": ["E-ZPass", "SunPass", "FasTrak", "TxTag"],
+    "example": "E-ZPass Notice: You have an outstanding toll balance of $6.99. To avoid a $50 late fee and registration hold, pay today: hxxps://ezpass-tollservices[.]com/pay",
+    "aiAngle": null,
+    "sources": [
+      {"title": "Got a text about unpaid tolls? It's probably a scam", "url": "https://consumer.ftc.gov/consumer-alerts/2025/01/got-text-about-unpaid-tolls-its-probably-scam", "publisher": "FTC Consumer Advice"},
+      {"title": "Smishing Scam Regarding Debt for Road Toll Services", "url": "https://www.ic3.gov/PSA/2024/PSA240412", "publisher": "FBI IC3"},
+      {"title": "New trends in reports of imposter scams", "url": "https://consumer.ftc.gov/consumer-alerts/2026/05/new-trends-reports-imposter-scams", "publisher": "FTC Consumer Advice"}
+    ]
+  },
+  {
+    "id": "traffic-violation-qr-text",
+    "name": "Fake traffic ticket / court notice text",
+    "channels": ["sms"],
+    "regions": ["US"],
+    "audience": "drivers",
+    "summary": "A text with an official-looking picture says you have a traffic violation and court date, and tells you to scan a QR code to pay the fine now.",
+    "tells": [
+      "Image of a 'notice' with a state seal and fake case number sent by text",
+      "Two options: attend a hearing or pay immediately",
+      "QR code to scan to pay",
+      "Threats of default judgment, fines or enforcement",
+      "Court or DMV would normally contact you by post, not a random text"
+    ],
+    "impersonates": ["state courts", "DMV"],
+    "example": "NOTICE OF TRAFFIC VIOLATION - Case #TV-2026-88412. Hearing scheduled 10/14. To avoid court, scan the QR code in the attached notice to settle your $85.00 balance today.",
+    "aiAngle": "Image generators make convincing fake official notices, and QR codes hide the destination link from people and some filters.",
+    "sources": [
+      {"title": "That text about a traffic violation is probably a scam", "url": "https://consumer.ftc.gov/consumer-alerts/2026/04/text-about-traffic-violation-probably-scam", "publisher": "FTC Consumer Advice"}
+    ]
+  },
+  {
+    "id": "task-job-scam",
+    "name": "Task job scam (\"like videos, get paid\")",
+    "channels": ["whatsapp", "sms", "social", "web"],
+    "regions": ["global"],
+    "audience": "students, young adults, people looking for side income",
+    "summary": "An unexpected message offers easy online work rating products or liking videos. Fake earnings pile up, then you must deposit your own money, usually crypto, to unlock them.",
+    "tells": [
+      "Job offer you never applied for, arriving by WhatsApp, Telegram or text",
+      "Paid to like videos, rate products or 'boost' apps",
+      "Dashboard shows growing earnings you cannot withdraw",
+      "Asked to deposit money, often crypto, to finish 'task sets' or unlock pay",
+      "Small first payout to build trust",
+      "Recruiter moves you into a group chat with 'successful' workers"
+    ],
+    "impersonates": ["recruitment agencies", "well-known brands", "TikTok", "YouTube"],
+    "example": "Hi! I'm Emma from a digital marketing agency. We're hiring part-time remote staff to like and rate products online. 30-60 mins a day, earn £80-£300 daily. Interested? Reply on WhatsApp.",
+    "aiAngle": "Chatbots let one scammer run hundreds of friendly 'recruiter' chats at once.",
+    "sources": [
+      {"title": "How to spot and avoid task scams", "url": "https://consumer.ftc.gov/consumer-alerts/2025/08/how-spot-avoid-task-scams", "publisher": "FTC Consumer Advice"},
+      {"title": "Task scams create the illusion of making money", "url": "https://consumer.ftc.gov/consumer-alerts/2024/11/task-scams-create-illusion-making-money", "publisher": "FTC Consumer Advice"},
+      {"title": "That job offer text is probably a scam", "url": "https://consumer.ftc.gov/consumer-alerts/2026/04/job-offer-text-probably-scam", "publisher": "FTC Consumer Advice"}
+    ]
+  },
+  {
+    "id": "pig-butchering-crypto",
+    "name": "Crypto investment / \"pig butchering\"",
+    "channels": ["whatsapp", "social", "web", "sms"],
+    "regions": ["global"],
+    "audience": "adults with savings, young people chasing 'get rich' crypto",
+    "summary": "A friendly stranger, often after a 'wrong number' message, builds trust over weeks and then coaches you to invest in a crypto platform that shows fake profits but never pays out.",
+    "tells": [
+      "'Wrong number' message that turns into a friendly chat",
+      "New friend talks about their crypto or trading success",
+      "Pushes a specific app or website you have never heard of",
+      "Platform shows big profits but asks for 'tax' or 'fees' to withdraw",
+      "Asks you to buy crypto and send it to their platform's wallet",
+      "Guaranteed or unusually high returns"
+    ],
+    "impersonates": ["investment platforms", "crypto exchanges", "financial advisers"],
+    "example": "Hi, is this Daniel? We were meant to meet for golf on Saturday. ... Oh sorry, wrong number! Nice to meet you anyway, I'm Lily, I work in crypto trading in London.",
+    "aiAngle": "Europol's IOCTA 2026 says generative AI lets fraudsters personalise social engineering at scale; FBI IC3 logged over $632m in 2025 investment losses with a reported AI link.",
+    "sources": [
+      {"title": "Crypto investment scams", "url": "https://www.fca.org.uk/consumers/crypto-investment-scams", "publisher": "Financial Conduct Authority"},
+      {"title": "What To Know About Cryptocurrency and Scams", "url": "https://consumer.ftc.gov/articles/what-know-about-cryptocurrency-and-scams", "publisher": "FTC Consumer Advice"},
+      {"title": "Cryptocurrency investment fraud", "url": "https://www.reportfraud.police.uk/cryptocurrency/", "publisher": "Report Fraud (City of London Police)"}
+    ]
+  },
+  {
+    "id": "romance-scam",
+    "name": "Romance scam",
+    "channels": ["social", "whatsapp", "web"],
+    "regions": ["global"],
+    "audience": "adults on dating apps and social media, often older or recently single",
+    "summary": "Someone you meet online builds a relationship, avoids meeting in person or on video, then asks for money for an emergency, travel or an 'investment'.",
+    "tells": [
+      "Profile seems too perfect; quickly says 'I love you'",
+      "Always has a reason they cannot video call or meet",
+      "Works abroad, on an oil rig, in the military or as a doctor overseas",
+      "Moves the chat off the dating app to WhatsApp or Telegram",
+      "Asks for money, gift cards or crypto, or suggests an investment",
+      "Asks you to keep the relationship secret"
+    ],
+    "impersonates": ["dating profiles", "military personnel"],
+    "example": "Good morning my love. I wish I could call but the signal on the rig is terrible. I need a small favour, my bank card was blocked and customs want £600 to release my equipment. I'll pay you back the moment I'm home.",
+    "aiAngle": "AI-generated profile photos and chat scripts make fake partners more believable; FBI IC3 links over $19m in 2025 romance losses to likely AI use.",
+    "sources": [
+      {"title": "What To Know About Romance Scams", "url": "https://consumer.ftc.gov/articles/what-know-about-romance-scams", "publisher": "FTC Consumer Advice"},
+      {"title": "Romance fraud", "url": "https://www.reportfraud.police.uk/romance-fraud/", "publisher": "Report Fraud (City of London Police)"}
+    ]
+  },
+  {
+    "id": "discord-free-nitro",
+    "name": "Discord \"free Nitro\" link",
+    "channels": ["discord", "web"],
+    "regions": ["global"],
+    "audience": "teens and gamers on Discord",
+    "summary": "A DM or server post offers free Discord Nitro or a gift, linking to a fake Discord login or QR code that steals your account.",
+    "tells": [
+      "Free Nitro, Steam gift or 'drop' from a friend who never normally messages, or from a bot (Discord says it has never made a bot that offers free products)",
+      "Link domain looks like Discord but is not discord.com or discord.gg (e.g. dlscord, discord-gift, discordnitro)",
+      "Asks you to log in again or scan a QR code to 'claim'",
+      "Message is copy-pasted and posted in many channels at once",
+      "Asks you to download a program or paste code into the browser console"
+    ],
+    "impersonates": ["Discord", "Discord Nitro", "Steam"],
+    "example": "yo bro discord is giving away 3 months nitro free for the anniversary, claim before it runs out 👉 hxxps://discord-nitro-gift[.]com/claim",
+    "aiAngle": "Hacked friend accounts are used to send the link, so it looks like it comes from someone you trust.",
+    "sources": [
+      {"title": "Protecting Against Scams on Discord", "url": "https://discord.com/safety/protecting-users-from-scams-on-discord", "publisher": "Discord Safety Center"},
+      {"title": "Scam/Phishing Bots", "url": "https://support.discord.com/hc/en-us/articles/360037660611-Scam-Phishing-Bots", "publisher": "Discord Support"}
+    ]
+  },
+  {
+    "id": "discord-fake-report-staff",
+    "name": "Discord \"I accidentally reported you\" / fake staff",
+    "channels": ["discord"],
+    "regions": ["global"],
+    "audience": "teens and gamers on Discord",
+    "summary": "Someone says they reported your account by mistake and it will be banned unless you contact a 'Discord staff' or 'admin' account, which then takes your login or token.",
+    "tells": [
+      "Stranger apologises for 'accidentally reporting' you",
+      "Says your account will be deleted or banned within hours",
+      "Sends you to a specific 'staff', 'HypeSquad' or 'admin' account to fix it",
+      "'Staff' asks for your password, 2FA code, token, a QR scan or a screen share",
+      "Real Discord warnings arrive as an in-app system DM and show on your Account Standing page, never as a stranger telling you to message an 'admin'"
+    ],
+    "impersonates": ["Discord Trust & Safety", "Discord staff", "HypeSquad"],
+    "example": "omg im so sorry i accidentally reported your account instead of a scammer 😭 discord said they'll delete it in 24 hrs unless you message the admin who handled it, his name is Discord Support#0001",
+    "aiAngle": "Fake 'support' accounts can use chatbots to sound official and keep many victims talking at once.",
+    "sources": [
+      {"title": "Protecting Against Scams on Discord", "url": "https://discord.com/safety/protecting-users-from-scams-on-discord", "publisher": "Discord Safety Center"},
+      {"title": "Discord Warning System", "url": "https://support.discord.com/hc/en-us/articles/18210965981847-Discord-Warning-System", "publisher": "Discord Support"}
+    ]
+  },
+  {
+    "id": "steam-vote-trade-phish",
+    "name": "Steam \"vote for my team\" / trade phishing",
+    "channels": ["discord", "social", "web"],
+    "regions": ["global"],
+    "audience": "teens and gamers with Steam inventories",
+    "summary": "A friend or stranger asks you to vote for their esports team or check a trade on a site whose fake 'Sign in through Steam' page or QR code hijacks your account.",
+    "tells": [
+      "'Can you vote for my team in a tournament?' or 'check out this skin deal'",
+      "Site asks you to sign in through Steam or scan a Steam Guard QR code",
+      "Sign-in pop-up that is not on steampowered.com or steamcommunity.com",
+      "Trade offer that changes at the last moment, or a 'middleman' you must send items to",
+      "Someone claiming to be Steam staff asks for your password or codes (Steam Support never asks for your password)"
+    ],
+    "impersonates": ["Steam", "Valve", "esports tournaments"],
+    "example": "hey can u vote for my cs2 team pls, we're in the final of a school tournament and need 20 votes 🙏 hxxps://cs2-teamvote-arena[.]com",
+    "aiAngle": "Pages copy the real Steam login pixel-for-pixel, and QR-login phishing skips the password entirely.",
+    "sources": [
+      {"title": "Steam Support - Account Stolen (security recommendations)", "url": "https://help.steampowered.com/en/wizard/HelpWithAccountStolen", "publisher": "Steam Support (Valve)"},
+      {"title": "Steam Support - Suspicious Content Lock", "url": "https://help.steampowered.com/en/wizard/HelpWithSuspiciousContent", "publisher": "Steam Support (Valve)"},
+      {"title": "Steam Support - Trading", "url": "https://help.steampowered.com/en/wizard/HelpWithEconTrading", "publisher": "Steam Support (Valve)"}
+    ]
+  },
+  {
+    "id": "free-game-currency-generator",
+    "name": "Free Robux / V-Bucks generator",
+    "channels": ["web", "social", "discord"],
+    "regions": ["global"],
+    "audience": "children and teens who play Roblox, Fortnite and similar",
+    "summary": "A video, site or game promises free Robux, V-Bucks or skins if you enter your username, log in, or complete 'human verification', but it steals the account or earns scammers money.",
+    "tells": [
+      "Promises free Robux, V-Bucks, premium or rare items (Roblox says every such offer is a scam)",
+      "Asks for your password or to log in on a non-official site",
+      "Endless 'human verification' surveys or app downloads",
+      "Asks you to download a file or browser extension",
+      "Advertised in comments, TikToks or YouTube videos"
+    ],
+    "impersonates": ["Roblox", "Fortnite / Epic Games", "Minecraft"],
+    "example": "🔥 FREE 10,000 ROBUX 🔥 Working Oct 2026! Enter your username and verify you're human at hxxps://robux-claim-now[.]xyz",
+    "aiAngle": "AI-generated 'proof' videos and fake reviews make generator sites look legit to kids.",
+    "sources": [
+      {"title": "Free Robux or Subscription Generators", "url": "https://en.help.roblox.com/hc/en-us/articles/204262550-Free-Robux-or-Subscription-Generators", "publisher": "Roblox Support"},
+      {"title": "Should I trust a website that's offering free V-Bucks?", "url": "https://www.epicgames.com/help/fortnite-battle-royale-c-34254770/billing-and-payment-c-39884448/should-i-trust-a-website-that-s-offering-free-v-bucks-a19499749", "publisher": "Epic Games Player Support"}
+    ]
+  },
+  {
+    "id": "whatsapp-code-theft",
+    "name": "WhatsApp 6-digit code theft",
+    "channels": ["whatsapp", "sms"],
+    "regions": ["global"],
+    "audience": "everyone, especially group-chat members",
+    "summary": "A contact (often a hacked friend) says they sent you a 6-digit code by mistake and asks you to forward it. The code lets them take over your WhatsApp and scam your contacts.",
+    "tells": [
+      "You receive a WhatsApp registration code you did not request",
+      "Someone, even a friend, asks you to send them a code 'sent by mistake'",
+      "Message pretends to be WhatsApp Support asking for the code",
+      "Request for a code to 'vote' in a competition or join a group",
+      "Urgency: 'quick, it expires in a minute'"
+    ],
+    "impersonates": ["WhatsApp Support", "friends and family"],
+    "example": "Hiya, sorry I accidentally sent my 6 digit code to your number instead of mine, can you send it to me please? It's urgent",
+    "aiAngle": "Report Fraud says stolen sums from email and social media account hacking rose 417% in 2025/26; hijacked accounts are then used to scam the victim's contacts.",
+    "sources": [
+      {"title": "About two-step verification", "url": "https://faq.whatsapp.com/1278661612895630/?cms_platform=android", "publisher": "WhatsApp Help Center"},
+      {"title": "Switch to passkeys: Report Fraud warning as email and social media account hacking sums stolen rise by more than 400 per cent", "url": "https://www.cityoflondon.police.uk/news/city-of-london/news/2026/october/switch-to-passkeys-report-fraud-warning-as-email-and-social-media-account-hacking-sums-stolen-rise-by-more-than-400-per-cent/", "publisher": "City of London Police / Report Fraud"}
+    ]
+  },
+  {
+    "id": "tech-support-popup",
+    "name": "Microsoft / Apple tech support pop-up",
+    "channels": ["web", "phone", "email"],
+    "regions": ["global"],
+    "audience": "older adults, anyone on a laptop",
+    "summary": "A pop-up or call claims your computer is infected or your account is locked and gives a phone number. 'Support' then asks for remote access and payment.",
+    "tells": [
+      "Full-screen warning with sirens or a countdown and a phone number to call",
+      "Says 'do not shut down your computer'",
+      "Asks you to install remote access software (AnyDesk, TeamViewer, Quick Assist)",
+      "Asks for payment by gift card, wire transfer or crypto",
+      "Microsoft says its error and warning messages never include phone numbers, and it does not make unsolicited support calls"
+    ],
+    "impersonates": ["Microsoft", "Windows Defender", "Apple", "AppleCare"],
+    "example": "WINDOWS DEFENDER SECURITY ALERT: Trojan spyware detected. Your banking details are at risk. Do not restart your PC. Call Microsoft Support now: +1 (800) 000-0000",
+    "aiAngle": "Scammers use AI voice agents and scripted chatbots to sound like real support staff.",
+    "sources": [
+      {"title": "Protect yourself from tech support scams", "url": "https://support.microsoft.com/en-us/windows/protect-yourself-from-tech-support-scams-2ebf91bd-f94c-2a8a-e541-f5c800d18435", "publisher": "Microsoft Support"},
+      {"title": "Recognize and avoid social engineering schemes", "url": "https://support.apple.com/en-us/102568", "publisher": "Apple Support"},
+      {"title": "How To Spot, Avoid, and Report Tech Support Scams", "url": "https://consumer.ftc.gov/articles/how-spot-avoid-and-report-tech-support-scams", "publisher": "FTC Consumer Advice"}
+    ]
+  },
+  {
+    "id": "fake-order-confirmation",
+    "name": "Fake PayPal / Amazon order or invoice",
+    "channels": ["email", "sms", "phone"],
+    "regions": ["global"],
+    "audience": "online shoppers",
+    "summary": "An email or text confirms an expensive order or payment you did not make, and tells you to call a number or click a link to cancel, leading to stolen details or remote access.",
+    "tells": [
+      "Order or invoice for an item you did not buy (often an iPhone or gift cards)",
+      "Phone number to 'cancel' or 'dispute' the charge",
+      "The order does not appear when you log in to the real app or site yourself",
+      "Asks you to pay by gift card or send money outside the platform",
+      "Generic greeting and a sender that is not the company's real domain"
+    ],
+    "impersonates": ["PayPal", "Amazon", "eBay", "Apple"],
+    "example": "Amazon: Your order #204-5531876 for Apple iPhone 17 Pro (£1,199.00) has been dispatched. If you did not place this order call 020 0000 0000 within 24 hours to cancel.",
+    "aiAngle": null,
+    "sources": [
+      {"title": "How to Detect Phishing Scams", "url": "https://www.paypal.com/us/security/learn-about-fake-messages", "publisher": "PayPal"},
+      {"title": "Identifying a scam", "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=G4YFYCCNUSENA23B", "publisher": "Amazon Customer Service"}
+    ]
+  },
+  {
+    "id": "subscription-renewal",
+    "name": "Fake subscription renewal (Norton / Geek Squad)",
+    "channels": ["email", "sms", "phone"],
+    "regions": ["US", "UK"],
+    "audience": "older adults, anyone with antivirus or tech support plans",
+    "summary": "An email says you have been charged hundreds for an antivirus or tech support renewal and must call within 24 hours to cancel. The 'refund' call ends in remote access and theft.",
+    "tells": [
+      "Auto-renewal charge for a product you do not remember buying",
+      "Call a number within 24 hours to dispute",
+      "Sent from a free email account, not the company's domain",
+      "'Refund' requires remote access to your computer",
+      "Claims they refunded too much and asks you to send the difference back"
+    ],
+    "impersonates": ["Norton", "McAfee", "Geek Squad", "Best Buy"],
+    "example": "Your Geek Squad Total Protection membership has been renewed for $399.99. If you wish to cancel and receive a refund, call our billing department within 24 hours: +1 (888) 000-0000",
+    "aiAngle": null,
+    "sources": [
+      {"title": "How to recognize a fake Geek Squad renewal scam", "url": "https://consumer.ftc.gov/consumer-alerts/2022/10/how-recognize-fake-geek-squad-renewal-scam", "publisher": "FTC Consumer Advice"},
+      {"title": "How To Spot, Avoid, and Report Tech Support Scams", "url": "https://consumer.ftc.gov/articles/how-spot-avoid-and-report-tech-support-scams", "publisher": "FTC Consumer Advice"}
+    ]
+  },
+  {
+    "id": "marketplace-fake-buyer",
+    "name": "Marketplace overpayment / fake buyer",
+    "channels": ["web", "email", "whatsapp", "social"],
+    "regions": ["global"],
+    "audience": "teens and adults selling on Vinted, Facebook Marketplace, eBay",
+    "summary": "A 'buyer' pays too much, or sends a fake payment email, and asks you to refund the difference or follow a link to 'receive' the money, which steals card or account details.",
+    "tells": [
+      "Buyer wants to move off the platform to WhatsApp, email or bank transfer",
+      "Overpays and asks you to send the extra back",
+      "Email saying payment is waiting but you must click to 'verify' or 'receive funds'",
+      "Asks for your card details so they can 'pay you'",
+      "Courier will 'collect' so they never see the item",
+      "Payment does not show in the real app"
+    ],
+    "impersonates": ["Vinted", "Facebook Marketplace", "eBay", "PayPal", "Gumtree"],
+    "example": "Hi, I want to buy your trainers. I'll pay through Vinted's secure delivery. Payment received! Please confirm your card to receive funds: hxxps://vinted-secure-pay[.]co/confirm",
+    "aiAngle": null,
+    "sources": [
+      {"title": "Recognize spoof and phishing messages", "url": "https://www.vinted.com/help/628-recognize-spoof-and-phishing-messages", "publisher": "Vinted"},
+      {"title": "How To Spot, Avoid, and Report Fake Check Scams", "url": "https://consumer.ftc.gov/articles/how-spot-avoid-and-report-fake-check-scams", "publisher": "FTC Consumer Advice"},
+      {"title": "Selling stuff online? Here's how to avoid a scam", "url": "https://consumer.ftc.gov/consumer-alerts/2022/07/selling-stuff-online-heres-how-avoid-scam", "publisher": "FTC Consumer Advice"}
+    ]
+  },
+  {
+    "id": "ticket-resale",
+    "name": "Fake concert / event tickets",
+    "channels": ["social", "web", "whatsapp"],
+    "regions": ["global"],
+    "audience": "teens and young adults, fans of sold-out events",
+    "summary": "Someone on social media or a fake site sells tickets for a sold-out gig or match. You pay by bank transfer and the tickets never arrive or are fake.",
+    "tells": [
+      "Tickets for a sold-out event offered on social media or in comments",
+      "Seller only accepts bank transfer, crypto or friends-and-family payments",
+      "Price too good, or seller has a new or hacked account",
+      "Pressure: 'lots of people want these'",
+      "Not sold through the venue, promoter or an official resale site"
+    ],
+    "impersonates": ["Ticketmaster", "fans selling spares"],
+    "example": "Selling 2 standing tickets for Saturday's show, can't go anymore 😢 £90 each, face value. Bank transfer only, first come first served, DM me!",
+    "aiAngle": "Hacked social media accounts are used to post ticket offers to the owner's real friends, which Report Fraud highlighted in 2026.",
+    "sources": [
+      {"title": "Ticket fraud", "url": "https://www.reportfraud.police.uk/ticket-fraud/", "publisher": "Report Fraud (City of London Police)"},
+      {"title": "Illegal ticketing websites", "url": "https://www.citizensadvice.org.uk/consumer/event-tickets/illegal-ticketing-websites/", "publisher": "Citizens Advice"}
+    ]
+  },
+  {
+    "id": "rental-deposit",
+    "name": "Fake rental listing / deposit scam",
+    "channels": ["web", "email", "whatsapp", "social"],
+    "regions": ["global"],
+    "audience": "students and young renters, people moving cities",
+    "summary": "A cheap flat or room is advertised online. The 'landlord' cannot show it in person and asks for a deposit or first month's rent upfront; the property is not theirs.",
+    "tells": [
+      "Rent well below local prices",
+      "Landlord is abroad or busy and cannot do a viewing",
+      "Asks for a deposit or holding fee before you have seen it",
+      "Pressure because 'many others are interested'",
+      "Payment by bank transfer, crypto or money transfer service"
+    ],
+    "impersonates": ["landlords", "letting agents", "student accommodation"],
+    "example": "Hello, the room is still available. I'm currently working abroad so can't show it, but if you send the £600 deposit today I'll post you the keys.",
+    "aiAngle": "AI-generated or copied listing photos make fake properties look real.",
+    "sources": [
+      {"title": "Rental fraud", "url": "https://www.reportfraud.police.uk/rental-fraud/", "publisher": "Report Fraud (City of London Police)"},
+      {"title": "Rental Listing Scams", "url": "https://consumer.ftc.gov/articles/rental-listing-scams", "publisher": "FTC Consumer Advice"}
+    ]
+  },
+  {
+    "id": "ai-voice-clone-emergency",
+    "name": "AI voice clone family emergency",
+    "channels": ["phone", "whatsapp"],
+    "regions": ["global"],
+    "audience": "parents and grandparents",
+    "summary": "A call or voice note sounds exactly like a family member in trouble (accident, arrest, stranded) and urgently asks for money, often with a fake 'lawyer' or 'police officer'.",
+    "tells": [
+      "Panicked call from a loved one asking for money right now",
+      "Asks you not to tell anyone else in the family",
+      "Hands over to a 'lawyer', 'police officer' or 'doctor'",
+      "Wants payment by bank transfer, gift cards, crypto or cash courier",
+      "Call comes from an unknown or withheld number"
+    ],
+    "impersonates": ["family members", "police", "lawyers"],
+    "example": "(voice note) 'Mum? It's me. I've been in a car accident and they've arrested me, I need £2,000 for bail right now. Please don't tell Dad. The officer will text you the details.'",
+    "aiAngle": "Voice cloning needs only a short audio clip from social media; FBI IC3 reported over $5m in 2025 losses to AI-voice 'distress' scams.",
+    "sources": [
+      {"title": "Scammers use AI to enhance their family emergency schemes", "url": "https://consumer.ftc.gov/consumer-alerts/2023/03/scammers-use-ai-enhance-their-family-emergency-schemes", "publisher": "FTC Consumer Advice"},
+      {"title": "Criminals Use Generative Artificial Intelligence to Facilitate Financial Fraud", "url": "https://www.ic3.gov/PSA/2024/PSA241203", "publisher": "FBI IC3"}
+    ]
+  },
+  {
+    "id": "deepfake-celebrity-investment",
+    "name": "Deepfake celebrity investment ad",
+    "channels": ["social", "web"],
+    "regions": ["global"],
+    "audience": "adults on Facebook, Instagram, YouTube",
+    "summary": "A video ad shows a famous person or presenter apparently endorsing an AI trading platform. Sign-ups get a 'broker' call, fake profits and pressure to invest more.",
+    "tells": [
+      "Celebrity, presenter or business leader 'revealing' a secret investment",
+      "Promises of guaranteed or very high returns",
+      "Lip movements or voice slightly out of sync",
+      "Sign-up form followed by a call from an 'account manager'",
+      "Platform not on the FCA register (UK) or uses a name close to a real firm",
+      "Asked to install remote access software to 'help you trade'"
+    ],
+    "impersonates": ["celebrities", "TV presenters", "tech CEOs", "news sites"],
+    "example": "(ad) BREAKING: Famous presenter reveals the AI trading app that turned £250 into £8,000 in a month. Banks are furious! Spaces limited: hxxps://quantum-ai-profit[.]live/join",
+    "aiAngle": "Report Fraud's 2025/26 assessment found AI-linked reports up 395% (193 to 956), with investment fraud using AI videos of public figures the biggest group.",
+    "sources": [
+      {"title": "City of London Police intelligence assessment highlights emerging fraud trends and evolving threats", "url": "https://www.cityoflondon.police.uk/news/city-of-london/news/2026/september/city-of-london-police-intelligence-assessment-highlights-emerging-fraud-trends-and-evolving-threats/", "publisher": "City of London Police / Report Fraud"},
+      {"title": "Misleading financial promotions", "url": "https://www.fca.org.uk/consumers/misleading-financial-adverts", "publisher": "Financial Conduct Authority"},
+      {"title": "Investment scams surge: how deepfakes and dodgy finfluencers put your money at risk", "url": "https://www.which.co.uk/news/article/investment-scams-surge-how-deepfakes-and-dodgy-finfluencers-put-your-money-at-risk-aaAKh0B7SkOM", "publisher": "Which?"}
+    ]
+  },
+  {
+    "id": "quishing-parking-qr",
+    "name": "QR code parking scam (quishing)",
+    "channels": ["web", "email"],
+    "regions": ["UK", "US", "EU"],
+    "audience": "drivers, anyone paying by QR code",
+    "summary": "A fake QR sticker on a parking meter or sign, or a QR code in an email, takes you to a lookalike payment site that steals card details or signs you up to recurring charges.",
+    "tells": [
+      "QR code is a sticker placed over the original signage",
+      "Payment page is not the official parking app or council site",
+      "Asks for more details than needed or a subscription",
+      "QR code in an email asking you to 'rescan' to keep your account or pay a fine",
+      "Better to type the official app or website yourself"
+    ],
+    "impersonates": ["parking operators", "councils", "RingGo", "PayByPhone"],
+    "example": "(sticker on a pay machine) 'Card reader out of order. Scan to pay for parking' -> hxxps://park-pay-uk[.]com",
+    "aiAngle": "QR codes hide the real URL, so link scanners and people both struggle to check them before visiting.",
+    "sources": [
+      {"title": "Cybercriminals Tampering with QR Codes to Steal Victim Funds", "url": "https://www.ic3.gov/PSA/2022/PSA220118", "publisher": "FBI IC3"},
+      {"title": "Scammers hide harmful links in QR codes to steal your information", "url": "https://consumer.ftc.gov/consumer-alerts/2023/12/scammers-hide-harmful-links-qr-codes-steal-your-information", "publisher": "FTC Consumer Advice"}
+    ]
+  },
+  {
+    "id": "mfa-fatigue-otp-phish",
+    "name": "MFA fatigue / one-time code phishing",
+    "channels": ["phone", "sms", "email", "web"],
+    "regions": ["global"],
+    "audience": "everyone with 2-step login, students and workers on school/work accounts",
+    "summary": "Attackers with your password spam login approval prompts, or call pretending to be support, until you tap 'Approve' or read out the one-time code.",
+    "tells": [
+      "Lots of sign-in approval pop-ups you did not trigger",
+      "Caller asks you to read out or approve a code 'to verify it's you'",
+      "Text with a code you did not request, followed by a message asking for it",
+      "Apple and others say they never ask you to tap Accept on a 2FA prompt for support",
+      "Fake login page that asks for your code straight after your password"
+    ],
+    "impersonates": ["Microsoft", "Apple", "Google", "school/work IT support", "banks"],
+    "example": "Hi, this is IT support. We're seeing failed logins on your Microsoft account. You'll get a code in a moment, just read it back to me so I can lock out the attacker.",
+    "aiAngle": "Real-time phishing kits relay your code to the real site in seconds; phishing-resistant passkeys/FIDO block this.",
+    "sources": [
+      {"title": "Implementing Number Matching in MFA Applications", "url": "https://www.cisa.gov/sites/default/files/publications/fact-sheet-implement-number-matching-in-mfa-applications-508c.pdf", "publisher": "CISA"},
+      {"title": "More than a Password (MFA)", "url": "https://www.cisa.gov/MFA", "publisher": "CISA"},
+      {"title": "Recognize and avoid social engineering schemes", "url": "https://support.apple.com/en-us/102568", "publisher": "Apple Support"}
+    ]
+  },
+  {
+    "id": "energy-bill-rebate",
+    "name": "Energy bill rebate / Ofgem refund",
+    "channels": ["sms", "email", "phone"],
+    "regions": ["UK"],
+    "audience": "households, older adults",
+    "summary": "A message claims Ofgem or the government owes you an energy rebate or discount and asks you to apply through a link with bank details.",
+    "tells": [
+      "Offers an energy rebate, refund or discount out of the blue",
+      "Claims to be from Ofgem (Ofgem never sells energy or asks for personal or payment details)",
+      "Email not from @ofgem.gov.uk",
+      "Asks you to set up a direct debit or enter card details to 'receive' money",
+      "Deadline to claim"
+    ],
+    "impersonates": ["Ofgem", "GOV.UK", "energy suppliers"],
+    "example": "Ofgem: You are eligible for a £400 energy bill rebate under the government support scheme. Apply before Friday: hxxps://ofgem-rebate-apply[.]co.uk",
+    "aiAngle": null,
+    "sources": [
+      {"title": "Avoid and report energy scams", "url": "https://www.ofgem.gov.uk/avoid-and-report-energy-scams", "publisher": "Ofgem"}
+    ]
+  },
+  {
+    "id": "brand-ambassador-collab",
+    "name": "Instagram / TikTok \"collab\" or brand ambassador offer",
+    "channels": ["social", "email"],
+    "regions": ["global"],
+    "audience": "teens and young creators on Instagram and TikTok",
+    "summary": "A flattering DM invites you to become a brand ambassador or collab. You are asked to buy products 'at a discount', pay a fee, or hand over personal and bank details.",
+    "tells": [
+      "DM out of the blue praising your style or following",
+      "You must buy products or pay shipping to join (real gifting is free)",
+      "Account is unverified, new or uses a personal email",
+      "Asks for ID, bank details or your login 'to set up payments'",
+      "Discount code you must use instead of being paid"
+    ],
+    "impersonates": ["fashion brands", "fitness brands", "talent agencies"],
+    "example": "Hey lovely! 💕 We love your content and want you as a brand ambassador! Get 50% off your first order with code AMBASSADOR50 and we'll feature you on our page. DM to apply!",
+    "aiAngle": "Scammers use AI to mass-personalise flattering pitches to thousands of small accounts.",
+    "sources": [
+      {"title": "Influencers: Spot a job scam", "url": "https://consumer.ftc.gov/consumer-alerts/2024/03/influencers-spot-job-scam", "publisher": "FTC Consumer Advice"},
+      {"title": "Job scam targeting influencers", "url": "https://consumer.ftc.gov/consumer-alerts/2023/10/job-scam-targeting-influencers", "publisher": "FTC Consumer Advice"},
+      {"title": "Avoid getting scammed on Instagram", "url": "https://help.instagram.com/514187739359208", "publisher": "Instagram Help Center"}
+    ]
+  },
+  {
+    "id": "loan-fee-scam",
+    "name": "Loan fee / advance-fee loan",
+    "channels": ["web", "email", "sms", "social"],
+    "regions": ["UK", "US", "EU"],
+    "audience": "people with bad credit or money worries, young adults",
+    "summary": "A lender guarantees a loan regardless of credit history, then asks for an upfront fee for 'insurance', 'processing' or 'admin'. There is no loan.",
+    "tells": [
+      "Loan 'guaranteed' or 'bad credit no problem'",
+      "Upfront fee before you get the money",
+      "Fee paid by bank transfer, voucher or crypto",
+      "Firm not on the FCA register (UK) or not registered in your state (US)",
+      "Contact only via WhatsApp or a mobile number"
+    ],
+    "impersonates": ["lenders", "clone firms of real lenders"],
+    "example": "Congratulations! Your loan of £5,000 has been APPROVED regardless of credit score. To release funds, pay the one-off £149 insurance fee to the account below today.",
+    "aiAngle": null,
+    "sources": [
+      {"title": "Loan fee fraud", "url": "https://www.fca.org.uk/consumers/loan-fee-fraud", "publisher": "Financial Conduct Authority"},
+      {"title": "What To Know About Advance-Fee Loans", "url": "https://consumer.ftc.gov/articles/what-know-about-advance-fee-loans", "publisher": "FTC Consumer Advice"}
+    ]
+  },
+  {
+    "id": "charity-disaster",
+    "name": "Fake charity after a disaster",
+    "channels": ["social", "email", "sms", "phone", "web"],
+    "regions": ["global"],
+    "audience": "everyone, especially after news of disasters or wars",
+    "summary": "After a disaster or tragedy, fake charities and crowdfunding pages appear asking for donations, often by bank transfer, gift card or crypto.",
+    "tells": [
+      "Charity you have never heard of that appeared right after the news",
+      "Emotional images and urgency, no clear details on how money is used",
+      "Asks for payment by gift card, wire transfer, cash or crypto",
+      "Name very similar to a well-known charity",
+      "Thanks you for a donation you do not remember making"
+    ],
+    "impersonates": ["Red Cross", "UNICEF", "disaster appeals", "crowdfunding pages"],
+    "example": "URGENT: Families affected by the floods need your help tonight. 100% of donations go straight to victims. Donate via crypto or bank transfer: hxxps://flood-relief-fund[.]org",
+    "aiAngle": "AI-generated disaster images spread on social media faster than fact-checks.",
+    "sources": [
+      {"title": "Charity Scams", "url": "https://consumer.ftc.gov/all-scams/charity-scams", "publisher": "FTC Consumer Advice"},
+      {"title": "Charity donation fraud", "url": "https://www.reportfraud.police.uk/charity-donation-fraud/", "publisher": "Report Fraud (City of London Police)"}
+    ]
+  }
+]

@@ -11,8 +11,16 @@ export const SITUATIONS: {id: Situation; label: string}[] = [
   {id: 'gave_code_or_remote_access', label: 'I gave a code or let them in'},
 ]
 
-type Step = string | {text: string; url?: string}
+type Channel = {name: string; how: string; url: string; source: string}
+type Block = {steps: string[]; channels: string[]}
+const R = respond as unknown as {channels: Record<string, Channel>} & Record<string, Record<string, Block>>
+
+// Plain steps first, then the official places to report it, each linked to its source.
 export function stepsFor(region: Region, situation: Situation): {text: string; url?: string}[] {
-  const r = (respond as unknown as Record<string, Record<string, Step[]>>)[region] ?? {}
-  return (r[situation] ?? r.received_only ?? []).map((s) => (typeof s === 'string' ? {text: s} : s))
+  const block = R[region]?.[situation] ?? R[region]?.received_only
+  if (!block) return []
+  return [
+    ...block.steps.map((text) => ({text})),
+    ...block.channels.map((id) => R.channels[id]).filter(Boolean).map((c) => ({text: `${c.name}: ${c.how}`, url: c.url})),
+  ]
 }

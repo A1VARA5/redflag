@@ -1,1 +1,187 @@
-{"UK":{"received_only":["Do not reply or click.","Forward scam texts to 7726, free."]},"US":{"received_only":["Do not reply or click.","Report at reportfraud.ftc.gov."]},"EU":{"received_only":["Do not reply or click."]}}
+{
+  "_meta": {
+    "checked": "2026-10-05",
+    "note": "Action Fraud was replaced by Report Fraud (reportfraud.police.uk, same phone number 0300 123 2040) from 4 December 2025 for England, Wales and Northern Ireland. Scotland reports to Police Scotland on 101. Steps are short imperatives for UI display; channels list the official reporting routes with sources."
+  },
+  "channels": {
+    "uk_7726": {"name": "Forward scam texts to 7726", "how": "Forward the text to 7726 (free), then reply with the sender's number when asked. For a suspicious call, text 'Call' plus the number to 7726.", "url": "https://www.reportfraud.police.uk/how-to-report-suspicious-activity/", "source": "Report Fraud"},
+    "uk_sers": {"name": "Suspicious Email Reporting Service", "how": "Forward suspicious emails to report@phishing.gov.uk", "url": "https://www.ncsc.gov.uk/collection/phishing-scams/report-scam-email", "source": "NCSC"},
+    "uk_ncsc_website": {"name": "Report a scam website to the NCSC", "how": "Use the NCSC suspicious website form", "url": "https://www.ncsc.gov.uk/collection/phishing-scams/report-scam-website", "source": "NCSC"},
+    "uk_report_fraud": {"name": "Report Fraud (formerly Action Fraud)", "how": "Report online or call 0300 123 2040 (England, Wales, Northern Ireland). In Scotland call Police Scotland on 101. Call 999 if a crime is happening now or you are in danger.", "url": "https://www.reportfraud.police.uk/", "source": "Report Fraud (City of London Police)", "evidence": "https://www.cityoflondon.police.uk/news/city-of-london/news/2025/december/report-fraud-service-goes-live-with-full-public-launch-in-january-2026/"},
+    "uk_159": {"name": "Call 159 to reach your bank", "how": "Hang up, then dial 159 from a phone you trust to be connected to your bank's real fraud line. Covers most UK current accounts including Barclays, HSBC, Lloyds, NatWest, Santander, Monzo, Revolut, Starling.", "url": "https://stopscamsuk.org.uk/159", "source": "Stop Scams UK"},
+    "uk_hmrc": {"name": "Report HMRC scams", "how": "Forward HMRC scam texts to 60599 (network charges apply) and emails to phishing@hmrc.gov.uk", "url": "https://www.gov.uk/government/publications/phishing-and-bogus-emails-hm-revenue-and-customs-examples/phishing-emails-and-bogus-contact-hm-revenue-and-customs-examples", "source": "HMRC / GOV.UK"},
+    "uk_royal_mail": {"name": "Report Royal Mail scams", "how": "Forward emails (or screenshots of texts) to reportascam@royalmail.com", "url": "https://www.royalmail.com/help/scam-protection", "source": "Royal Mail"},
+    "uk_whatsapp_report": {"name": "Report in WhatsApp", "how": "Press and hold the message, tap Report, then block the sender", "url": "https://www.reportfraud.police.uk/how-to-report-suspicious-activity/", "source": "Report Fraud"},
+    "uk_psr_reimbursement": {"name": "APP fraud reimbursement", "how": "If you were tricked into sending a bank payment, tell your bank as soon as possible and within 13 months. Reimbursement is usually within 5 business days of the claim; firms may apply an excess of up to £100 (not for vulnerable customers).", "url": "https://www.psr.org.uk/information-for-consumers/app-fraud-reimbursement-protections/", "source": "Payment Systems Regulator"},
+    "uk_cifas": {"name": "Cifas Protective Registration", "how": "Paid service that flags your identity so lenders do extra checks if someone applies for credit in your name", "url": "https://www.cifas.org.uk/services/identity-protection/protective-registration", "source": "Cifas"},
+    "uk_ncsc_hacked": {"name": "Recover a hacked account", "how": "Follow NCSC steps to regain access, change passwords and turn on 2-step verification", "url": "https://www.ncsc.gov.uk/guidance/recovering-a-hacked-account", "source": "NCSC"},
+    "us_7726": {"name": "Forward scam texts to 7726 (SPAM)", "how": "Forward the text to 7726 or use your phone's 'Report junk' option", "url": "https://consumer.ftc.gov/articles/how-recognize-and-report-spam-text-messages", "source": "FTC"},
+    "us_apwg": {"name": "Forward phishing emails to APWG", "how": "Forward phishing emails to reportphishing@apwg.org", "url": "https://consumer.ftc.gov/articles/how-recognize-and-avoid-phishing-scams", "source": "FTC"},
+    "us_ftc": {"name": "ReportFraud.ftc.gov", "how": "Report the scam to the Federal Trade Commission", "url": "https://reportfraud.ftc.gov/", "source": "FTC"},
+    "us_identitytheft": {"name": "IdentityTheft.gov", "how": "Get a personal recovery plan if your personal or financial details were exposed", "url": "https://www.identitytheft.gov/", "source": "FTC"},
+    "us_ic3": {"name": "FBI Internet Crime Complaint Center", "how": "File a complaint, especially for online fraud with money lost (crypto, investment, tech support)", "url": "https://www.ic3.gov/", "source": "FBI IC3"},
+    "us_credit_freeze": {"name": "Credit freeze or fraud alert", "how": "Freeze your credit with each bureau, or place a fraud alert", "url": "https://consumer.ftc.gov/articles/what-know-about-credit-freezes-and-fraud-alerts", "source": "FTC"},
+    "us_irs": {"name": "Report IRS scams", "how": "Email phishing@irs.gov (subject 'IRS' for emails, 'Text' for texts with sender number, date and time) and forward texts to 7726", "url": "https://www.irs.gov/privacy-disclosure/report-phishing", "source": "IRS"},
+    "us_uspis": {"name": "Report USPS smishing", "how": "Email the text body and a screenshot to spam@uspis.gov without clicking the link, and forward the text to 7726", "url": "https://www.uspis.gov/news/scam-article/smishing-package-tracking-text-scams", "source": "U.S. Postal Inspection Service"},
+    "us_get_money_back": {"name": "Try to get money back", "how": "Contact the bank, payment app, gift card issuer, wire service or crypto exchange you paid through immediately and ask them to reverse the payment", "url": "https://consumer.ftc.gov/articles/what-do-if-you-were-scammed", "source": "FTC"},
+    "eu_national_police": {"name": "Report to your national police", "how": "Use your country's online cybercrime reporting site (Europol lists them by country). If your country has no online option, go to your local police station. Call 112 in an emergency.", "url": "https://www.europol.europa.eu/report-a-crime/report-cybercrime-online", "source": "Europol"},
+    "eu_europol_guide": {"name": "Europol scam prevention guide", "how": "Advice on common online financial scams (phishing, smishing, tech support, romance, ID theft, SIM swapping)", "url": "https://www.europol.europa.eu/operations-services-and-innovation/public-awareness-and-prevention-guides/take-control-of-your-digital-life", "source": "Europol"},
+    "eu_ecc_net": {"name": "European Consumer Centres Network", "how": "Free help with cross-border purchase disputes inside the EU, Iceland and Norway", "url": "https://www.eccnet.eu/", "source": "ECC-Net"}
+  },
+  "UK": {
+    "received_only": {
+      "steps": [
+        "Don't click links, open attachments or reply.",
+        "Forward scam texts to 7726 (free).",
+        "Forward scam emails to report@phishing.gov.uk.",
+        "Report WhatsApp scams in the app (hold the message, tap Report) and block the sender.",
+        "If it names a company or person you know, contact them using details you find yourself, not the ones in the message.",
+        "Delete the message."
+      ],
+      "channels": ["uk_7726", "uk_sers", "uk_ncsc_website", "uk_whatsapp_report", "uk_hmrc", "uk_royal_mail"]
+    },
+    "clicked_link": {
+      "steps": [
+        "Close the page. Don't type anything into it.",
+        "If something downloaded, don't open it; delete it and run your antivirus or security scan.",
+        "Update your phone or computer and browser.",
+        "Report the website to the NCSC and forward the message (7726 / report@phishing.gov.uk).",
+        "Watch for follow-up calls or texts pretending to be your bank about this."
+      ],
+      "channels": ["uk_ncsc_website", "uk_7726", "uk_sers"]
+    },
+    "entered_details": {
+      "steps": [
+        "If you entered card or bank details, call your bank now on 159 or the number on your card.",
+        "Change the password on the real site, and anywhere else you reused it.",
+        "Turn on 2-step verification or switch to a passkey.",
+        "Report it to Report Fraud online or on 0300 123 2040 (Scotland: 101).",
+        "Check your bank statements and account activity for the next few weeks.",
+        "If ID documents were taken, consider Cifas Protective Registration."
+      ],
+      "channels": ["uk_159", "uk_report_fraud", "uk_ncsc_hacked", "uk_cifas"]
+    },
+    "paid_money": {
+      "steps": [
+        "Call your bank immediately on 159 or the number on your card. Speed matters.",
+        "Tell them it was a scam and ask about APP fraud reimbursement.",
+        "Report to Report Fraud online or on 0300 123 2040 (Scotland: 101).",
+        "Keep screenshots, usernames, phone numbers and payment receipts.",
+        "Don't pay anyone who later offers to 'recover' your money for a fee."
+      ],
+      "channels": ["uk_159", "uk_psr_reimbursement", "uk_report_fraud"]
+    },
+    "gave_code_or_remote_access": {
+      "steps": [
+        "If you gave remote access: disconnect from the internet and uninstall the remote access app.",
+        "Run a full security scan, or get the device checked by someone you trust.",
+        "From a different, safe device, change passwords for email and banking first.",
+        "Call your bank on 159 and tell them a scammer may have access.",
+        "If you shared a WhatsApp or account code: log back in to re-register, then turn on two-step verification.",
+        "Warn friends and family that messages from your account may be fake, then report to Report Fraud."
+      ],
+      "channels": ["uk_159", "uk_ncsc_hacked", "uk_report_fraud"]
+    }
+  },
+  "US": {
+    "received_only": {
+      "steps": [
+        "Don't click links, call numbers in the message, or reply.",
+        "Forward scam texts to 7726 (SPAM).",
+        "Forward phishing emails to reportphishing@apwg.org.",
+        "Report it at ReportFraud.ftc.gov.",
+        "Check any real account by typing the company's website or app yourself.",
+        "Delete the message."
+      ],
+      "channels": ["us_7726", "us_apwg", "us_ftc", "us_irs", "us_uspis"]
+    },
+    "clicked_link": {
+      "steps": [
+        "Close the page without entering anything.",
+        "If something downloaded, update your security software and run a scan.",
+        "Update your phone or computer.",
+        "Report the message at ReportFraud.ftc.gov and forward texts to 7726."
+      ],
+      "channels": ["us_ftc", "us_7726"]
+    },
+    "entered_details": {
+      "steps": [
+        "Call your bank or card issuer using the number on your card.",
+        "Change the password on the real site and anywhere you reused it, and turn on multi-factor authentication.",
+        "Go to IdentityTheft.gov for a step-by-step recovery plan.",
+        "Consider a credit freeze or fraud alert.",
+        "Report at ReportFraud.ftc.gov."
+      ],
+      "channels": ["us_identitytheft", "us_credit_freeze", "us_ftc"]
+    },
+    "paid_money": {
+      "steps": [
+        "Contact whoever you paid through right now (bank, Zelle, payment app, gift card company, wire service or crypto exchange) and ask them to reverse it.",
+        "Report at ReportFraud.ftc.gov.",
+        "File a complaint with the FBI at ic3.gov, especially for crypto, investment or tech support scams.",
+        "Keep receipts, screenshots, wallet addresses and phone numbers.",
+        "Ignore anyone who offers to recover your money for a fee."
+      ],
+      "channels": ["us_get_money_back", "us_ftc", "us_ic3"]
+    },
+    "gave_code_or_remote_access": {
+      "steps": [
+        "Disconnect from the internet and uninstall any remote access app the scammer had you install.",
+        "Update your security software and run a full scan.",
+        "From a safe device, change passwords for email, banking and any account tied to the code.",
+        "Call your bank and card issuers to watch for or reverse charges.",
+        "Use IdentityTheft.gov if personal info was exposed, and report at ReportFraud.ftc.gov."
+      ],
+      "channels": ["us_identitytheft", "us_ftc", "us_ic3"]
+    }
+  },
+  "EU": {
+    "received_only": {
+      "steps": [
+        "Don't click links, open attachments or reply.",
+        "Use your phone's 'Report spam/junk' option and block the sender.",
+        "Contact the company or person directly using details you find yourself.",
+        "Report the scam to your national cybercrime reporting site if your country has one.",
+        "Delete the message."
+      ],
+      "channels": ["eu_national_police", "eu_europol_guide"]
+    },
+    "clicked_link": {
+      "steps": [
+        "Close the page without entering anything.",
+        "Delete anything that downloaded and run a security scan.",
+        "Update your device and browser.",
+        "Report the site or message to your national police reporting service."
+      ],
+      "channels": ["eu_national_police"]
+    },
+    "entered_details": {
+      "steps": [
+        "Call your bank immediately using the number on your card or official app.",
+        "Change the password on the real site and anywhere you reused it; turn on 2-step verification.",
+        "Report to your national police (online where available, or at a police station).",
+        "Watch your accounts for unusual activity."
+      ],
+      "channels": ["eu_national_police"]
+    },
+    "paid_money": {
+      "steps": [
+        "Call your bank or payment provider immediately and ask them to stop or recall the payment.",
+        "Report to your national police and keep the case or reference number for your bank.",
+        "Keep screenshots, IBANs, wallet addresses and receipts.",
+        "If it was a cross-border purchase from a real business, ask the European Consumer Centres Network for help."
+      ],
+      "channels": ["eu_national_police", "eu_ecc_net"]
+    },
+    "gave_code_or_remote_access": {
+      "steps": [
+        "Disconnect from the internet and remove any remote access app.",
+        "Run a security scan or get the device checked.",
+        "From a safe device, change email and banking passwords first and turn on 2-step verification.",
+        "Call your bank to warn them.",
+        "Report to your national police."
+      ],
+      "channels": ["eu_national_police", "eu_europol_guide"]
+    }
+  }
+}
