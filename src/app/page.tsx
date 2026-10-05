@@ -27,7 +27,7 @@ export default function Home() {
 
       <section className="mt-20 grid gap-4 sm:grid-cols-3">
         <Way title="Paste or screenshot" body="Texts, WhatsApps, DMs, emails. Drop a screenshot and Red Flag reads it." />
-        <Way title="Forward the email" body={<>Forward any dodgy email to <span className="font-mono text-ink">check@redflag</span> and the verdict comes back as a reply.</>} />
+        <Way title="Forward the email" body={<>Forward any dodgy email to <span className="font-mono text-ink">redflag@homingbox.net</span> and the verdict comes back as a reply.</>} />
         <Way title="Right-click in Discord" body="Add the app, right-click a message, Apps → Red Flag this. Only you see the answer." />
       </section>
     </main>
