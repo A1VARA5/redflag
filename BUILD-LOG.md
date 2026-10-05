@@ -37,3 +37,12 @@ Timestamped so the judges can see everything was built during the event (Oct 3 t
 - Wording fixed: "no AI" labels made it read as if the product had no AI. Now "AI reads it" + "hard checks". Added a one-tap screenshot sample (/sample-sms renders a fake Evri SMS); live: SCAM 97, transcript read from the image, link inside the screenshot checked.
 - Homepage: live facts strip, radar teaser, Add to Discord and email buttons, footer with UK/US/EU report links.
 - Public repo https://github.com/A1VARA5/redflag, all rights reserved (public for judging only). Secret scan of tree and history clean.
+
+### Mon 5 Oct, night (UK)
+- Redesign after Aivaras said it looked AI-made and sluggish: dropped the cream paper, serif + tiny mono labels, handwriting font and decorative motion. Now IBM Plex, white/cool grey, navy, red only for danger, shield-icon verdicts. Progress shows the real server events (links checked, then the AI reading) with a seconds counter instead of a spinner.
+- Domain age had never worked in production: rdap.org returns 403 to server requests. Now asks each registry directly via IANA's RDAP bootstrap.
+- Look-alike hits on domains older than 3 years downgraded to a note (bank.com, hermes.com, bookings.com); real fakes stay high.
+- EU data from a research agent: 141 brands (66 EU), 37 reporting channels incl. IE/DE/FR/NL/ES/IT/LT/PL, 36 patterns. Eval re-run: 80/80, plain Qwen2.5-72B 95%.
+- What-to-do now shows 3 steps plus only relevant report channels (7726 only for texts, HMRC only for tax scams, WhatsApp only for WhatsApp).
+- Instant link check while typing: /api/links, code only, ~1 s, before the full check.
+- VirusTotal (70+ engines) and urlscan.io sandbox screenshots on links that don't belong to a known brand (real bank/reset links are never sent anywhere). Screenshots are proxied so the viewer's browser never talks to a third party. Live test: a fresh phishing domain came back 19/93 engines and a screenshot of a fake AT&T "click below to verify" page.
