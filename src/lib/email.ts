@@ -33,14 +33,14 @@ function auth() {
   return {Authorization: `Bearer ${process.env.AGENTBOXD_API_KEY}`, 'content-type': 'application/json'}
 }
 
-// Agentboxd quarantines ("holds") mail it thinks is phishing, and hides the content from agents.
-// A scam checker is the one agent that should read it, so we ask for held content explicitly
-// (needs an API key with the messages:release permission).
+// Agentboxd can quarantine ("hold") mail it thinks is phishing and hide its content from agents.
+// For a scam checker that is backwards, so the workspace runs with screening off: we still get Agentboxd's
+// phishing and injection scores as evidence, plus the content to explain.
 export async function getMessage(messageId: string): Promise<MailMessage | null> {
-  const res = await fetch(`${API}/messages/${messageId}?include_held=true&include_unscreened=true`, {headers: auth(), signal: AbortSignal.timeout(10_000)})
+  const res = await fetch(`${API}/messages/${messageId}`, {headers: auth(), signal: AbortSignal.timeout(10_000)})
   if (!res.ok) return null
   const j = await res.json()
-  return (j.data ?? j) as MailMessage
+  return (j.id ? j : j.data) as MailMessage
 }
 
 export async function downloadAttachment(id: string): Promise<{data: string; type: string} | null> {
