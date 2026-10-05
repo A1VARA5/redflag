@@ -1,6 +1,7 @@
 import type {Metadata, Viewport} from 'next'
 import {Inter, Instrument_Serif, JetBrains_Mono, Caveat} from 'next/font/google'
 import './globals.css'
+import {Footer} from '@/components/Footer'
 
 const inter = Inter({variable: '--font-inter', subsets: ['latin']})
 const serif = Instrument_Serif({variable: '--font-serif', weight: '400', subsets: ['latin']})
@@ -26,7 +27,10 @@ export const viewport: Viewport = {
 export default function RootLayout({children}: LayoutProps<'/'>) {
   return (
     <html lang="en-GB" className={`${inter.variable} ${serif.variable} ${mono.variable} ${hand.variable} antialiased`}>
-      <body className="min-h-dvh">{children}</body>
+      <body className="min-h-dvh">
+        {children}
+        <Footer />
+      </body>
     </html>
   )
 }

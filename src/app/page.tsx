@@ -40,10 +40,33 @@ export default async function Home() {
         <Fact n="UK · US · EU" label={radar ? `what to do and who to report to; this week's radar read ${radar.itemCount} reports` : 'what to do and who to report to'} />
       </dl>
 
-      <section className="mt-20 grid gap-4 sm:grid-cols-3">
+      {radar && radar.scams[0] && (
+        <a href="/radar" className="group mt-16 block rounded-2xl border border-rule bg-sheet p-5 hover:border-ink sm:p-6">
+          <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-3">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-red" /> This week&apos;s radar
+          </div>
+          <div className="mt-2 font-display text-3xl leading-tight sm:text-4xl">{radar.headline}</div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {radar.scams.slice(0, 5).map((sc) => (
+              <span key={sc.title} className="rounded-full bg-paper px-3 py-1 text-sm text-ink-2">{sc.title}</span>
+            ))}
+          </div>
+          <div className="mt-3 text-sm font-medium text-red group-hover:underline">See all {radar.scams.length} and how to spot them →</div>
+        </a>
+      )}
+
+      <section className="mt-6 grid gap-4 sm:grid-cols-3">
         <Way title="Paste or screenshot" body="Texts, WhatsApps, DMs, emails. Drop a screenshot and Red Flag reads it." />
-        <Way title="Forward the email" body={<>Forward any dodgy email to <span className="font-mono text-ink">redflag@homingbox.net</span> and the verdict comes back as a reply.</>} />
-        <Way title="Right-click in Discord" body="Add the app, right-click a message, Apps → Red Flag this. Only you see the answer." />
+        <Way
+          title="Forward the email"
+          body={<>Forward any dodgy email to <span className="font-mono text-ink">redflag@homingbox.net</span>. The verdict comes back as a reply in about a minute.</>}
+          cta={{href: 'mailto:redflag@homingbox.net?subject=Is%20this%20a%20scam%3F', label: 'Open in my email'}}
+        />
+        <Way
+          title="Right-click in Discord"
+          body="Add it to your account, then right-click any message → Apps → Red Flag this. Only you see the answer, even in DMs from strangers."
+          cta={{href: `https://discord.com/oauth2/authorize?client_id=${process.env.DISCORD_APPLICATION_ID ?? '1556639934457184256'}`, label: 'Add to Discord'}}
+        />
       </section>
     </main>
   )
@@ -58,11 +81,16 @@ function Fact({n, label}: {n: string; label: string}) {
   )
 }
 
-function Way({title, body}: {title: string; body: React.ReactNode}) {
+function Way({title, body, cta}: {title: string; body: React.ReactNode; cta?: {href: string; label: string}}) {
   return (
-    <div className="rounded-2xl border border-rule bg-sheet p-5">
+    <div className="flex flex-col rounded-2xl border border-rule bg-sheet p-5">
       <h2 className="font-display text-2xl">{title}</h2>
       <p className="mt-1 text-sm leading-relaxed text-ink-2">{body}</p>
+      {cta && (
+        <a href={cta.href} target={cta.href.startsWith('http') ? '_blank' : undefined} rel="noreferrer" className="mt-4 w-fit rounded-full border border-ink px-4 py-1.5 text-sm font-medium hover:bg-ink hover:text-paper">
+          {cta.label}
+        </a>
+      )}
     </div>
   )
 }
