@@ -1,26 +1,142 @@
 @import "tailwindcss";
 
+/* Red Flag: a sheet of paper marked up in red pen. Ink, paper, one red. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --paper: #f5f1e8;
+  --sheet: #fffdf8;
+  --ink: #16130f;
+  --ink-2: #5b554c;
+  --ink-3: #8f887c;
+  --rule: #e4ddcf;
+  --red: #d7261e;
+  --red-wash: #fde3dc;
+  --amber: #b86e00;
+  --amber-wash: #fff0d1;
+  --calm: #2f6b4f;
+  --calm-wash: #e1efe6;
+  --slate: #4a5568;
+  --slate-wash: #e9ecf1;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --paper: #12100d;
+    --sheet: #1c1915;
+    --ink: #f3eee4;
+    --ink-2: #bcb4a6;
+    --ink-3: #847c70;
+    --rule: #332e27;
+    --red: #ff5a4e;
+    --red-wash: #3a1714;
+    --amber: #f0a530;
+    --amber-wash: #33260f;
+    --calm: #6fc79a;
+    --calm-wash: #15291f;
+    --slate: #a9b4c4;
+    --slate-wash: #1f242c;
   }
 }
 
+@theme inline {
+  --color-paper: var(--paper);
+  --color-sheet: var(--sheet);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-red: var(--red);
+  --color-red-wash: var(--red-wash);
+  --color-amber: var(--amber);
+  --color-amber-wash: var(--amber-wash);
+  --color-calm: var(--calm);
+  --color-calm-wash: var(--calm-wash);
+  --color-slate: var(--slate);
+  --color-slate-wash: var(--slate-wash);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-serif);
+  --font-mono: var(--font-mono-jb);
+  --font-hand: var(--font-hand);
+}
+
+html {
+  background: var(--paper);
+}
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+/* Red pen underline that "draws" in when a verdict lands. */
+.pen {
+  background-image: linear-gradient(transparent 58%, color-mix(in oklab, var(--red) 28%, transparent) 58%);
+  background-repeat: no-repeat;
+  background-size: 0% 100%;
+  animation: pen 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+  border-bottom: 2px solid var(--red);
+  padding: 0 1px;
+}
+@keyframes pen {
+  to {
+    background-size: 100% 100%;
+  }
+}
+.pen-num {
+  font-family: var(--font-mono-jb), monospace;
+  font-size: 0.62em;
+  vertical-align: super;
+  color: var(--red);
+  font-weight: 700;
+  margin-left: 1px;
+}
+
+/* Scanning sweep over the message while checks run. */
+.scan {
+  position: relative;
+  overflow: hidden;
+}
+.scan::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, color-mix(in oklab, var(--red) 14%, transparent) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: sweep 1.6s ease-in-out infinite;
+}
+@keyframes sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.rise {
+  animation: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.stamp {
+  animation: stamp 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+@keyframes stamp {
+  from {
+    opacity: 0;
+    transform: scale(1.35) rotate(-4deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pen,
+  .rise,
+  .stamp {
+    animation: none;
+    background-size: 100% 100%;
+  }
+  .scan::after {
+    animation: none;
+  }
 }
