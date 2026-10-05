@@ -26,7 +26,21 @@
     "us_get_money_back": {"name": "Try to get money back", "how": "Contact the bank, payment app, gift card issuer, wire service or crypto exchange you paid through immediately and ask them to reverse the payment", "url": "https://consumer.ftc.gov/articles/what-do-if-you-were-scammed", "source": "FTC"},
     "eu_national_police": {"name": "Report to your national police", "how": "Use your country's online cybercrime reporting site (Europol lists them by country). If your country has no online option, go to your local police station. Call 112 in an emergency.", "url": "https://www.europol.europa.eu/report-a-crime/report-cybercrime-online", "source": "Europol"},
     "eu_europol_guide": {"name": "Europol scam prevention guide", "how": "Advice on common online financial scams (phishing, smishing, tech support, romance, ID theft, SIM swapping)", "url": "https://www.europol.europa.eu/operations-services-and-innovation/public-awareness-and-prevention-guides/take-control-of-your-digital-life", "source": "Europol"},
-    "eu_ecc_net": {"name": "European Consumer Centres Network", "how": "Free help with cross-border purchase disputes inside the EU, Iceland and Norway", "url": "https://www.eccnet.eu/", "source": "ECC-Net"}
+    "eu_ecc_net": {"name": "European Consumer Centres Network", "how": "Free help with cross-border purchase disputes inside the EU, Iceland and Norway", "url": "https://www.eccnet.eu/", "source": "ECC-Net"},
+    "eu_ie_garda": {"name": "Ireland: report to An Garda Síochána", "how": "Report fraud to your local Garda station (Garda station directory on garda.ie). Call 999 or 112 in an emergency.", "url": "https://www.garda.ie/en/crime/fraud/", "source": "An Garda Síochána"},
+    "eu_de_onlinewache": {"name": "Germany: Onlinewache (police online report)", "how": "File a criminal complaint online with the police of the federal state where it happened. Call 110 in an emergency.", "url": "https://portal.onlinewache.polizei.de/de/", "source": "Polizei (Onlinewachen der Länder)"},
+    "eu_de_phishing_radar": {"name": "Germany: Verbraucherzentrale Phishing-Radar", "how": "Forward suspicious emails to phishing@verbraucherzentrale.nrw so the consumer centre can warn others", "url": "https://www.verbraucherzentrale.de/wissen/digitale-welt/phishingradar/phishingradar-aktuelle-warnungen-6059", "source": "Verbraucherzentrale"},
+    "eu_de_bsi": {"name": "Germany: BSI Service Center", "how": "Free IT security advice from the Federal Office for Information Security on 0800 274 1000 or service-center@bsi.bund.de", "url": "https://www.bsi.bund.de/DE/Service-Navi/Kontakt/kontakt_node.html", "source": "BSI"},
+    "eu_fr_17cyber": {"name": "France: 17Cyber", "how": "Online diagnosis and help for cybercrime victims, run by the Police nationale, Gendarmerie nationale and Cybermalveillance.gouv.fr", "url": "https://17cyber.gouv.fr/", "source": "Cybermalveillance.gouv.fr"},
+    "eu_fr_pharos": {"name": "France: PHAROS (internet-signalement.gouv.fr)", "how": "Report illegal online content to PHAROS. Victims of online scams (fake shops, hacked email accounts, extortion) can file an online complaint (THESEE) linked from the site. In an emergency call 17.", "url": "https://www.internet-signalement.gouv.fr/", "source": "Ministère de l'Intérieur"},
+    "eu_fr_33700": {"name": "France: report spam texts and calls to 33700", "how": "Report unwanted SMS or calls on 33700.fr (form or screenshot); reports are passed to phone operators daily", "url": "https://www.33700.fr/", "source": "33700"},
+    "eu_nl_fraudehelpdesk": {"name": "Netherlands: Fraudehelpdesk", "how": "Report fraud online or call 088 786 73 72; forward fake emails via the 'valse e-mail melden' page", "url": "https://www.fraudehelpdesk.nl/fraude-melden/", "source": "Fraudehelpdesk"},
+    "eu_es_incibe_017": {"name": "Spain: INCIBE helpline 017", "how": "Call 017 (free, confidential, 8:00 to 23:00 every day), WhatsApp 900 116 117 or Telegram @INCIBE017", "url": "https://www.incibe.es/linea-de-ayuda-en-ciberseguridad", "source": "INCIBE"},
+    "eu_it_polizia_postale": {"name": "Italy: Polizia Postale online report", "how": "Send an online report (segnalazione) or report a cybercrime on the Commissariato di PS Online", "url": "https://www.commissariatodips.it/segnalazioni/segnala-online/index.html", "source": "Polizia di Stato (Polizia Postale)"},
+    "eu_lt_cert": {"name": "Lithuania: report scam attempts to NKSC (CERT-LT)", "how": "Email scam websites, calls and messages to cert@nksc.lt", "url": "https://policija.lrv.lt/lt/naujienos/pranesk-apie-sukciavima/", "source": "Lietuvos policija"},
+    "eu_lt_epolicija": {"name": "Lithuania: report to police at epolicija.lt", "how": "If you lost money or data, report it to the police through epolicija.lt. Call 112 in an emergency.", "url": "https://policija.lrv.lt/lt/naujienos/pranesk-apie-sukciavima/", "source": "Lietuvos policija"},
+    "eu_pl_cert_8080": {"name": "Poland: forward scam texts to 8080", "how": "Forward the whole suspicious SMS to 8080 (free in Poland). Report emails and websites at incydent.cert.pl or cert@cert.pl.", "url": "https://www.gov.pl/web/baza-wiedzy/dostales-niepokojacy-sms-albo-email-zglos-go-do-cert-polska-csirt-nask", "source": "CERT Polska (NASK)"},
+    "eu_pl_cert_incident": {"name": "Poland: CERT Polska incident report", "how": "Report phishing websites and other incidents online", "url": "https://incydent.cert.pl/", "source": "CERT Polska (NASK)"}
   },
   "UK": {
     "received_only": {
@@ -144,7 +158,7 @@
         "Report the scam to your national cybercrime reporting site if your country has one.",
         "Delete the message."
       ],
-      "channels": ["eu_national_police", "eu_europol_guide"]
+      "channels": ["eu_national_police", "eu_europol_guide", "eu_fr_33700", "eu_pl_cert_8080", "eu_de_phishing_radar", "eu_nl_fraudehelpdesk", "eu_lt_cert", "eu_es_incibe_017"]
     },
     "clicked_link": {
       "steps": [
@@ -153,7 +167,7 @@
         "Update your device and browser.",
         "Report the site or message to your national police reporting service."
       ],
-      "channels": ["eu_national_police"]
+      "channels": ["eu_national_police", "eu_fr_pharos", "eu_fr_17cyber", "eu_es_incibe_017", "eu_nl_fraudehelpdesk", "eu_pl_cert_incident", "eu_lt_cert", "eu_de_bsi"]
     },
     "entered_details": {
       "steps": [
@@ -162,7 +176,7 @@
         "Report to your national police (online where available, or at a police station).",
         "Watch your accounts for unusual activity."
       ],
-      "channels": ["eu_national_police"]
+      "channels": ["eu_national_police", "eu_fr_17cyber", "eu_de_onlinewache", "eu_es_incibe_017", "eu_nl_fraudehelpdesk", "eu_it_polizia_postale", "eu_ie_garda", "eu_lt_epolicija"]
     },
     "paid_money": {
       "steps": [
@@ -171,7 +185,7 @@
         "Keep screenshots, IBANs, wallet addresses and receipts.",
         "If it was a cross-border purchase from a real business, ask the European Consumer Centres Network for help."
       ],
-      "channels": ["eu_national_police", "eu_ecc_net"]
+      "channels": ["eu_national_police", "eu_ecc_net", "eu_de_onlinewache", "eu_fr_17cyber", "eu_it_polizia_postale", "eu_ie_garda", "eu_nl_fraudehelpdesk", "eu_lt_epolicija"]
     },
     "gave_code_or_remote_access": {
       "steps": [
@@ -181,7 +195,7 @@
         "Call your bank to warn them.",
         "Report to your national police."
       ],
-      "channels": ["eu_national_police", "eu_europol_guide"]
+      "channels": ["eu_national_police", "eu_europol_guide", "eu_fr_17cyber", "eu_es_incibe_017", "eu_de_bsi", "eu_nl_fraudehelpdesk"]
     }
   }
 }

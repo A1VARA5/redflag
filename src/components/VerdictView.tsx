@@ -3,7 +3,7 @@
 import {useMemo, useState} from 'react'
 import type {Verdict} from '@/lib/verdict'
 import type {LinkReport} from '@/lib/links'
-import {SITUATIONS, stepsFor, type Region, type Situation} from '@/lib/respond'
+import {SITUATIONS, respondFor, type Region, type Situation} from '@/lib/respond'
 
 const LOOK = {
   scam: {word: 'Scam', sub: 'Do not reply, click or pay.', fg: 'text-red', bg: 'bg-red-wash', ring: 'border-red'},
@@ -45,22 +45,26 @@ function Marked({text, highlights}: {text: string; highlights: Verdict['highligh
 
 const SEV = {high: 'bg-red text-white', medium: 'bg-amber text-white', low: 'bg-rule text-ink', info: 'bg-calm-wash text-calm'} as const
 
-export function LinkPanel({links, pending}: {links: LinkReport[] | null; pending?: boolean}) {
+export function LinkPanel({links, pending, fromImage}: {links: LinkReport[] | null; pending?: boolean; fromImage?: boolean}) {
   if (!links) {
     return (
       <div className="rounded-2xl border border-rule bg-sheet p-5">
-        <Label>Link check</Label>
-        <p className="mt-2 font-mono text-sm text-ink-3">Unwrapping redirects, looking up domain age, checking blocklists…</p>
+        <Label>Hard checks on the links</Label>
+        <p className="mt-2 font-mono text-sm text-ink-3">Google Safe Browsing, 566k-site blocklist, domain age, redirects…</p>
       </div>
     )
   }
   return (
     <div className="rise rounded-2xl border border-rule bg-sheet p-5">
       <div className="flex items-baseline justify-between gap-3">
-        <Label>Link check</Label>
-        <span className="font-mono text-[11px] uppercase tracking-wider text-ink-3">hard evidence · Google Safe Browsing · 566k blocklist · domain age</span>
+        <Label>Hard checks on the links</Label>
+        <span className="font-mono text-[11px] uppercase tracking-wider text-ink-3">hard evidence</span>
       </div>
-      {links.length === 0 && <p className="mt-2 text-sm text-ink-2">No links in this message.{pending ? ' Reading the words now.' : ''}</p>}
+      {links.length === 0 && (
+        <p className="mt-2 text-sm text-ink-2">
+          {pending && fromImage ? 'Reading your screenshot first. Any links in it get checked as soon as it has been read.' : `No links in this message.${pending ? ' Reading the words now.' : ''}`}
+        </p>
+      )}
       <ul className="mt-3 space-y-4">
         {links.map((l) => (
           <li key={l.url} className="min-w-0">
@@ -106,11 +110,14 @@ function Label({children}: {children: React.ReactNode}) {
   return <h3 className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-3">{children}</h3>
 }
 
-export function VerdictView({v, sig, shared = false}: {v: Verdict; sig?: string; shared?: boolean}) {
+export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: string; shared?: boolean; image?: string}) {
   const look = LOOK[v.verdict]
   const [region, setRegion] = useState<Region>(v.region)
   const [situation, setSituation] = useState<Situation>(v.situation)
-  const steps = useMemo(() => stepsFor(region, situation), [region, situation])
+  const {steps, report} = useMemo(
+    () => respondFor(region, situation, {text: v.text, impersonating: v.impersonating, pattern: v.pattern_id, source: v.source, hasLinks: v.links.length > 0}),
+    [region, situation, v],
+  )
   const [copied, setCopied] = useState(false)
   // Margin notes follow the order the marks appear in the message; unmatched flags go last.
   const flags = v.red_flags
@@ -164,7 +171,13 @@ export function VerdictView({v, sig, shared = false}: {v: Verdict; sig?: string;
             <Label>{v.inputHadImage ? 'Text read from your screenshot' : 'The message'}</Label>
             {v.impersonating && <span className="rounded-full bg-red-wash px-2.5 py-0.5 text-xs font-medium text-red">pretending to be {v.impersonating}</span>}
           </div>
-          <Marked text={v.text} highlights={v.highlights} />
+          <div className={image ? 'grid gap-5 sm:grid-cols-[1fr_150px]' : ''}>
+            <Marked text={v.text} highlights={v.highlights} />
+            {image && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={image} alt="Your screenshot" className="hidden max-h-72 w-full rounded-xl border border-rule object-contain object-top sm:block" />
+            )}
+          </div>
         </div>
         <ol className="space-y-3">
           {flags.length === 0 && <li className="text-sm text-ink-2">No warning signs marked.</li>}
@@ -233,7 +246,7 @@ export function VerdictView({v, sig, shared = false}: {v: Verdict; sig?: string;
         <div className="rise rounded-2xl bg-ink p-5 text-paper sm:p-6" style={{animationDelay: '240ms'}}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="font-display text-3xl">What to do now</h3>
-            <div className="flex gap-1 rounded-full bg-white/10 p-1 text-xs">
+            <div className="flex gap-1 rounded-full bg-paper/10 p-1 text-xs">
               {(['UK', 'US', 'EU'] as Region[]).map((r) => (
                 <button key={r} onClick={() => setRegion(r)} className={`rounded-full px-3 py-1 ${region === r ? 'bg-paper text-ink' : 'text-paper/80'}`}>
                   {r}
@@ -246,7 +259,7 @@ export function VerdictView({v, sig, shared = false}: {v: Verdict; sig?: string;
               <button
                 key={s.id}
                 onClick={() => setSituation(s.id)}
-                className={`rounded-full border px-3 py-1 text-sm ${situation === s.id ? 'border-paper bg-paper text-ink' : 'border-white/25 text-paper/85 hover:border-white/60'}`}
+                className={`rounded-full border px-3 py-1 text-sm ${situation === s.id ? 'border-paper bg-paper text-ink' : 'border-paper/30 text-paper/85 hover:border-paper/70'}`}
               >
                 {s.label}
               </button>
@@ -256,18 +269,23 @@ export function VerdictView({v, sig, shared = false}: {v: Verdict; sig?: string;
             {steps.map((s, i) => (
               <li key={i} className="flex gap-3">
                 <span className="font-mono text-sm text-paper/50">{String(i + 1).padStart(2, '0')}</span>
-                <span className="leading-snug">
-                  {s.url ? (
-                    <a href={s.url} target="_blank" rel="noreferrer" className="underline decoration-white/40 underline-offset-4">
-                      {s.text}
-                    </a>
-                  ) : (
-                    s.text
-                  )}
-                </span>
+                <span className="leading-snug">{s}</span>
               </li>
             ))}
           </ol>
+          {report.length > 0 && (
+            <>
+              <div className="mt-6 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-paper/60">Report it</div>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {report.map((c) => (
+                  <a key={c.id} href={c.url} target="_blank" rel="noreferrer" className="group rounded-xl border border-paper/20 p-3 hover:border-paper/60">
+                    <div className="font-semibold leading-snug group-hover:underline">{c.name} ↗</div>
+                    <div className="mt-0.5 text-sm leading-snug text-paper/75">{c.how}</div>
+                  </a>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
 

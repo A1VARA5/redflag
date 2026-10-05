@@ -232,7 +232,7 @@ export function Checker() {
                 </li>
               ))}
             </ol>
-            <LinkPanel links={links} pending />
+            <LinkPanel links={links} pending fromImage={Boolean(img)} />
           </div>
         )}
         {phase === 'error' && (
@@ -242,7 +242,7 @@ export function Checker() {
             <p className="mt-2 text-sm text-ink-2">If you are worried about it right now: do not click, reply or pay. Contact the company yourself using a number or app you already trust.</p>
           </div>
         )}
-        {result && <VerdictView v={result.v} sig={result.sig} />}
+        {result && <VerdictView v={result.v} sig={result.sig} image={result.v.inputHadImage ? img?.preview : undefined} />}
       </div>
     </div>
   )
