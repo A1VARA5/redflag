@@ -1,21 +1,18 @@
-MIT License
+Copyright (c) 2026 Aivaras Navardauskas. All rights reserved.
 
-Copyright (c) 2026 Aivaras Navardauskas
+This repository is public so that ForgeHacks 2026 judges and other readers can
+see and evaluate how Red Flag works. Being able to read it does not give you
+permission to use it.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+No licence is granted. You may not copy, modify, merge, publish, distribute,
+sublicense, host, sell, or otherwise use this software, its knowledge base
+(src/data), its test set (eval/), its design, or any part of them, for any
+purpose, without prior written permission from the copyright holder.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+The only exceptions are the rights GitHub's Terms of Service give every user
+of a public repository (viewing it and forking it on GitHub).
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Third-party data and services referenced by this project (blocklists, official
+guidance, APIs, fonts) remain under their own owners' terms.
+
+For permission, contact: aivarasnavardauskas92@gmail.com

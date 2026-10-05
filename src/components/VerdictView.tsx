@@ -58,7 +58,7 @@ export function LinkPanel({links, pending}: {links: LinkReport[] | null; pending
     <div className="rise rounded-2xl border border-rule bg-sheet p-5">
       <div className="flex items-baseline justify-between gap-3">
         <Label>Link check</Label>
-        <span className="font-mono text-[11px] uppercase tracking-wider text-ink-3">no AI · DNS · RDAP · blocklists</span>
+        <span className="font-mono text-[11px] uppercase tracking-wider text-ink-3">hard evidence · 566k blocklist · domain age · redirects</span>
       </div>
       {links.length === 0 && <p className="mt-2 text-sm text-ink-2">No links in this message.{pending ? ' Reading the words now.' : ''}</p>}
       <ul className="mt-3 space-y-4">

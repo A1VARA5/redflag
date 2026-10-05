@@ -27,7 +27,7 @@ export default async function Home() {
           Not sure about a message? <span className="text-red">Show it to Red Flag.</span>
         </h1>
         <p className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-2">
-          It marks the exact words that give a scam away, checks every link without guessing, and tells you what to do in the next ten minutes. Free, no account, nothing saved unless you share it.
+          AI reads the message or your screenshot and marks the exact words that give a scam away. Hard checks on every link back it up, against 566,000 known phishing sites. Then it tells you what to do in the next ten minutes. Free, no account, nothing saved unless you share it.
         </p>
       </section>
 

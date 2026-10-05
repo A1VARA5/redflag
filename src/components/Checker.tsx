@@ -9,7 +9,7 @@ import {LinkPanel, VerdictView} from './VerdictView'
 type Img = {mediaType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif'; data: string; preview: string}
 type Phase = 'idle' | 'checking' | 'done' | 'error'
 
-const STAGES = ['Reading the message', 'Checking links without AI', 'Comparing with known scams', 'Marking it up']
+const STAGES = ['AI reading the message', 'Hard checks on every link', 'Comparing with 30 known scams', 'Marking it up']
 
 async function fileToImg(file: File): Promise<Img | null> {
   if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) return null
@@ -73,10 +73,20 @@ export function Checker() {
     return () => clearInterval(t)
   }, [phase])
 
-  async function run(override?: string) {
-    const body = {text: override ?? text, image: override ? null : img ? {mediaType: img.mediaType, data: img.data} : null, region}
+  async function runSampleImage() {
+    const blob = await (await fetch('/sample-sms')).blob()
+    const sample = await fileToImg(new File([blob], 'sample.png', {type: 'image/png'}))
+    if (!sample) return
+    setText('')
+    setImg(sample)
+    run(undefined, sample)
+  }
+
+  async function run(override?: string, imgOverride?: Img) {
+    const useImg = imgOverride ?? (override !== undefined ? null : img)
+    const body = {text: override ?? (imgOverride ? '' : text), image: useImg ? {mediaType: useImg.mediaType, data: useImg.data} : null, region}
     if (!body.text.trim() && !body.image) return
-    if (override !== undefined) {
+    if (override !== undefined && !imgOverride) {
       setText(override)
       setImg(null)
     }
@@ -201,6 +211,9 @@ export function Checker() {
 
       <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
         <span className="text-ink-3">Try one:</span>
+        <button disabled={busy} onClick={runSampleImage} className="rounded-full bg-red-wash px-3 py-1 font-medium text-red ring-1 ring-red/40 hover:ring-red disabled:opacity-40">
+          📱 Screenshot of a text
+        </button>
         {SAMPLES.map((s) => (
           <button key={s.label} disabled={busy} onClick={() => run(s.text)} className="rounded-full bg-sheet px-3 py-1 text-ink-2 ring-1 ring-rule hover:ring-ink disabled:opacity-40">
             {s.label}

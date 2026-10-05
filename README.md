@@ -92,4 +92,6 @@ Next.js 16 (App Router) on Vercel with Blob (private) and Cron · Anthropic Type
 
 Built during ForgeHacks 2026 (Oct 5 to 10) by Aivaras Navardauskas, with Claude Code as a coding assistant. All example messages are made up. The commit history and `BUILD-LOG.md` show the build day by day.
 
-MIT licence.
+## Licence
+
+All rights reserved. The code is public for judging and reading only; no permission is given to copy, host or reuse it, or its knowledge base and test set. See [LICENSE](LICENSE).

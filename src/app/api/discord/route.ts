@@ -64,7 +64,7 @@ export async function POST(req: Request) {
               color: COLOR[v.verdict],
               fields: [
                 ...(v.red_flags.length ? [{name: 'Warning signs', value: v.red_flags.slice(0, 5).map((f, n) => `${n + 1}. "${f.quote}" ${f.why}`).join('\n').slice(0, 1024)}] : []),
-                ...(links.length ? [{name: 'Link check (no AI)', value: links.join('\n').slice(0, 1024)}] : []),
+                ...(links.length ? [{name: 'Hard checks on the links', value: links.join('\n').slice(0, 1024)}] : []),
                 ...(v.overrides.length ? [{name: 'Checks overruled the AI', value: v.overrides.join(' ').slice(0, 1024)}] : []),
                 {name: 'Check it yourself', value: v.check_it_yourself.slice(0, 1024)},
               ],

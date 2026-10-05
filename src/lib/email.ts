@@ -101,7 +101,7 @@ export function renderReply(v: Verdict, url: string): {text: string; html: strin
     '',
     v.red_flags.length ? 'Warning signs:' : '',
     ...v.red_flags.map((f, i) => `${i + 1}. "${f.quote}": ${f.why}`),
-    linkFlags.length ? '\nLink check (no AI):' : '',
+    linkFlags.length ? '\nHard checks on the links:' : '',
     ...linkFlags.map((f) => `- ${f}`),
     v.overrides.length ? `\n${v.overrides.join(' ')}` : '',
     '',
@@ -142,7 +142,7 @@ ${v.red_flags
 ${
   linkFlags.length
     ? `<div style="margin-top:16px;background:#fffdf8;border:1px solid #e4ddcf;border-radius:14px;padding:18px">
-<div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8f887c;font-weight:600">Link check (no AI)</div>
+<div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8f887c;font-weight:600">Hard checks on the links</div>
 ${linkFlags.map((f) => `<div style="font-size:14px;margin-top:8px;font-family:Consolas,monospace">${esc(f)}</div>`).join('')}
 </div>`
     : ''

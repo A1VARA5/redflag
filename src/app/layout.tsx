@@ -13,7 +13,7 @@ const url = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
 export const metadata: Metadata = {
   metadataBase: new URL(url),
   title: 'Red Flag: is this message a scam?',
-  description: 'Paste it, screenshot it or forward it. Red Flag marks the exact words that give a scam away, checks every link without AI, and tells you what to do next.',
+  description: 'Paste it, screenshot it or forward it. Red Flag marks the exact words that give a scam away, has AI read the message or screenshot, backs it with hard checks on every link, and tells you what to do next.',
   openGraph: {title: 'Red Flag', description: 'Is this message a scam? Get a marked-up answer in seconds.', type: 'website'},
 }
 

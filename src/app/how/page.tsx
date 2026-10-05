@@ -29,12 +29,12 @@ function Diagram() {
         <text x="320" y="48" fontFamily="var(--font-mono-jb)" fontSize="12" fill="var(--ink-3)">ONE CHECK PIPELINE</text>
 
         <rect x="320" y="64" width="380" height="88" rx="12" className={box} strokeWidth="1.5" />
-        <text x="336" y="90" fontWeight="600">1 · Link forensics (no AI)</text>
+        <text x="336" y="90" fontWeight="600">1 · Hard checks on every link</text>
         <text x="336" y="112" fontSize="12.5" fill="var(--ink-2)">redirect unwrapping · RDAP domain age · punycode</text>
         <text x="336" y="132" fontSize="12.5" fill="var(--ink-2)">look-alike brands · 5 blocklists (560k+ sites) · risky TLDs</text>
 
         <rect x="320" y="166" width="380" height="88" rx="12" className={box} strokeWidth="1.5" />
-        <text x="336" y="192" fontWeight="600">2 · Claude Opus 5.5 (structured output)</text>
+        <text x="336" y="192" fontWeight="600">2 · AI reads it: Claude Opus 5.5</text>
         <text x="336" y="214" fontSize="12.5" fill="var(--ink-2)">reads text or screenshot · 30 known patterns in context</text>
         <text x="336" y="234" fontSize="12.5" fill="var(--ink-2)">exact quotes to highlight · message treated as untrusted</text>
 
@@ -80,7 +80,7 @@ export default function How() {
 
       <h1 className="pt-8 font-display text-6xl leading-[1.02]">How it works</h1>
       <p className="mt-4 max-w-2xl text-lg text-ink-2">
-        Most scam checkers are a chatbot with a verdict. Red Flag shows its working: it marks the exact words that give a scam away, and every link is checked by plain code that can overrule the AI.
+        Two layers. AI (Claude) reads the message or screenshot like a careful friend would and marks the exact words that give a scam away. Hard checks on every link (blocklists, domain age, look-alike brands) back it up, and can overrule the AI when it is too trusting.
       </p>
 
       <div className="mt-10 rounded-2xl border border-rule bg-sheet p-4">
@@ -102,7 +102,7 @@ export default function How() {
 
       <H>What doesn&apos;t work (yet)</H>
       <ul className="mt-3 list-disc space-y-2 pl-5 leading-relaxed text-ink-2">
-        <li>Phone calls and voice notes. AI voice-clone scams are in the knowledge base, but Red Flag can only judge text and images.</li>
+        <li>Phone calls and voice notes. Red Flag reads text and screenshots (Claude vision), not audio, so AI voice-clone calls can only be checked from what you type in about them.</li>
         <li>Brand-new phishing domains that aren&apos;t on a blocklist and don&apos;t use a brand name rely on the AI reading the message.</li>
         <li>Email replies can land in spam, because the sending domain is new. The verdict is always on the web too, via the link in the reply.</li>
         <li>The email channel is limited to 20 replies a day on the current mail plan.</li>
