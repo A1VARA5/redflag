@@ -198,6 +198,11 @@ export function VerdictView({v, sig, shared = false}: {v: Verdict; sig?: string;
         <div className="rise rounded-2xl border border-rule bg-sheet p-5" style={{animationDelay: '160ms'}}>
           <Label>What's going on</Label>
           {v.pattern && <div className="mt-2 font-display text-3xl leading-tight">{v.pattern.name}</div>}
+          {v.trending && (
+            <a href="/radar" className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-red px-2.5 py-0.5 text-xs font-semibold text-white">
+              ● {v.trending.status === 'new' ? 'New this week' : v.trending.status === 'rising' ? 'Rising this week' : 'Doing the rounds this week'}
+            </a>
+          )}
           <p className="mt-2 leading-relaxed text-ink-2">{v.summary}</p>
           {v.pattern?.aiAngle && <p className="mt-2 text-sm text-ink-2"><span className="font-semibold text-ink">Why it's getting worse: </span>{v.pattern.aiAngle}</p>}
           {v.pattern && v.pattern.sources.length > 0 && (

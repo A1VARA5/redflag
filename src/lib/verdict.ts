@@ -4,6 +4,7 @@ import * as z from 'zod/v4'
 import patterns from '@/data/patterns.json'
 import {stepsFor, type Region, type Situation} from './respond'
 import {inspectAll, type LinkReport} from './links'
+import {latestRadar} from './radar'
 
 export const MODEL = process.env.REDFLAG_MODEL ?? 'claude-opus-5-5'
 
@@ -63,6 +64,7 @@ export type Verdict = ModelVerdictT & {
   steps: {text: string; url?: string}[]
   ms: number
   inputHadImage: boolean
+  trending: {title: string; status: string} | null
 }
 
 const SYSTEM = `You are Red Flag, a scam checker. People paste, forward or screenshot messages they are unsure about. You decide whether it is a scam, show exactly which words give it away, and say what to do.
@@ -185,6 +187,8 @@ export async function check(input: CheckInput): Promise<Verdict> {
   const shownText = text || mv.transcript || ''
   const {verdict, confidence, overrides} = applyOverrides(mv, allLinks)
   const pattern = PATTERNS.find((p) => p.id === mv.pattern_id) ?? null
+  const radar = pattern ? await latestRadar().catch(() => null) : null
+  const hot = radar?.scams.find((s) => s.pattern_id === pattern?.id)
 
   return {
     ...mv,
@@ -204,5 +208,6 @@ export async function check(input: CheckInput): Promise<Verdict> {
     steps: verdict === 'safe' ? [] : stepsFor(region, situation),
     ms: Date.now() - t0,
     inputHadImage: Boolean(input.image),
+    trending: hot ? {title: hot.title, status: hot.status} : null,
   }
 }
