@@ -5,6 +5,8 @@ import patterns from '@/data/patterns.json'
 import {stepsFor, type Region, type Situation} from './respond'
 import {inspectAll, type LinkReport} from './links'
 import {latestRadar} from './radar'
+import {overBudget, record} from './meter'
+import {askBackup, BACKUP_MODEL} from './backup'
 
 export const MODEL = process.env.REDFLAG_MODEL ?? 'claude-opus-5-5'
 
@@ -65,6 +67,7 @@ export type Verdict = ModelVerdictT & {
   ms: number
   inputHadImage: boolean
   trending: {title: string; status: string} | null
+  engine: 'claude' | 'backup'
 }
 
 const SYSTEM = `You are Red Flag, a scam checker. People paste, forward or screenshot messages they are unsure about. You decide whether it is a scam, show exactly which words give it away, and say what to do.
@@ -125,6 +128,32 @@ function applyOverrides(v: ModelVerdictT, links: LinkReport[]): {verdict: ModelV
   return {verdict, confidence, overrides}
 }
 
+// Open models are looser with JSON: clamp and default fields before validating.
+function normaliseBackup(raw: unknown): unknown {
+  const o = (raw ?? {}) as Record<string, unknown>
+  const kinds = new Set<string>(FLAG_KINDS)
+  const arr = (x: unknown) => (Array.isArray(x) ? x : [])
+  return {
+    verdict: ['scam', 'suspicious', 'safe', 'unclear'].includes(String(o.verdict)) ? o.verdict : 'unclear',
+    confidence: Math.max(0, Math.min(100, Math.round(Number(o.confidence) || 50))),
+    headline: String(o.headline ?? 'Checked by the backup model.'),
+    summary: String(o.summary ?? o.headline ?? ''),
+    pattern_id: typeof o.pattern_id === 'string' && PATTERNS.some((p) => p.id === o.pattern_id) ? o.pattern_id : null,
+    impersonating: typeof o.impersonating === 'string' && o.impersonating ? o.impersonating : null,
+    red_flags: arr(o.red_flags)
+      .slice(0, 6)
+      .map((f) => {
+        const r = (f ?? {}) as Record<string, unknown>
+        return {quote: String(r.quote ?? ''), kind: kinds.has(String(r.kind)) ? r.kind : 'other', why: String(r.why ?? '')}
+      })
+      .filter((f) => f.quote),
+    good_signs: arr(o.good_signs).slice(0, 3).map(String),
+    transcript: typeof o.transcript === 'string' && o.transcript ? o.transcript : null,
+    check_it_yourself: String(o.check_it_yourself ?? 'Contact the company or person yourself using details you already trust.'),
+    injection_attempt: Boolean(o.injection_attempt),
+  }
+}
+
 export type CheckInput = {
   text: string
   image?: {mediaType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif'; data: string} | null
@@ -149,34 +178,51 @@ export async function check(input: CheckInput): Promise<Verdict> {
         .join('\n')
     : 'No links found in the text.'
 
-  const content: Anthropic.Beta.BetaContentBlockParam[] = []
-  if (input.image) content.push({type: 'image', source: {type: 'base64', media_type: input.image.mediaType, data: input.image.data}})
-  content.push({
-    type: 'text',
-    text: [
-      `Reader's region: ${region}. What they have done so far: ${situation.replace(/_/g, ' ')}.`,
-      input.image ? 'A screenshot is attached. Read all text in it into transcript and judge the screenshot.' : '',
-      `<link_forensics>\n${forensics}\n</link_forensics>`,
-      input.extraSignals ? `<mail_signals>\n${input.extraSignals}\n</mail_signals>` : '',
-      `<suspicious_message>\n${text || '(no text, see screenshot)'}\n</suspicious_message>`,
-    ]
-      .filter(Boolean)
-      .join('\n\n'),
-  })
+  const userText = [
+    `Reader's region: ${region}. What they have done so far: ${situation.replace(/_/g, ' ')}.`,
+    input.image ? 'A screenshot is attached. Read all text in it into transcript and judge the screenshot.' : '',
+    `<link_forensics>\n${forensics}\n</link_forensics>`,
+    input.extraSignals ? `<mail_signals>\n${input.extraSignals}\n</mail_signals>` : '',
+    `<suspicious_message>\n${text || '(no text, see screenshot)'}\n</suspicious_message>`,
+  ]
+    .filter(Boolean)
+    .join('\n\n')
 
-  const res = await client.beta.messages.parse({
-    model: MODEL,
-    max_tokens: 4000,
-    betas: ['server-side-fallback-2026-07-01'],
-    fallbacks: 'default',
-    output_config: {effort: 'low', format: betaZodOutputFormat(ModelVerdict)},
-    system: [{type: 'text', text: SYSTEM, cache_control: {type: 'ephemeral'}}],
-    messages: [{role: 'user', content}],
-  })
-  if (res.stop_reason === 'refusal' || !res.parsed_output) {
-    throw new Error(res.stop_reason === 'refusal' ? 'The model declined to analyse this message.' : 'Could not read the model output.')
+  // Claude first. If it fails, refuses, or today's budget is spent, the open backup model reads it instead.
+  let mv: ModelVerdictT | null = null
+  let modelName = MODEL
+  let engine: Verdict['engine'] = 'claude'
+  if (!overBudget()) {
+    try {
+      const content: Anthropic.Beta.BetaContentBlockParam[] = []
+      if (input.image) content.push({type: 'image', source: {type: 'base64', media_type: input.image.mediaType, data: input.image.data}})
+      content.push({type: 'text', text: userText})
+      const res = await client.beta.messages.parse({
+        model: MODEL,
+        max_tokens: 4000,
+        betas: ['server-side-fallback-2026-07-01'],
+        fallbacks: 'default',
+        output_config: {effort: 'low', format: betaZodOutputFormat(ModelVerdict)},
+        system: [{type: 'text', text: SYSTEM, cache_control: {type: 'ephemeral'}}],
+        messages: [{role: 'user', content}],
+      })
+      record(res.usage)
+      if (res.stop_reason !== 'refusal' && res.parsed_output) {
+        mv = res.parsed_output
+        modelName = res.model
+      }
+    } catch (e) {
+      console.error('[claude] falling back:', e instanceof Error ? e.message : e)
+    }
   }
-  const mv = res.parsed_output
+  if (!mv) {
+    const raw = await askBackup(SYSTEM, userText, input.image ?? null)
+    const parsed = ModelVerdict.safeParse(normaliseBackup(raw))
+    if (!parsed.success) throw new Error('Could not read this message right now. Please try again in a minute.')
+    mv = parsed.data
+    modelName = BACKUP_MODEL
+    engine = 'backup'
+  }
 
   // Screenshot links only appear in the transcript, so run forensics on those too.
   let allLinks = links
@@ -196,7 +242,8 @@ export async function check(input: CheckInput): Promise<Verdict> {
     confidence,
     id: crypto.randomUUID().replace(/-/g, '').slice(0, 12),
     createdAt: new Date().toISOString(),
-    model: res.model,
+    model: modelName,
+    engine,
     region,
     situation,
     source: input.source ?? 'web',

@@ -45,7 +45,8 @@ As soon as a link appears in the box, it is checked in about a second. In the fu
           |                  registry RDAP domain age, 141 brands' real domains, redirects, urlscan sandbox
           |                  results stream to the page first
           v
- 2. Claude Opus 5.5          reads the text or screenshot as untrusted data, structured output:
+ 2. Claude Opus 5.5          reads the text or screenshot as untrusted data, structured output
+          |                  (backup: Qwen3-VL on Featherless if Claude fails or the daily budget is spent):
           |                  verdict, exact quotes to mark, which of 36 known scam types
           v
  3. Evidence beats opinion   known bad link -> scam; fake brand address -> never "safe";
@@ -108,7 +109,8 @@ npm run dev
 | `AGENTBOXD_API_KEY`, `AGENTBOXD_INBOX_ID`, `AGENTBOXD_WEBHOOK_SECRET` | email channel |
 | `DISCORD_APPLICATION_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_BOT_TOKEN` | Discord app (`npx tsx scripts/register-discord.mts`) |
 | `CRON_SECRET` | daily blocklist and radar jobs |
-| `FEATHERLESS_API_KEY` | only for the baseline model in the test runner |
+| `FEATHERLESS_API_KEY` | backup reader and the baseline model in the test runner |
+| `REDFLAG_DAILY_USD` | daily Claude budget before switching to the backup (default 6) |
 
 ## Stack
 
@@ -116,7 +118,7 @@ Next.js 16 on Vercel (private Blob storage, Cron) · Anthropic TypeScript SDK wi
 
 ## Credits and references
 
-- Claude Opus 5.5 (Anthropic). Baseline model in the test: Qwen2.5-72B-Instruct via Featherless AI.
+- Claude Opus 5.5 (Anthropic). Backup reader: Qwen3-VL-30B-A3B-Instruct via Featherless AI, used automatically when Claude is unavailable or the daily Claude budget (`REDFLAG_DAILY_USD`, default $6) is spent. Baseline model in the test: Qwen2.5-72B-Instruct via Featherless AI.
 - Google Safe Browsing Lookup API v4, VirusTotal API v3, urlscan.io API.
 - Phishing lists: OpenPhish, PhishTank, URLhaus (abuse.ch), Phishing.Database, Phishing Army. Official brand domains are never blocked whole even when a list includes them; on shared platforms only exact URLs are matched.
 - Agentboxd (email inbox, webhooks, phishing and injection scores).

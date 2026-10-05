@@ -295,7 +295,8 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
         </button>
       </div>
       <p className="text-[13px] text-ink-3">
-        Checked {new Date(v.createdAt).toLocaleString('en-GB', {dateStyle: 'medium', timeStyle: 'short'})} in {(v.ms / 1000).toFixed(1)}s.{shared ? '' : ' Not stored unless you share it.'}
+        Checked {new Date(v.createdAt).toLocaleString('en-GB', {dateStyle: 'medium', timeStyle: 'short'})} in {(v.ms / 1000).toFixed(1)}s, read by{' '}
+        {v.engine === 'backup' ? 'the backup model (Qwen3-VL, open source, on Featherless)' : 'Claude (Anthropic)'}.{shared ? '' : ' Not stored unless you share it.'}
       </p>
     </section>
   )

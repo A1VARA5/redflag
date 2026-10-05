@@ -126,7 +126,7 @@ export default async function How() {
 
       <Section title="Built with">
         <ul className="list-disc space-y-1.5 pl-5">
-          <li>Claude Opus 5.5 by Anthropic, for reading messages and screenshots.</li>
+          <li>Claude Opus 5.5 by Anthropic, for reading messages and screenshots. If Claude is unavailable or the day&apos;s budget is used up, an open-source backup model (Qwen3-VL on Featherless AI) reads the message instead, and the result says which one was used.</li>
           <li>Google Safe Browsing API, VirusTotal API, urlscan.io API; OpenPhish, PhishTank, URLhaus, Phishing.Database and Phishing Army; registry RDAP via IANA.</li>
           <li>Agentboxd for the email inbox; Discord interactions for the Discord app.</li>
           <li>Weekly scam reports from the FTC, FBI IC3, NCSC, FCA, GOV.UK, Which?, Europol, CISA and r/Scams.</li>
