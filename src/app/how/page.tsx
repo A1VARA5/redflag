@@ -31,7 +31,7 @@ function Diagram() {
         <rect x="320" y="64" width="380" height="88" rx="12" className={box} strokeWidth="1.5" />
         <text x="336" y="90" fontWeight="600">1 · Link forensics (no AI)</text>
         <text x="336" y="112" fontSize="12.5" fill="var(--ink-2)">redirect unwrapping · RDAP domain age · punycode</text>
-        <text x="336" y="132" fontSize="12.5" fill="var(--ink-2)">look-alike brands (60) · OpenPhish blocklist · risky TLDs</text>
+        <text x="336" y="132" fontSize="12.5" fill="var(--ink-2)">look-alike brands · 5 blocklists (560k+ sites) · risky TLDs</text>
 
         <rect x="320" y="166" width="380" height="88" rx="12" className={box} strokeWidth="1.5" />
         <text x="336" y="192" fontWeight="600">2 · Claude Opus 5.5 (structured output)</text>
@@ -114,7 +114,7 @@ export default function How() {
       <ul className="mt-3 space-y-1.5 text-sm leading-relaxed text-ink-2">
         <li>Verdicts: Claude Opus 5.5 by Anthropic (Anthropic TypeScript SDK, structured outputs). Baseline in the test: Qwen2.5-72B-Instruct via Featherless AI.</li>
         <li>Email inbox, webhook and phishing/injection scores: Agentboxd.</li>
-        <li>Phishing blocklist: OpenPhish community feed. Domain ages: RDAP via rdap.org. Domain parsing: tldts.</li>
+        <li>Phishing blocklists, combined daily into one list of 560,000+ sites and links: OpenPhish, PhishTank, URLhaus (abuse.ch), Phishing.Database, Phishing Army. Real brand domains are never blocked even if a feed lists them. Domain ages: RDAP via rdap.org. Domain parsing: tldts.</li>
         <li>Radar sources: FTC Consumer Alerts and press releases, FBI IC3, NCSC, FCA, GOV.UK, Which?, Europol, CISA, r/Scams (public RSS).</li>
         <li>Scam patterns and what-to-do steps cite official sources on each card: Report Fraud (formerly Action Fraud), NCSC, FCA, HMRC, Royal Mail, FTC, FBI IC3, CISA, Europol, Discord, Steam, Apple, PayPal and others.</li>
         <li>Built with Next.js on Vercel (Blob, Cron). Fonts: Instrument Serif, Inter, JetBrains Mono, Caveat (Google Fonts).</li>

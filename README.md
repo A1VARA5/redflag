@@ -25,7 +25,7 @@ Built for ForgeHacks 2026, AI + Cybersecurity track: *help people recognise, pre
  web / email / Discord
           │
           ▼
- 1. Link forensics (no AI)  ── redirects, RDAP age, 60 brands' real domains, punycode, OpenPhish, risky TLDs
+ 1. Link forensics (no AI)  ── redirects, RDAP age, brands' real domains, punycode, 560k-entry blocklist, risky TLDs
           │  streamed to the page first
           ▼
  2. Claude Opus 5.5         ── structured output: verdict, exact quotes, pattern from a 30-pattern knowledge base
@@ -78,13 +78,14 @@ npm run dev
 
 ## Stack
 
-Next.js 16 (App Router) on Vercel with Blob (private) and Cron · Anthropic TypeScript SDK, Claude Opus 5.5 with structured outputs and server-side refusal fallbacks · Agentboxd for the inbox · Discord HTTP interactions · tldts · RDAP · OpenPhish.
+Next.js 16 (App Router) on Vercel with Blob (private) and Cron · Anthropic TypeScript SDK, Claude Opus 5.5 with structured outputs and server-side refusal fallbacks · Agentboxd for the inbox · Discord HTTP interactions · tldts · RDAP · OpenPhish, PhishTank, URLhaus, Phishing.Database, Phishing Army.
 
 ## Credits and references
 
 - Claude Opus 5.5 (Anthropic); baseline Qwen2.5-72B-Instruct via Featherless AI.
 - Agentboxd (email inbox, webhooks, phishing/injection scoring).
-- OpenPhish community feed; RDAP via rdap.org; tldts.
+- Phishing blocklists (combined daily, ~566k entries in 64 hashed shards): OpenPhish, PhishTank, URLhaus (abuse.ch), Phishing.Database, Phishing Army. Official brand domains are never blocked whole, and on shared platforms (docs.google.com, dropbox.com, bit.ly) only exact URLs are matched.
+- RDAP via rdap.org; tldts.
 - Radar sources: FTC Consumer Alerts and press releases, FBI IC3, NCSC, FCA, GOV.UK, Which?, Europol, CISA, r/Scams.
 - Pattern and response sources are listed per entry in `src/data/patterns.json` and `src/data/respond.json`.
 - Fonts: Instrument Serif, Inter, JetBrains Mono, Caveat (Google Fonts).
