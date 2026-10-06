@@ -19,7 +19,7 @@ export default async function Home() {
         <div className="mx-auto w-full max-w-6xl px-4 pt-12 pb-14 sm:px-6 sm:pt-16">
           <h1 className="max-w-3xl text-[34px] font-bold leading-[1.12] tracking-tight text-ink sm:text-[46px]">Got a message that doesn&apos;t feel right? Check it before you click.</h1>
           <p className="mt-4 max-w-3xl text-lg leading-relaxed text-ink-2">
-            Paste a text, email or DM, or add a screenshot. Red Flag shows you the exact words that give a scam away, checks every link, and tells you what to do next.
+            Paste a text, email or DM, or add a screenshot or PDF. Red Flag shows you the exact words that give a scam away, checks every link, and tells you what to do next.
           </p>
           <div className="mt-8">
             <Checker blocklistSize={blocklistSize} patternCount={(patterns as unknown[]).length} />
@@ -68,7 +68,7 @@ export default async function Home() {
         <h2 className="text-2xl font-bold tracking-tight">Check it wherever it arrives</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           <Way icon={<ImageIcon className="h-5 w-5" />} title="On this page">
-            Paste the words, or add a screenshot of a text or WhatsApp. Works on your phone too.
+            Paste the words, or add a screenshot of a text or WhatsApp, or a PDF invoice. QR codes in screenshots are read too. Works on your phone.
           </Way>
           <Way icon={<Mail className="h-5 w-5" />} title="By email" cta={{href: 'mailto:redflag@homingbox.net?subject=Is%20this%20a%20scam%3F', label: 'Forward an email'}}>
             Forward the suspicious email to <span className="font-medium text-ink">redflag@homingbox.net</span>. The result comes back as a reply within a minute or two.

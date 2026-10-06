@@ -14,6 +14,18 @@ type Img = {
   preview: string
 }
 type Phase = 'idle' | 'checking' | 'done' | 'error'
+type Doc = {name: string; data: string}
+
+const MAX_PDF = 3 * 1024 * 1024
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((res, rej) => {
+    const r = new FileReader()
+    r.onload = () => res(String(r.result).split(',')[1])
+    r.onerror = () => rej(r.error)
+    r.readAsDataURL(file)
+  })
+}
 
 async function fileToImg(file: File): Promise<Img | null> {
   if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) return null
@@ -61,6 +73,8 @@ function Step({state, children}: {state: 'done' | 'active' | 'todo'; children: R
 export function Checker({blocklistSize, patternCount}: {blocklistSize: string; patternCount: number}) {
   const [text, setText] = useState('')
   const [img, setImg] = useState<Img | null>(null)
+  const [doc, setDoc] = useState<Doc | null>(null)
+  const [fileNote, setFileNote] = useState<string | null>(null)
   const [region, setRegion] = useState<'UK' | 'US' | 'EU'>('UK')
   const [phase, setPhase] = useState<Phase>('idle')
   const [links, setLinks] = useState<LinkReport[] | null>(null)
@@ -110,6 +124,28 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
     return () => clearInterval(t)
   }, [phase])
 
+  // Screenshots go to the AI as images; PDFs are turned into text on the server.
+  async function addFile(f: File) {
+    setFileNote(null)
+    if (f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) {
+      if (f.size > MAX_PDF) return setFileNote('That PDF is over 3 MB. Try a screenshot of the important page instead.')
+      setDoc({name: f.name, data: await fileToBase64(f)})
+      return
+    }
+    const i = await fileToImg(f)
+    if (!i) return setFileNote('Red Flag can read screenshots (PNG, JPEG, WebP, GIF) and PDFs.')
+    setImg(i)
+  }
+
+  async function runSamplePdf() {
+    const blob = await (await fetch('/sample-invoice.pdf')).blob()
+    const sample = {name: 'Invoice-BL-20461.pdf', data: await fileToBase64(new File([blob], 'Invoice-BL-20461.pdf', {type: 'application/pdf'}))}
+    setText('')
+    setImg(null)
+    setDoc(sample)
+    run('', undefined, sample)
+  }
+
   async function runSampleImage() {
     const blob = await (await fetch('/sample-sms')).blob()
     const sample = await fileToImg(new File([blob], 'sample.png', {type: 'image/png'}))
@@ -119,17 +155,20 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
     run(undefined, sample)
   }
 
-  async function run(override?: string, imgOverride?: Img) {
+  async function run(override?: string, imgOverride?: Img, docOverride?: Doc) {
     const useImg = imgOverride ?? (override !== undefined ? null : img)
+    const useDoc = docOverride ?? (override !== undefined || imgOverride ? null : doc)
     const body = {
       text: override ?? (imgOverride ? '' : text),
       image: useImg ? {mediaType: useImg.mediaType, data: useImg.data} : null,
+      document: useDoc,
       region,
     }
-    if (!body.text.trim() && !body.image) return
-    if (override !== undefined && !imgOverride) {
+    if (!body.text.trim() && !body.image && !body.document) return
+    if (override !== undefined && !imgOverride && !docOverride) {
       setText(override)
       setImg(null)
+      setDoc(null)
     }
     try {
       localStorage.setItem('rf-region', region)
@@ -203,7 +242,7 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
             e.preventDefault()
             setDrag(false)
             const f = e.dataTransfer.files[0]
-            if (f) setImg(await fileToImg(f))
+            if (f) await addFile(f)
           }}
           className={`overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_rgba(13,27,42,0.06),0_8px_24px_-12px_rgba(13,27,42,0.18)] transition-colors ${drag ? 'border-navy ring-2 ring-navy/20' : 'border-line-2'}`}
         >
@@ -231,21 +270,31 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
               </button>
             </div>
           )}
+          {doc && (
+            <div className="mx-4 mb-3 flex items-center gap-3 rounded-lg border border-line bg-bg p-2">
+              <span className="flex h-14 w-14 items-center justify-center rounded-md border border-line-2 bg-card text-[13px] font-semibold text-ink-2">PDF</span>
+              <span className="min-w-0 truncate text-sm text-ink-2">{doc.name}</span>
+              <button onClick={() => setDoc(null)} className="ml-auto rounded-md px-2 py-1 text-sm text-ink-3 hover:bg-muted-bg hover:text-ink">
+                Remove
+              </button>
+            </div>
+          )}
+          {fileNote && <p className="mx-5 mb-3 text-sm text-warn">{fileNote}</p>}
           <div className="flex flex-wrap items-center gap-2 border-t border-line bg-bg/60 px-3 py-3 sm:px-4">
             <button
               onClick={() => fileRef.current?.click()}
               className="flex items-center gap-2 rounded-lg border border-line-2 bg-card px-3 py-2 text-sm font-medium text-ink-2 hover:border-ink hover:text-ink"
             >
-              <ImageIcon className="h-4 w-4" /> Add screenshot
+              <ImageIcon className="h-4 w-4" /> Add screenshot or PDF
             </button>
             <input
               ref={fileRef}
               type="file"
-              accept="image/png,image/jpeg,image/webp,image/gif"
+              accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,.pdf"
               className="hidden"
               onChange={async (e) => {
                 const f = e.target.files?.[0]
-                if (f) setImg(await fileToImg(f))
+                if (f) await addFile(f)
                 e.target.value = ''
               }}
             />
@@ -261,7 +310,7 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
             </select>
             <button
               onClick={() => run()}
-              disabled={busy || (!text.trim() && !img)}
+              disabled={busy || (!text.trim() && !img && !doc)}
               className="ml-auto flex items-center gap-2 rounded-lg bg-navy px-5 py-2.5 text-[15px] font-semibold text-white hover:bg-navy-2 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {busy ? (
@@ -285,6 +334,13 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
             className="rounded-md px-2 py-1 font-medium text-navy underline decoration-line-2 underline-offset-4 hover:decoration-navy disabled:opacity-40"
           >
             Screenshot of a text
+          </button>
+          <button
+            disabled={busy}
+            onClick={runSamplePdf}
+            className="rounded-md px-2 py-1 font-medium text-navy underline decoration-line-2 underline-offset-4 hover:decoration-navy disabled:opacity-40"
+          >
+            Fake invoice PDF
           </button>
           {SAMPLES.map((s) => (
             <button
