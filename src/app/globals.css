@@ -136,3 +136,148 @@ body {
     animation: none;
   }
 }
+
+/* ---------- Landing page ---------- */
+
+/* The hero is always deep navy, in light and dark mode: it's the brand moment. */
+.hero {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(60rem 30rem at 85% -10%, rgba(229, 57, 47, 0.16), transparent 60%),
+    radial-gradient(50rem 30rem at 10% 0%, rgba(59, 110, 168, 0.35), transparent 60%),
+    linear-gradient(180deg, #071526 0%, #0a1d33 100%);
+  color: #e8edf4;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 40%, transparent 100%);
+}
+
+/* Scroll reveal. Elements start slightly low and faded, and settle when they enter the screen. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.6s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--d, 0ms);
+}
+[data-reveal][data-in="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Phone demo: a scan line, words lighting up, the verdict sliding in. */
+.scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background: linear-gradient(180deg, transparent, rgba(229, 57, 47, 0.18), transparent);
+  border-bottom: 1px solid rgba(229, 57, 47, 0.55);
+  animation: scan 1.4s ease-in-out both;
+}
+@keyframes scan {
+  from {
+    top: -70px;
+  }
+  to {
+    top: 100%;
+  }
+}
+.demo-mark {
+  border-radius: 3px;
+  padding: 0 2px;
+  transition: background-color 0.35s ease, box-shadow 0.35s ease;
+}
+.demo-mark[data-on="true"] {
+  background: rgba(229, 57, 47, 0.16);
+  box-shadow: inset 0 -2px 0 #e5392f;
+}
+.pop {
+  animation: pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+}
+
+/* A slow pulse on the live dot. */
+.pulse-dot {
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Pipeline line that draws itself. */
+.draw {
+  stroke-dasharray: 600;
+  stroke-dashoffset: 600;
+  transition: stroke-dashoffset 1.6s ease;
+}
+[data-in="true"] .draw {
+  stroke-dashoffset: 0;
+}
+
+.lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px -24px rgba(13, 27, 42, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .scanline,
+  .pop,
+  .pulse-dot {
+    animation: none;
+  }
+  .draw {
+    stroke-dashoffset: 0;
+    transition: none;
+  }
+  .lift:hover {
+    transform: none;
+  }
+}
+
+/* A result arrives in order: verdict, then the message and its marks, then the rest. */
+.verdict-in > * {
+  animation: pop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.verdict-in > *:nth-child(2) { animation-delay: 90ms; }
+.verdict-in > *:nth-child(3) { animation-delay: 180ms; }
+.verdict-in > *:nth-child(4) { animation-delay: 270ms; }
+.verdict-in > *:nth-child(n + 5) { animation-delay: 360ms; }
+.verdict-in .flagged {
+  animation: mark-in 0.7s ease-out 0.45s both;
+}
+@keyframes mark-in {
+  from {
+    background: transparent;
+    box-shadow: inset 0 0 0 transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .verdict-in > *,
+  .verdict-in .flagged {
+    animation: none;
+  }
+}

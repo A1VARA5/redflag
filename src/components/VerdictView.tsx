@@ -135,7 +135,7 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
   }
 
   return (
-    <section className="fade-in space-y-5">
+    <section className="verdict-in space-y-5">
       {/* Verdict */}
       <div className={`rounded-xl border ${look.line} ${look.bg} p-5 sm:p-6`}>
         <div className="flex items-start gap-4">
@@ -157,7 +157,7 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
         )}
         {v.hidden && v.hidden.length > 0 && (
           <div className="mt-3 rounded-lg border border-line-2 bg-card px-4 py-3 text-[14px] text-ink-2">
-            <span className="font-semibold text-ink">Hidden characters found. </span>
+            <span className="font-semibold text-ink">Hidden from you. </span>
             {v.hidden.join(' ')}
           </div>
         )}

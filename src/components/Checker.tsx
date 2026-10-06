@@ -239,7 +239,7 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
 
   return (
     <div>
-      <div className="max-w-3xl">
+      <div className="w-full">
         <div
           onDragOver={(e) => {
             e.preventDefault()
