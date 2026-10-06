@@ -134,6 +134,7 @@ On top of that, `npm test` runs 17 tests on the security checks that don't need 
 - The backup model is slower (15 to 25 seconds) and less sharp than Claude.
 - Up to 12 links per message are checked. With more, links on real brand sites are skipped first.
 - The daily Claude budget and the in app rate limits are per server instance, so they're guard rails. A Vercel firewall rule limits checks per IP on top.
+- Checking where a link redirects sends one request to that site (no page is loaded). A link made just for you could tell the scammer it was opened, so Red Flag never sends real bank or password links anywhere.
 - Advice covers the UK, US and EU only.
 
 ## Where to look in the code
