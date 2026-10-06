@@ -53,6 +53,8 @@ Also try the **Fake invoice PDF** and **Screenshot of a text** examples, type a 
 - Anything hidden from you on purpose: invisible text only an AI can read, file names flipped so a program looks like a PDF, brand names split with invisible spaces, and instructions hidden in an email's HTML.
 - What to do now, depending on how far it got (just got it, clicked, typed details, paid, gave a code), with only the reporting channels that fit: 37 official places across 10 countries in the UK, US and EU.
 
+![Tricks Red Flag catches: hidden instructions, QR codes, disguised file names](docs/media/tricks.jpg)
+
 ![A scam verdict with the message marked up and the warning signs listed](docs/media/verdict.jpg)
 
 ![Link checks: blocklist, VirusTotal and a sandbox screenshot of a fake AT&T page](docs/media/link-checks-sandbox.jpg)
