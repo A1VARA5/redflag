@@ -3,10 +3,11 @@
 // and send the link through the same checks as any other link.
 import sharp from 'sharp'
 import jsQR from 'jsqr'
+import {MAX_PIXELS} from './image'
 
 export async function readQr(base64: string): Promise<string | null> {
   try {
-    const {data, info} = await sharp(Buffer.from(base64, 'base64'))
+    const {data, info} = await sharp(Buffer.from(base64, 'base64'), {limitInputPixels: MAX_PIXELS})
       .resize({width: 1400, height: 1400, fit: 'inside', withoutEnlargement: true})
       .ensureAlpha()
       .raw()

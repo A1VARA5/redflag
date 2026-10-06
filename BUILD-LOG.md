@@ -73,3 +73,15 @@ Timestamped so anyone can see everything was built during the event (3 to 10 Oct
 - Discord reads PDFs: right clicking a message with a PDF (or adding one to /redflag) used to say "no text or image to check". The PDF text is now extracted with unpdf and checked; scanned PDFs without text get a clear message asking for a screenshot.
 - Website takes PDFs too (drag in or "Add screenshot or PDF"), so all three ways in read the same things. New one tap example: "Fake invoice PDF".
 - Hidden HTML injection: an email's plain text part can look clean while its HTML hides "ignore previous instructions" in a display:none div, zero size text or a comment. Red Flag now scans the HTML, keeps only hidden text that talks to an AI (so newsletter preview text isn't flagged), shows it to the reader and won't let the verdict be safe. Tip from Frederic at Agentboxd.
+- Second review of today's code, all fixed:
+  - Hidden HTML detection only worked on bare snippets; inside a real email layout (html, table, td) it never fired. It now walks every element, and only hidden text that gives an AI orders counts, so newsletter preview text, aria-hidden labels and "hidden-mobile" classes are left alone.
+  - A missing space ("dropped my phone.New number") became a "link" that got checked and sent to VirusTotal. Bare domains now need a lowercase or all capitals ending, and endings that are everyday words (.live, .love, .fun) need something link-like around them.
+  - Outlook and Android wrap copied phone numbers and names in direction marks, which made normal messages "suspicious". Only real direction overrides count now.
+  - Forged senders: a DKIM or SPF pass for some other domain no longer counts. It needs DMARC pass or a pass for the From address's own domain. Replies are capped at 18 a day and 6 per sender.
+  - Email advice region now comes from the sender's address, and the reply says the full report has UK, US and EU steps.
+  - Images are shrunk on the server before the AI sees them and have a pixel limit; PDFs read at most 20 pages within 10 seconds; email HTML is capped at 200 KB and the HTML scan is linear, so a huge or broken email can't hang a check.
+  - The private address filter now uses Node's BlockList, which also catches IPv4 written as IPv6.
+  - With more than 12 links, the most suspicious ones are checked first instead of the first and last six.
+  - The eval no longer counts a crash as a correct answer.
+  - hidden.ts had raw invisible characters in its own source code. Embarrassing for a scam checker; now written as escape codes.
+- Tests: 17, run by GitHub Actions on every push with lint and type checks.

@@ -3,7 +3,7 @@
 import {parse} from 'tldts'
 import {domainToUnicode} from 'node:url'
 import {lookup} from 'node:dns/promises'
-import {isIP} from 'node:net'
+import {BlockList, isIP} from 'node:net'
 import brands from '@/data/brands.json'
 import {isKnownPhish} from './feeds'
 import {safeBrowsing} from './safebrowsing'
@@ -82,22 +82,54 @@ export function extractUrls(text: string): string[] {
   const withScheme = /\bhttps?:\/\/[^\s<>"'`)\]]+/gi
   for (const m of refanged.matchAll(withScheme)) found.add(trimUrl(m[0]))
   // Unicode letters too, so a look-alike like "аррle.com" (Cyrillic) is read whole, not as "le.com".
-  const bare = /(?<![\p{L}\p{N}-])(?:[\p{L}\p{N}-]+\.)+\p{L}{2,24}(?:\/[^\s<>"'`)\]]*)?/giu
+  // The ending must be all lowercase or all capitals, so "phone.New number" (a missing space) is not a link.
+  const bare = /(?<![\p{L}\p{N}-])(?:[\p{L}\p{N}-]+\.)+(?:[a-z]{2,24}|[A-Z]{2,24})(?![\p{L}\p{N}])(?:\/[^\s<>"'`)\]]*)?/gu
   const stripped = refanged.replace(withScheme, ' ')
   for (const m of stripped.matchAll(bare)) {
     const candidate = trimUrl(m[0])
-    const p = parse(candidate)
+    const [host, ...path] = candidate.split('/')
+    const p = parse(host.toLowerCase())
     // Only keep bare tokens that end in a real public suffix, so "e.g" and "file.txt" stay out.
-    if (p.domain && p.isIcann && !/\.(txt|png|jpe?g|pdf|docx?|zip)$/i.test(candidate)) found.add('https://' + candidate)
+    if (!p.domain || !p.isIcann || /\.(txt|png|jpe?g|pdf|docx?|zip|exe)$/i.test(candidate)) continue
+    // An all capitals ending only counts when the whole address is in capitals (WWW.EXAMPLE.COM).
+    if (/[A-Z]$/.test(host) && /[a-z]/.test(host)) continue
+    // Endings that are also everyday words (.live, .love, .fun, .me) need something link-like around them.
+    const label = (p.domainWithoutSuffix ?? '').toLowerCase()
+    const linkLike = /^www\./i.test(host) || path.length > 0 || /[-\d]/.test(label) || COMMON_TLDS.has(p.publicSuffix ?? '') || host.split('.').length > 2
+    if (linkLike) found.add('https://' + candidate)
   }
-  // Scammers pad messages with decoy links. With more than MAX_LINKS, links on a known brand's real domain
-  // are dropped first, then the first and last ones are kept.
+  // Scammers pad messages with decoy links. With more than MAX_LINKS, the most suspicious looking ones are
+  // checked first (no brand's real domain, cheap ending, a brand name, hyphens, encoded letters).
   const all = [...found]
   if (all.length <= MAX_LINKS) return all
-  const unknown = all.filter((u) => !isOfficialUrl(u))
-  const pool = unknown.length ? unknown : all
-  const half = MAX_LINKS / 2
-  return pool.length > MAX_LINKS ? [...pool.slice(0, half), ...pool.slice(-half)] : pool
+  const keep = new Set(
+    all
+      .map((u, i) => ({u, i, s: suspicion(u)}))
+      .sort((a, b) => b.s - a.s || a.i - b.i)
+      .slice(0, MAX_LINKS)
+      .map((x) => x.u),
+  )
+  return all.filter((u) => keep.has(u))
+}
+
+// Common endings that are rarely an ordinary word, so a bare "name.com" counts as a link on its own.
+const COMMON_TLDS = new Set(['com', 'net', 'org', 'info', 'biz', 'io', 'co', 'co.uk', 'org.uk', 'uk', 'us', 'eu', 'de', 'fr', 'nl', 'es', 'lt', 'pl', 'ie', 'ca', 'au', 'ru', 'cn', 'xyz', 'top', 'shop', 'site', 'online', 'click', 'store', 'app', 'dev', 'ly', 'gd', 'tk', 'ml', 'ga', 'cf', 'gq', 'icu', 'cyou', 'buzz', 'sbs', 'rest', 'bond'])
+
+function suspicion(u: string): number {
+  if (isOfficialUrl(u)) return 0
+  let host = ''
+  try {
+    host = new URL(u).hostname.toLowerCase()
+  } catch {
+    return 1
+  }
+  const p = parse(host)
+  let s = 1
+  if (p.publicSuffix && RISKY_TLDS.has(p.publicSuffix)) s += 2
+  if (host.includes('xn--')) s += 3
+  if ((p.domainWithoutSuffix ?? '').includes('-')) s += 1
+  if (BRANDS.some((b) => b.keywords.some((k) => k.length > 3 && host.includes(k.toLowerCase())))) s += 3
+  return s
 }
 
 export const MAX_LINKS = 12
@@ -158,7 +190,12 @@ function brandFor(host: string, domain: string | null): {brand: Brand | null; of
   return {brand: null, official: false, flags}
 }
 
-const PRIVATE = /^(10\.|127\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|0\.|::$|::1$|fc|fd|fe80)/i
+// Private, local and carrier ranges. BlockList also matches IPv4 written as IPv6 (::ffff:7f00:1 is 127.0.0.1).
+const PRIVATE = new BlockList()
+for (const [net, bits] of [['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8], ['169.254.0.0', 16], ['172.16.0.0', 12], ['192.168.0.0', 16]] as const) {
+  PRIVATE.addSubnet(net, bits, 'ipv4')
+}
+for (const [net, bits] of [['::', 128], ['::1', 128], ['fc00::', 7], ['fe80::', 10]] as const) PRIVATE.addSubnet(net, bits, 'ipv6')
 
 // Refuses hosts that resolve to a private or local address, so a link can't be used to probe our own network.
 async function safeToFetch(host: string): Promise<boolean> {
@@ -166,7 +203,7 @@ async function safeToFetch(host: string): Promise<boolean> {
   if (host === 'localhost' || host.endsWith('.local') || host.endsWith('.internal')) return false
   try {
     const ips = isIP(host) ? [host] : (await lookup(host, {all: true})).map((a) => a.address)
-    return ips.length > 0 && ips.every((ip) => !PRIVATE.test(ip.replace(/^::ffff:/i, '')))
+    return ips.length > 0 && ips.every((ip) => !PRIVATE.check(ip, isIP(ip) === 6 ? 'ipv6' : 'ipv4'))
   } catch {
     return false
   }

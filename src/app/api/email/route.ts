@@ -1,11 +1,24 @@
 import {after} from 'next/server'
 import {check} from '@/lib/verdict'
 import {saveVerdict} from '@/lib/store'
-import {attachmentText, downloadAttachment, getMessage, hiddenHtmlText, htmlToText, renderReply, reply, senderOf, senderVerified, verifyMailroom, type MailMessage} from '@/lib/email'
+import {HTML_LIMIT, attachmentText, downloadAttachment, getMessage, hiddenHtmlText, htmlToText, renderReply, reply, senderOf, senderVerified, verifyMailroom, type MailMessage} from '@/lib/email'
 
 export const maxDuration = 60
 
 const perSender = new Map<string, number[]>()
+// Agentboxd allows 20 sends a day. Keep a few back, and stop one address using them all.
+const DAILY_REPLIES = 18
+const PER_SENDER_PER_DAY = 6
+let today = {day: '', sent: 0}
+const EU_TLDS = new Set(['ie', 'de', 'fr', 'nl', 'es', 'it', 'lt', 'pl', 'be', 'at', 'pt', 'se', 'dk', 'fi', 'cz', 'ro', 'hu', 'gr', 'bg', 'hr', 'sk', 'si', 'lv', 'ee', 'lu', 'mt', 'cy', 'eu'])
+
+// The forwarder's own address is the only hint at where they live. Their full report can switch regions.
+function regionFor(address: string): 'UK' | 'US' | 'EU' {
+  const tld = address.split('.').pop() ?? ''
+  return tld === 'us' || tld === 'edu' || tld === 'gov' ? 'US' : EU_TLDS.has(tld) ? 'EU' : 'UK'
+}
+
+const withDeadline = <T,>(p: Promise<T>, ms: number, fallback: T) => Promise.race([p, new Promise<T>((r) => setTimeout(() => r(fallback), ms))])
 const seen = new Set<string>()
 
 // Agentboxd webhook: message.received. Answer 200 straight away (they time out at 10 s), do the work in after().
@@ -36,19 +49,31 @@ export async function POST(req: Request) {
         return
       }
       const now = Date.now()
-      const recent = (perSender.get(from) ?? []).filter((t) => now - t < 3_600_000)
-      if (recent.length >= 10) return
+      const day = new Date(now).toISOString().slice(0, 10)
+      if (today.day !== day) today = {day, sent: 0}
+      const recent = (perSender.get(from) ?? []).filter((t) => now - t < 86_400_000)
+      if (recent.length >= PER_SENDER_PER_DAY || today.sent >= DAILY_REPLIES) {
+        console.warn('[email] reply limit reached', from, today.sent)
+        return
+      }
       perSender.set(from, [...recent, now])
+      today.sent++
 
       // The full text, not extracted_text: a forward's whole point is the quoted original underneath.
-      const body = (m.text?.trim() || (m.html ? htmlToText(m.html) : '') || m.extracted_text || '').slice(0, 60_000)
+      const html = m.html?.slice(0, HTML_LIMIT) ?? null
+      const body = (m.text?.trim() || (html ? htmlToText(html) : '') || m.extracted_text || '').slice(0, 60_000)
       if (!body && !m.attachments?.length) {
         console.error('[email] no readable content', m.id, heldReason)
         return
       }
       const imgAtt = m.attachments?.find((a) => /^image\/(png|jpeg|webp|gif)$/.test(a.content_type ?? ''))
-      const docs = (m.attachments ?? []).filter((a) => a !== imgAtt).slice(0, 2)
-      const [img, ...docTexts] = await Promise.all([imgAtt ? downloadAttachment(imgAtt.id) : null, ...docs.map((a) => attachmentText(m.id, a.id))])
+      // Documents only: inline logos and signature images are images, and tiny files are rarely the scam.
+      const docs = (m.attachments ?? []).filter((a) => !/^image\//i.test(a.content_type ?? '') && (a.size ?? 10_000) >= 2_000).slice(0, 2)
+      const [img, ...docTexts] = await withDeadline(
+        Promise.all([imgAtt ? downloadAttachment(imgAtt.id) : null, ...docs.map((a) => attachmentText(m.id, a.id))]),
+        15_000,
+        [null, ...docs.map(() => null)],
+      )
       const attached = docs
         .map((a, i) => (docTexts[i] ? `\n\n[Attached file: ${a.filename ?? 'document'}]\n${docTexts[i]}` : ''))
         .join('')
@@ -67,19 +92,19 @@ export async function POST(req: Request) {
         .join('\n')
 
       // The plain text part can look clean while the HTML hides instructions for an AI, so scan the HTML too.
-      const hiddenText = m.html ? hiddenHtmlText(m.html) : []
+      const hiddenText = html ? hiddenHtmlText(html) : []
       const v = await check({
         hiddenText,
         text,
         image: img ? {mediaType: imgAtt!.content_type as 'image/png', data: img.data} : null,
         source: 'email',
-        region: 'UK',
+        region: regionFor(from),
         extraSignals: signals,
       })
       await saveVerdict(v)
       const site = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin
-      const {text: t, html} = renderReply(v, `${site}/v/${v.id}`)
-      await reply(inboxId, m.id, t, html)
+      const out = renderReply(v, `${site}/v/${v.id}`)
+      await reply(inboxId, m.id, out.text, out.html)
       console.log('[email] replied', v.id, v.verdict, v.ms + 'ms')
     } catch (e) {
       console.error('[email]', e)

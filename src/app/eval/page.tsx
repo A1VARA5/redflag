@@ -90,7 +90,7 @@ export default function Eval() {
         <section className="mt-14">
           <h2 className="text-2xl font-bold tracking-tight">Attacks on the checker</h2>
           <p className="mt-2 max-w-3xl text-[16px] text-ink-2">
-            Tricks aimed at Red Flag itself rather than at the reader: hidden instructions, invisible characters, look-alike letters, fake evidence and links hidden in QR codes. Two normal messages are included to make sure the defences don&apos;t cause false alarms. Red Flag got {attacks.filter((r) => r.redflag_correct).length} of {attacks.length} right. The plain model also caught the text ones, because the scam was obvious in the visible words; what matters here is that the hidden tricks didn&apos;t change Red Flag&apos;s answer.
+            Tricks aimed at Red Flag itself rather than at the reader: hidden instructions, invisible characters, look-alike letters, fake evidence and links hidden in QR codes. Two normal messages are included to make sure the defences don&apos;t cause false alarms. Red Flag got {attacks.filter((r) => r.redflag_correct).length} of {attacks.length} right. The plain model got {attacks.filter((r) => r.baseline_correct).length} of {attacks.filter((r) => r.baseline_correct !== null).length} it could read (it can&apos;t see images). Most of these scams are obvious in the visible words, so the point is that the hidden tricks didn&apos;t change Red Flag&apos;s answer.
           </p>
           <ul className="mt-5 grid gap-3 md:grid-cols-2">
             {attacks.map((r) => (

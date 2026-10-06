@@ -34,7 +34,8 @@ async function baseline(text: string): Promise<string> {
 }
 
 const flagged = (v: string) => v === 'scam' || v === 'suspicious'
-const correct = (c: Case, v: string) => (c.kind === 'legit' ? !flagged(v) : flagged(v))
+// An error is never a pass, for either model.
+const correct = (c: Case, v: string) => v !== 'error' && (c.kind === 'legit' ? !flagged(v) : flagged(v))
 
 const results: Record<string, unknown>[] = []
 const queue = [...cases]

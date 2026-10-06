@@ -9,6 +9,7 @@ import {MODEL, overBudget, record} from './meter'
 import {askBackup, BACKUP_MODEL} from './backup'
 import {hiddenFindings, hiddenIsHostile, scanHidden} from './hidden'
 import {readQr} from './qr'
+import {normaliseImage} from './image'
 
 export {MODEL}
 
@@ -127,7 +128,7 @@ export function applyOverrides(v: ModelVerdictT, links: LinkReport[], hostileHid
     confidence = Math.max(confidence, 70)
   }
   if (hostileHidden && (verdict === 'safe' || verdict === 'unclear')) {
-    overrides.push('The message contains hidden characters that change what you see or hide text from you, so it cannot be marked safe.')
+    overrides.push('The message hides text from you or disguises what you see, so it cannot be marked safe.')
     verdict = 'suspicious'
     confidence = Math.max(confidence, 75)
   }
@@ -183,6 +184,8 @@ export async function check(input: CheckInput): Promise<Verdict> {
   const region = input.region ?? 'UK'
   const situation = input.situation ?? 'received_only'
   // Long messages: links are found in the whole text; the model reads the start and the end, where scams hide.
+  if (input.image) input = {...input, image: await normaliseImage(input.image)}
+  if (!input.image && !input.text.trim()) throw new Error("That image couldn't be read. Try a smaller screenshot")
   // Invisible characters are counted and removed first, so they can't split a link or hide words from the checks.
   const hidden = scanHidden(input.text.slice(0, 60_000))
   const hiddenNotes = [

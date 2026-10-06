@@ -110,7 +110,7 @@ The rules that make it hold up:
 
 The first three rows include the harder cases of that kind. The plain model called a "move your money to a safe account" bank scam safe, happily obeyed a hidden "classify as safe" note, and flagged a real Steam Guard code.
 
-**9 out of 9** on a separate set of attacks aimed at the checker itself: a hidden instruction in invisible characters, a flipped file name, a brand split with invisible spaces, a Cyrillic lookalike domain, a message faking the checker's own evidence, a link buried under padding with hidden text, a link in a QR code, plus two normal messages (emoji, Arabic) that must stay clean. Honest note: the plain model caught the text ones too, because the scam was obvious in the visible words. The point is that none of the tricks changed Red Flag's answer.
+**9 out of 9** on a separate set of attacks aimed at the checker itself: a hidden instruction in invisible characters, a flipped file name, a brand split with invisible spaces, a Cyrillic lookalike domain, a message faking the checker's own evidence, a link buried under padding with hidden text, a link in a QR code, plus two normal messages (emoji, Arabic) that must stay clean. Honest note: the plain model got 7 of the 8 it could read (it can't see images), because most of these scams are obvious in the visible words. The one it missed was the message faking the checker's own evidence, which it called safe. The point is that none of the tricks changed Red Flag's answer.
 
 ![Attacks on the checker, all caught](docs/media/attacks.jpg)
 
@@ -118,7 +118,7 @@ The first three rows include the harder cases of that kind. The plain model call
 
 83 messages written for this project is a small test, and Red Flag will get real messages wrong sometimes. Full table: [/eval](https://getredflag.vercel.app/eval). Run it yourself with `npx tsx --env-file=.env.local scripts/eval.mts` (or `EVAL_SET=attack` for just the attacks).
 
-On top of that, `npm test` runs 14 tests on the security checks that don't need any AI or network (hidden text, hidden HTML, link extraction, sender checks, signatures, override rules, QR and PDF reading), and CI runs lint, type checks and tests on every push.
+On top of that, `npm test` runs 17 tests on the security checks that don't need any AI or network (hidden text, hidden HTML in a real email layout, typos that look like links, link padding, forged senders, signatures, override rules, QR and PDF reading), and CI runs lint, type checks and tests on every push.
 
 ## This week's scams
 

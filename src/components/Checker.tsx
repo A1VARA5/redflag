@@ -42,8 +42,10 @@ async function fileToImg(file: File): Promise<Img | null> {
   const url = await new Promise<string>((res) => {
     const r = new FileReader()
     r.onload = () => res(r.result as string)
+    r.onerror = () => res('')
     r.readAsDataURL(file)
   })
+  if (!url) return null
   return {
     mediaType: file.type as Img['mediaType'],
     data: url.split(',')[1],
@@ -110,7 +112,8 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
       const file = [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith('image/'))
       if (file) {
         e.preventDefault()
-        setImg(await fileToImg(file))
+        const i = await fileToImg(file)
+        if (i) setImg(i)
       }
     }
     window.addEventListener('paste', onPaste)
@@ -165,6 +168,11 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
       region,
     }
     if (!body.text.trim() && !body.image && !body.document) return
+    // Vercel accepts request bodies up to 4.5 MB.
+    if ((body.image?.data.length ?? 0) + (body.document?.data.length ?? 0) > 4_300_000) {
+      setFileNote('The screenshot and PDF together are too big. Remove one and try again.')
+      return
+    }
     if (override !== undefined && !imgOverride && !docOverride) {
       setText(override)
       setImg(null)

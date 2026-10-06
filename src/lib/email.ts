@@ -1,6 +1,7 @@
 // Email channel: someone forwards a suspicious email to the Red Flag inbox (Agentboxd),
 // the webhook lands here, and the verdict goes back as a reply in the same thread.
 import {createHmac, timingSafeEqual} from 'node:crypto'
+import {parse} from 'tldts'
 import type {Verdict} from './verdict'
 import {BANK_ADVICE, VERDICT_BG, VERDICT_COLOR, VERDICT_TITLE, confidenceText} from './labels'
 
@@ -16,14 +17,20 @@ export function verifyMailroom(raw: string, ts: string | null, sig: string | nul
   return expected.length === got.length && timingSafeEqual(expected, got)
 }
 
-// Anyone can put any address in "From". Before replying, check that the sending server proved it owns that address
-// (SPF or DKIM pass, DMARC not failed, no spoofing label from Agentboxd). Otherwise a forged sender would let a
-// stranger make Red Flag email someone else.
-export function senderVerified(m: {headers?: Record<string, string>; labels?: string[]}): boolean {
+// Anyone can put any address in "From". Before replying, check that the sending server proved it may send for
+// that address: DMARC pass, or a DKIM or SPF pass for the same domain as the From address. A pass for some other
+// domain proves nothing. Otherwise a forged sender would let a stranger make Red Flag email someone else.
+export function senderVerified(m: {headers?: Record<string, string>; labels?: string[]; from?: MailMessage['from']}): boolean {
   if (m.labels?.some((l) => /spoof/i.test(l))) return false
   const auth = Object.entries(m.headers ?? {}).find(([k]) => k.toLowerCase() === 'authentication-results')?.[1] ?? ''
   if (/\bdmarc=fail\b/i.test(auth)) return false
-  return /\b(dkim|spf)=pass\b/i.test(auth)
+  if (/\bdmarc=pass\b/i.test(auth)) return true
+  const fromDomain = parse(senderOf(m).split('@')[1] ?? '').domain
+  if (!fromDomain) return false
+  const aligned = (d: string | undefined) => Boolean(d) && parse(d!.toLowerCase()).domain === fromDomain
+  const dkim = /\bdkim=pass\b[^;]*?\bheader\.(?:d=|i=[^@\s;]*@)([^\s;]+)/i.exec(auth)?.[1]
+  const spf = /\bspf=pass\b[^;]*?\bsmtp\.mailfrom=(?:[^@\s;]*@)?([^\s;]+)/i.exec(auth)?.[1]
+  return aligned(dkim) || aligned(spf)
 }
 
 export type MailMessage = {
@@ -74,9 +81,9 @@ export async function downloadAttachment(id: string): Promise<{data: string; typ
 // instructions" often arrive as a PDF with a short covering email, so the attachment is where the scam is.
 // OCR can take a few seconds, so this waits briefly while extraction is still running.
 export async function attachmentText(messageId: string, attachmentId: string, maxChars = 20_000): Promise<string | null> {
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await fetch(`${API}/messages/${messageId}/attachments/${attachmentId}/text?max_chars=${maxChars}`, {headers: auth(), signal: AbortSignal.timeout(8000)})
+      const res = await fetch(`${API}/messages/${messageId}/attachments/${attachmentId}/text?max_chars=${maxChars}`, {headers: auth(), signal: AbortSignal.timeout(5000)})
       if (!res.ok) return null
       const j = (await res.json()) as {text?: string | null; extraction?: {status?: string}}
       if (j.text) return j.text.slice(0, maxChars)
@@ -84,7 +91,7 @@ export async function attachmentText(messageId: string, attachmentId: string, ma
     } catch {
       return null
     }
-    await new Promise((r) => setTimeout(r, 2000))
+    await new Promise((r) => setTimeout(r, 1500))
   }
   return null
 }
@@ -99,7 +106,7 @@ export async function reply(inboxId: string, messageId: string, text: string, ht
   if (!res.ok) throw new Error(`reply failed ${res.status}: ${(await res.text()).slice(0, 300)}`)
 }
 
-export function senderOf(m: MailMessage): string {
+export function senderOf(m: Pick<MailMessage, 'from'>): string {
   const f = m.from
   if (!f) return ''
   if (typeof f === 'string') return (f.match(/<([^>]+)>/)?.[1] ?? f).toLowerCase()
@@ -107,30 +114,65 @@ export function senderOf(m: MailMessage): string {
 }
 
 // Text an email's HTML hides from the reader: display:none, visibility:hidden, zero size or opacity, the hidden
-// attribute, and comments. Newsletters hide harmless preview text this way, so only text that talks to an AI or
-// a checker counts. A human never sees it; a careless AI reads it as an order.
+// attribute, and comments. Newsletters hide harmless preview text this way, so only hidden text that gives an AI
+// orders counts. A human never sees it; a careless AI reads it as an instruction.
+export const HTML_LIMIT = 200_000
 const HIDING = /display\s*:\s*none|visibility\s*:\s*hidden|font-size\s*:\s*0+(px|pt|em|%)?\s*(;|$)|opacity\s*:\s*0+(\.0+)?\s*(;|$)|max-height\s*:\s*0+(px)?\s*(;|$)/i
-const TALKS_TO_AI = /\b(ignore|disregard|forget)\b.{0,40}\b(instruction|previous|above|prior|rules)|\b(ai|assistant|model|llm|chatbot|gpt|claude|checker|filter|classifier|system prompt)\b|\bclassify\b|\bmark (this|it) as\b/i
+const ORDERS_AN_AI =
+  /\b(ignore|disregard|forget|override)\b[^.]{0,40}\b(instructions?|previous|above|prior|rules|prompt)\b|\b(classify|mark|label|treat|flag|report)\b[^.]{0,30}\b(as )?(safe|legitimate|legit|verified|trusted|not (spam|a scam|phishing))\b|\b(note|message|instructions?)s? (to|for) (the |any )?(ai|assistant|model|llm|filters?|checkers?|scanners?|classifiers?)\b|\bsystem prompt\b/i
+const VOID = new Set(['br', 'img', 'hr', 'meta', 'link', 'input', 'source', 'col', 'area', 'base', 'wbr'])
 
-export function hiddenHtmlText(html: string): string[] {
-  const found: string[] = []
-  for (const m of html.matchAll(/<(\w+)\b([^>]*)>([\s\S]*?)<\/\1>/gi)) {
-    const attrs = m[2]
-    const style = /\bstyle\s*=\s*("([^"]*)"|'([^']*)')/i.exec(attrs)
-    if ((style && HIDING.test(style[2] ?? style[3] ?? '')) || /\bhidden\b(?!\s*=\s*["']?false)/i.test(attrs.replace(/style\s*=\s*("[^"]*"|'[^']*')/i, ''))) {
-      found.push(htmlToText(m[3]))
-    }
+function hides(attrs: string): boolean {
+  const style = /\bstyle\s*=\s*("([^"]*)"|'([^']*)')/i.exec(attrs)
+  if (style && HIDING.test(style[2] ?? style[3] ?? '')) return true
+  // The bare `hidden` attribute, not aria-hidden or a class name containing "hidden".
+  const names = attrs.replace(/=\s*("[^"]*"|'[^']*'|[^\s>]+)/g, '=')
+  return /(^|\s)hidden(\s|=|\/|$)/i.test(names) && !/(^|\s)hidden\s*=\s*["']?false/i.test(attrs)
+}
+
+// Index of the tag that closes the element opened just before `from`, counting nested tags of the same name.
+function closeOf(html: string, name: string, from: number): number {
+  const re = new RegExp(`<(/?)${name}\\b[^<>]*>`, 'gi')
+  re.lastIndex = from
+  let depth = 1
+  for (let m = re.exec(html); m; m = re.exec(html)) {
+    depth += m[1] ? -1 : 1
+    if (depth === 0) return m.index
   }
-  for (const m of html.matchAll(/<!--([\s\S]*?)-->/g)) found.push(m[1].trim())
-  return [...new Set(found.map((t) => t.replace(/\s+/g, ' ').trim()))].filter((t) => t.length >= 8 && TALKS_TO_AI.test(t)).slice(0, 5).map((t) => t.slice(0, 300))
+  return Math.min(html.length, from + 2000)
+}
+
+export function hiddenHtmlText(raw: string): string[] {
+  const html = raw.slice(0, HTML_LIMIT)
+  const found: string[] = []
+  // [^<>] rather than [^>]: a stray "<" with no ">" must not make every later match scan to the end.
+  for (const m of html.matchAll(/<([a-z][a-z0-9]*)\b([^<>]*)>/gi)) {
+    if (found.length >= 30) break
+    const name = m[1].toLowerCase()
+    if (VOID.has(name) || !hides(m[2])) continue
+    const start = m.index! + m[0].length
+    found.push(htmlToText(html.slice(start, closeOf(html, name, start))))
+  }
+  for (let i = html.indexOf('<!--'); i >= 0 && found.length < 40; ) {
+    const j = html.indexOf('-->', i + 4)
+    if (j < 0) break
+    found.push(html.slice(i + 4, j))
+    i = html.indexOf('<!--', j + 3)
+  }
+  return [...new Set(found.map((t) => t.replace(/\s+/g, ' ').trim()))]
+    .filter((t) => t.length >= 8 && ORDERS_AN_AI.test(t))
+    .slice(0, 5)
+    .map((t) => t.slice(0, 300))
 }
 
 export function htmlToText(html: string) {
   return html
-    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
+    .slice(0, HTML_LIMIT)
+    .replace(/<(script|style)\b[^<>]*>[^<]*(?:<(?!\/\1>)[^<]*)*<\/\1>/gi, ' ')
     .replace(/<br\s*\/?>|<\/p>|<\/div>|<\/li>|<\/tr>/gi, '\n')
-    .replace(/<a [^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, '$2 ($1)')
-    .replace(/<[^>]+>/g, ' ')
+    // The link target goes in front of the link text, so a fake "paypal.com" label can't hide where it points.
+    .replace(/<a\b[^<>]*?\bhref="([^"<>]+)"[^<>]*>/gi, ' ($1) ')
+    .replace(/<[^<>]+>/g, ' ')
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
@@ -166,7 +208,7 @@ export function renderReply(v: Verdict, url: string): {text: string; html: strin
     v.steps.length ? '\nWhat to do now:' : '',
     ...v.steps.map((s, i) => `${i + 1}. ${s.text}${s.url ? ` (${s.url})` : ''}`),
     '',
-    `Full report: ${url}`,
+    `Advice above is for the ${v.region}. Steps for the UK, US and EU are in the full report: ${url}`,
     '',
     `Red Flag is an automated checker and can be wrong. ${BANK_ADVICE}`,
   ]

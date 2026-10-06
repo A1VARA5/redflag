@@ -12,9 +12,12 @@ export type HiddenReport = {
 
 // Zero width space, word joiner, Mongolian vowel separator, BOM. The zero width joiner (U+200D) is left alone:
 // emoji like families and flags are built with it.
-const ZERO_WIDTH = /[​⁠᠎﻿]/g
-// Direction overrides and isolates. The plain left/right marks (U+200E, U+200F) are normal in Arabic and Hebrew.
-const BIDI = /[‪-‮⁦-⁩]/g
+const ZERO_WIDTH = /[\u200B\u2060\u180E\uFEFF]/g
+// Direction overrides (U+202D, U+202E) are what flip "fdp.exe" into "exe.pdf". Embeddings and isolates
+// (U+202A to U+202C, U+2066 to U+2069) are added by Windows, Outlook and Android around copied phone numbers and
+// names, so they are removed but not counted. Plain left/right marks are normal in Arabic and Hebrew.
+const BIDI = /[\u202D\u202E]/g
+const BIDI_HARMLESS = /[\u202A-\u202C\u2066-\u2069]/g
 // Unicode "tag" characters mirror ASCII one to one and render as nothing. They can carry a whole hidden sentence.
 const TAGS = /[\u{E0000}-\u{E007F}]/gu
 
@@ -29,7 +32,7 @@ export function scanHidden(text: string): HiddenReport {
       .map((n) => String.fromCharCode(n))
       .join('')
       .trim() || null
-  const cleaned = text.replace(TAGS, '').replace(BIDI, '').replace(ZERO_WIDTH, '')
+  const cleaned = text.replace(TAGS, '').replace(BIDI, '').replace(BIDI_HARMLESS, '').replace(ZERO_WIDTH, '')
   return {zeroWidth, bidi, tags: tagChars.length, decoded, cleaned}
 }
 
