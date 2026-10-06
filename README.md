@@ -156,14 +156,13 @@ Next.js 16 on Vercel (private Blob storage, Cron) · Anthropic TypeScript SDK wi
 - Google Safe Browsing Lookup API v4, VirusTotal API v3, urlscan.io API.
 - Phishing lists: OpenPhish, PhishTank, URLhaus (abuse.ch), Phishing.Database, Phishing Army. Official brand domains are never blocked whole even when a list includes them; on shared platforms only exact URLs are matched.
 - Agentboxd (email inbox, webhooks, phishing and injection scores).
+- Claude Code (Anthropic), used as a coding tool.
 - Radar sources: FTC Consumer Alerts and press releases, FBI IC3, NCSC, FCA, GOV.UK, Which?, Europol, CISA, r/Scams.
 - Each scam type and reporting channel lists its official sources in `src/data/patterns.json` and `src/data/respond.json`.
 
-## AI use and work before the event
+## AI in the product
 
-In the product, Claude Opus 5.5 reads messages and screenshots and groups the daily radar. Qwen3-VL on Featherless is the backup reader, and Qwen2.5-72B on Featherless is the comparison model in the test.
-
-I built Red Flag with Claude Code as my coding assistant. I picked the problem and the track, decided how it should work, set the scope (UK, US and EU coverage, official sources only, a backup model), set up and connected every outside service (Google Safe Browsing, VirusTotal, urlscan, Featherless, Agentboxd, the Discord app), tested the email and Discord channels myself, and decided what stayed and what got rebuilt, including a full redesign when the first version looked machine made. Every official source was opened and checked before use. The commit history and `BUILD-LOG.md` show the process, including what broke.
+Claude Opus 5.5 reads messages and screenshots and groups the daily radar. Qwen3-VL on Featherless is the backup reader, and Qwen2.5-72B on Featherless is the comparison model in the test.
 
 Nothing was built before the event. All code and data in this repo were made from 5 October 2026, during the event. All example messages are made up.
 
