@@ -58,7 +58,7 @@ export async function POST(req: Request) {
         const v = await check({text, image, source: 'discord', region, country: EU_LOCALES[loc] ?? (region === 'US' ? 'US' : 'GB')})
         await saveVerdict(v)
         const site = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin
-        const links = v.links.flatMap((l) => l.flags.filter((f) => f.severity === 'high').map((f) => `\`${l.host}\`: ${f.detail}`)).slice(0, 3)
+        const links = [...new Set(v.links.flatMap((l) => l.flags.filter((f) => f.severity === 'high').map((f) => `\`${l.host}\`: ${f.detail}`)))].slice(0, 3)
         const sure = confidenceText(v)
         await edit({
           embeds: [

@@ -127,7 +127,7 @@ export function htmlToText(html: string) {
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
 export function renderReply(v: Verdict, url: string): {text: string; html: string} {
-  const linkFlags = v.links.flatMap((l) => l.flags.filter((f) => f.severity === 'high' || f.severity === 'medium').map((f) => `${l.host}: ${f.detail}`))
+  const linkFlags = [...new Set(v.links.flatMap((l) => l.flags.filter((f) => f.severity === 'high' || f.severity === 'medium').map((f) => `${l.host}: ${f.detail}`)))]
   const sure = confidenceText(v)
   const text = [
     `Red Flag: ${VERDICT_TITLE[v.verdict]}${sure ? ` (${sure})` : ''}`,
