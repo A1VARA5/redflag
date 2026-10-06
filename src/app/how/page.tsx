@@ -114,7 +114,7 @@ export default async function How() {
           <li>Phone calls and voice notes. It reads text and screenshots, not audio.</li>
           <li>A brand new scam site that isn&apos;t on any list and doesn&apos;t use a brand name relies on the reading of the message alone.</li>
           <li>Email replies come from a new address and can land in spam. Every reply also links to the result on this site.</li>
-          <li>Email replies are limited to 20 a day for now.</li>
+          <li>Email replies are limited to 20 a day for now, and only go to senders whose mail server passed SPF or DKIM, so a forged address can&apos;t make Red Flag email someone else.</li>
           <li>With more than 12 links in one message, links on real brand sites are skipped first so the unknown ones get checked.</li>
           <li>What to do advice covers the UK, US and EU, with {channels} official places to report or get help.</li>
           <li>

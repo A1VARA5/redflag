@@ -16,6 +16,16 @@ export function verifyMailroom(raw: string, ts: string | null, sig: string | nul
   return expected.length === got.length && timingSafeEqual(expected, got)
 }
 
+// Anyone can put any address in "From". Before replying, check that the sending server proved it owns that address
+// (SPF or DKIM pass, DMARC not failed, no spoofing label from Agentboxd). Otherwise a forged sender would let a
+// stranger make Red Flag email someone else.
+export function senderVerified(m: {headers?: Record<string, string>; labels?: string[]}): boolean {
+  if (m.labels?.some((l) => /spoof/i.test(l))) return false
+  const auth = Object.entries(m.headers ?? {}).find(([k]) => k.toLowerCase() === 'authentication-results')?.[1] ?? ''
+  if (/\bdmarc=fail\b/i.test(auth)) return false
+  return /\b(dkim|spf)=pass\b/i.test(auth)
+}
+
 export type MailMessage = {
   id: string
   screening?: {state?: string; reason?: string}
@@ -26,7 +36,8 @@ export type MailMessage = {
   text?: string | null
   html?: string | null
   extracted_text?: string | null
-  ai?: {category?: string; risk?: {injection?: number; phishing?: number}; needs_human?: boolean}
+  ai?: {category?: unknown; risk?: {injection?: number; phishing?: number}; needs_human?: unknown; verification?: unknown}
+  labels?: string[]
   headers?: Record<string, string>
   attachments?: {id: string; filename?: string; content_type?: string; size?: number}[]
 }

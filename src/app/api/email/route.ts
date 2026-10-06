@@ -1,7 +1,7 @@
 import {after} from 'next/server'
 import {check} from '@/lib/verdict'
 import {saveVerdict} from '@/lib/store'
-import {downloadAttachment, getMessage, htmlToText, renderReply, reply, senderOf, verifyMailroom, type MailMessage} from '@/lib/email'
+import {downloadAttachment, getMessage, htmlToText, renderReply, reply, senderOf, senderVerified, verifyMailroom, type MailMessage} from '@/lib/email'
 
 export const maxDuration = 60
 
@@ -31,6 +31,10 @@ export async function POST(req: Request) {
       const from = senderOf(m)
       // Never answer ourselves, bounces or auto-replies: that is how mail loops start.
       if (!from || from === inboxAddress || /mailer-daemon|postmaster|no-?reply/i.test(from) || /^(re: )?red flag verdict/i.test(m.subject ?? '')) return
+      if (!senderVerified(m)) {
+        console.warn('[email] sender failed SPF/DKIM, not replying', m.id)
+        return
+      }
       const now = Date.now()
       const recent = (perSender.get(from) ?? []).filter((t) => now - t < 3_600_000)
       if (recent.length >= 10) return
