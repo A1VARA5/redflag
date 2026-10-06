@@ -7,6 +7,8 @@ import {inspectAll, type LinkReport} from './links'
 import {latestRadar} from './radar'
 import {MODEL, overBudget, record} from './meter'
 import {askBackup, BACKUP_MODEL} from './backup'
+import {hiddenFindings, hiddenIsHostile, scanHidden} from './hidden'
+import {readQr} from './qr'
 
 export {MODEL}
 
@@ -67,6 +69,7 @@ export type Verdict = ModelVerdictT & {
   ms: number
   inputHadImage: boolean
   truncated: boolean
+  hidden?: string[]
   country: string | null
   trending: {title: string; status: string} | null
   engine: 'claude' | 'backup'
@@ -107,7 +110,7 @@ function findHighlights(text: string, flags: ModelVerdictT['red_flags']): Highli
 }
 
 // Non-AI evidence can push a verdict up, never down. Every push is recorded and shown to the user.
-function applyOverrides(v: ModelVerdictT, links: LinkReport[]): {verdict: ModelVerdictT['verdict']; confidence: number; overrides: string[]} {
+function applyOverrides(v: ModelVerdictT, links: LinkReport[], hostileHidden: boolean): {verdict: ModelVerdictT['verdict']; confidence: number; overrides: string[]} {
   const overrides: string[] = []
   let {verdict, confidence} = v
   const high = links.flatMap((l) => l.flags.filter((f) => f.severity === 'high').map((f) => ({...f, host: l.host})))
@@ -122,6 +125,11 @@ function applyOverrides(v: ModelVerdictT, links: LinkReport[]): {verdict: ModelV
     overrides.push(`The link checks found a fake-looking address (${fake.host}), so this cannot be marked safe.`)
     verdict = 'suspicious'
     confidence = Math.max(confidence, 70)
+  }
+  if (hostileHidden && (verdict === 'safe' || verdict === 'unclear')) {
+    overrides.push('The message contains hidden characters that change what you see or hide text from you, so it cannot be marked safe.')
+    verdict = 'suspicious'
+    confidence = Math.max(confidence, 75)
   }
   if (v.injection_attempt && verdict !== 'scam') {
     overrides.push('The message tries to give instructions to a scam checker. Legitimate messages never do that.')
@@ -173,11 +181,22 @@ export async function check(input: CheckInput): Promise<Verdict> {
   const region = input.region ?? 'UK'
   const situation = input.situation ?? 'received_only'
   // Long messages: links are found in the whole text; the model reads the start and the end, where scams hide.
-  const full = input.text.slice(0, 60_000)
+  // Invisible characters are counted and removed first, so they can't split a link or hide words from the checks.
+  const hidden = scanHidden(input.text.slice(0, 60_000))
+  const hiddenNotes = hiddenFindings(hidden)
+  const full = hidden.cleaned
   const truncated = full.length > 8000
   const text = truncated ? `${full.slice(0, 5000)}\n\n[… ${full.length - 8000} characters in the middle not shown …]\n\n${full.slice(-3000)}` : full
 
-  const links = await inspectAll(full, true)
+  // A QR code in a screenshot hides its link from the reader, so read it and check that link too.
+  const qr = input.image ? await readQr(input.image.data) : null
+  const [textLinks, qrLinks] = await Promise.all([inspectAll(full, true), qr ? inspectAll(qr, true) : Promise.resolve([])])
+  const links = [
+    ...textLinks,
+    ...qrLinks
+      .filter((q) => !textLinks.some((t) => t.url === q.url))
+      .map((q) => ({...q, fromQr: true, flags: [{code: 'qr-code', severity: 'medium' as const, detail: "This link is inside a QR code, so you can't read the address before you scan it."}, ...q.flags]})),
+  ]
   input.onLinks?.(links)
   const forensics = links.length
     ? links
@@ -186,12 +205,14 @@ export async function check(input: CheckInput): Promise<Verdict> {
     : 'No links found in the text.'
 
   // The message must not be able to close its own section and pose as link evidence.
-  const fence = (s: string) => s.replace(/<\/?\s*(suspicious_message|link_forensics|mail_signals)\b[^>]*>/gi, '[tag removed]')
+  const fence = (s: string) => s.replace(/<\/?\s*(suspicious_message|link_forensics|mail_signals|hidden_characters|qr_code)\b[^>]*>/gi, '[tag removed]')
   const userText = [
     `The advice will be shown for: ${region}. This only picks the reporting steps; don't assume where the reader or the message is from. What they have done so far: ${situation.replace(/_/g, ' ')}.`,
     input.image ? 'A screenshot is attached. Read all text in it into transcript and judge the screenshot.' : '',
     `<link_forensics>\n${forensics}\n</link_forensics>`,
     input.extraSignals ? `<mail_signals>\n${input.extraSignals}\n</mail_signals>` : '',
+    qr ? `<qr_code>\nCode found a QR code in the screenshot. Scanning it opens: ${fence(qr.slice(0, 500))}\n</qr_code>` : '',
+    hiddenNotes.length ? `<hidden_characters>\nFound by code in the original message and removed from the text below:\n${fence(hiddenNotes.join('\n'))}\n</hidden_characters>` : '',
     `<suspicious_message>\n${fence(text) || '(no text, see screenshot)'}\n</suspicious_message>`,
   ]
     .filter(Boolean)
@@ -243,7 +264,7 @@ export async function check(input: CheckInput): Promise<Verdict> {
     allLinks = [...links, ...extra]
   }
   const shownText = text || mv.transcript || ''
-  const {verdict, confidence, overrides} = applyOverrides(mv, allLinks)
+  const {verdict, confidence, overrides} = applyOverrides(mv, allLinks, hiddenIsHostile(hidden))
   const pattern = PATTERNS.find((p) => p.id === mv.pattern_id) ?? null
   const radar = pattern ? await latestRadar().catch(() => null) : null
   const hot = radar?.scams.find((s) => s.pattern_id === pattern?.id)
@@ -268,6 +289,7 @@ export async function check(input: CheckInput): Promise<Verdict> {
     ms: Date.now() - t0,
     inputHadImage: Boolean(input.image),
     truncated,
+    hidden: hiddenNotes,
     country: input.country ?? null,
     trending: hot ? {title: hot.title, status: hot.status} : null,
   }

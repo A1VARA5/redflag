@@ -4,11 +4,13 @@ import {VERDICT_SHORT} from '@/lib/labels'
 
 export const metadata: Metadata = {title: 'Test results · Red Flag', description: 'Red Flag against a public test set of scams, genuine messages and prompt-injection attacks, compared with a plain AI model. Every miss is listed.'}
 
-type Row = {id: string; kind: string; set: string; text: string; redflag: string; confidence: number | null; baseline: string; redflag_correct: boolean; baseline_correct: boolean; headline: string; overrides: string[]; pattern_expected: string | null; pattern_got: string | null}
+type Row = {id: string; kind: string; set: string; label?: string | null; text: string; redflag: string; confidence: number | null; baseline: string; redflag_correct: boolean; baseline_correct: boolean | null; headline: string; overrides: string[]; pattern_expected: string | null; pattern_got: string | null}
 const {summary, results} = data as unknown as {
-  summary: {ranAt: string; model: string; baselineModel: string; n: number; redflag: Record<string, number>; baseline: Record<string, number>; hard: {n: number; redflag: number; baseline: number}}
+  summary: {ranAt: string; model: string; baselineModel: string; n: number; redflag: Record<string, number>; baseline: Record<string, number>; hard: {n: number; redflag: number; baseline: number}; attacks?: {n: number; redflag: number}}
   results: Row[]
 }
+const main = results.filter((r) => r.set !== 'attack')
+const attacks = results.filter((r) => r.set === 'attack')
 
 const pct = (x: number) => `${Math.round(x * 100)}%`
 const KIND = {scam: 'Scam', legit: 'Genuine', injection: 'Injection attack'} as const
@@ -38,8 +40,8 @@ function Stat({label, rf, base, note}: {label: string; rf: number; base?: number
 
 export default function Eval() {
   const misses = results.filter((r) => !r.redflag_correct)
-  const counts = (k: string, set?: string) => results.filter((r) => r.kind === k && (!set || r.set === set)).length
-  const baseMisses = results.filter((r) => !r.baseline_correct)
+  const counts = (k: string, set?: string) => main.filter((r) => r.kind === k && (!set || r.set === set)).length
+  const baseMisses = main.filter((r) => r.baseline_correct === false)
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pt-12 sm:px-6">
       <h1 className="text-[34px] font-bold leading-tight tracking-tight sm:text-[42px]">Test results</h1>
@@ -84,6 +86,28 @@ export default function Eval() {
         </section>
       )}
 
+      {attacks.length > 0 && (
+        <section className="mt-14">
+          <h2 className="text-2xl font-bold tracking-tight">Attacks on the checker</h2>
+          <p className="mt-2 max-w-3xl text-[16px] text-ink-2">
+            Tricks aimed at Red Flag itself rather than at the reader: hidden instructions, invisible characters, look-alike letters, fake evidence and links hidden in QR codes. Two normal messages are included to make sure the defences don&apos;t cause false alarms. Red Flag got {attacks.filter((r) => r.redflag_correct).length} of {attacks.length} right. The plain model also caught the text ones, because the scam was obvious in the visible words; what matters here is that the hidden tricks didn&apos;t change Red Flag&apos;s answer.
+          </p>
+          <ul className="mt-5 grid gap-3 md:grid-cols-2">
+            {attacks.map((r) => (
+              <li key={r.id} className="flex items-start justify-between gap-4 rounded-xl border border-line bg-card p-4">
+                <span className="text-[15px] text-ink">{r.label ?? r.id}</span>
+                <span className="flex shrink-0 flex-col items-end gap-1 text-[13px] text-ink-3">
+                  <span className="flex items-center gap-2">
+                    Red Flag <Chip v={r.redflag} /> <span className={r.redflag_correct ? 'text-safe' : 'text-danger'}>{r.redflag_correct ? '✓' : '✗'}</span>
+                  </span>
+                  <span>{r.baseline === 'n/a' ? "Plain model can't read images" : <>Plain model <Chip v={r.baseline} /></>}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="mt-14">
         <h2 className="text-2xl font-bold tracking-tight">Red Flag&apos;s misses</h2>
         {misses.length === 0 ? (
@@ -119,7 +143,7 @@ export default function Eval() {
               </tr>
             </thead>
             <tbody>
-              {results.map((r) => (
+              {main.map((r) => (
                 <tr key={r.id} className="border-b border-line last:border-0">
                   <td className="max-w-md px-4 py-3">
                     <div className="line-clamp-2 text-ink" title={r.text}>

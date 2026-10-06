@@ -75,6 +75,7 @@ export function LinkPanel({links}: {links: LinkReport[]}) {
               {l.finalUrl && l.finalUrl !== l.url && <span className="text-ink-3"> → {safeHost(l.finalUrl)}</span>}
             </div>
             <div className="mt-0.5 flex flex-wrap gap-x-3 text-[13px] text-ink-3">
+              {l.fromQr && <span className="font-medium text-ink-2">Read from a QR code</span>}
               {l.registered && <span>Registered {l.registered}</span>}
               {l.brand && <span>{l.official ? `Real ${l.brand} address` : `Uses the name ${l.brand}`}</span>}
             </div>
@@ -152,6 +153,12 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
           <div className="mt-4 rounded-lg border border-line-2 bg-card px-4 py-3 text-[14px] text-ink-2">
             <span className="font-semibold text-ink">Our checks overruled the AI. </span>
             {v.overrides.join(' ')}
+          </div>
+        )}
+        {v.hidden && v.hidden.length > 0 && (
+          <div className="mt-3 rounded-lg border border-line-2 bg-card px-4 py-3 text-[14px] text-ink-2">
+            <span className="font-semibold text-ink">Hidden characters found. </span>
+            {v.hidden.join(' ')}
           </div>
         )}
       </div>

@@ -1,11 +1,13 @@
 // Runs the public test set through Red Flag and through a plain open model (no link checks, no knowledge base).
-// npx tsx scripts/eval.mts   -> writes eval/results.json
-import {readFileSync, writeFileSync} from 'node:fs'
+// npx tsx scripts/eval.mts                 -> runs every case, writes eval/results.json
+// EVAL_SET=attack npx tsx scripts/eval.mts  -> runs one set and merges it into the saved results
+import {existsSync, readFileSync, writeFileSync} from 'node:fs'
 import OpenAI from 'openai'
 import {check} from '../src/lib/verdict.ts'
 
-type Case = {id: string; kind: 'scam' | 'legit' | 'injection'; expect: string; set: 'core' | 'hard'; pattern?: string; text: string}
-const cases = JSON.parse(readFileSync('eval/cases.json', 'utf8')) as Case[]
+type Case = {id: string; kind: 'scam' | 'legit' | 'injection'; expect: string; set: 'core' | 'hard' | 'attack'; pattern?: string; text: string; image?: string; label?: string}
+const ONLY = process.env.EVAL_SET
+const cases = (JSON.parse(readFileSync('eval/cases.json', 'utf8')) as Case[]).filter((c) => !ONLY || c.set === ONLY)
 const BASELINE = 'Qwen/Qwen2.5-72B-Instruct'
 const featherless = new OpenAI({baseURL: 'https://api.featherless.ai/v1', apiKey: process.env.FEATHERLESS_API_KEY})
 
@@ -38,13 +40,16 @@ const results: Record<string, unknown>[] = []
 const queue = [...cases]
 async function worker() {
   for (let c = queue.shift(); c; c = queue.shift()) {
-    const [rf, base] = await Promise.all([check({text: c.text}).catch((e) => ({error: String(e)}) as const), baseline(c.text)])
+    // Screenshot cases: the plain text model can't see images, so it isn't scored on them.
+    const image = c.image ? {mediaType: 'image/png' as const, data: readFileSync(c.image).toString('base64')} : null
+    const [rf, base] = await Promise.all([check({text: c.text, image}).catch((e) => ({error: String(e)}) as const), image ? Promise.resolve('n/a') : baseline(c.text)])
     const v = 'error' in rf ? 'error' : rf.verdict
     const row = {
       id: c.id,
       kind: c.kind,
       set: c.set,
-      text: c.text,
+      label: c.label ?? null,
+      text: c.text || (c.image ? '(screenshot)' : ''),
       redflag: v,
       confidence: 'error' in rf ? null : rf.confidence,
       pattern_expected: c.pattern ?? null,
@@ -54,7 +59,7 @@ async function worker() {
       ms: 'error' in rf ? null : rf.ms,
       redflag_correct: correct(c, v),
       baseline: base,
-      baseline_correct: correct(c, base),
+      baseline_correct: base === 'n/a' ? null : correct(c, base),
     }
     results.push(row)
     console.log(`${row.redflag_correct ? '✓' : '✗'} ${row.baseline_correct ? '✓' : '✗'}  ${c.id.padEnd(34)} RF=${v.padEnd(10)} base=${base}`)
@@ -62,8 +67,20 @@ async function worker() {
 }
 await Promise.all([worker(), worker(), worker()])
 
-const by = (k: string) => results.filter((r) => r.kind === k)
-const rate = (rows: Record<string, unknown>[], key: string) => rows.filter((r) => r[key]).length / rows.length
+// With EVAL_SET, keep the saved results for the other sets.
+if (ONLY && existsSync('eval/results.json')) {
+  const saved = JSON.parse(readFileSync('eval/results.json', 'utf8')) as {results: Record<string, unknown>[]}
+  results.push(...saved.results.filter((r) => r.set !== ONLY))
+}
+
+// The headline numbers cover the core and hard sets; the attack set is reported on its own.
+const main = results.filter((r) => r.set !== 'attack')
+const attacks = results.filter((r) => r.set === 'attack')
+const by = (k: string) => main.filter((r) => r.kind === k)
+const rate = (rows: Record<string, unknown>[], key: string) => {
+  const scored = rows.filter((r) => r[key] !== null)
+  return scored.length ? scored.filter((r) => r[key]).length / scored.length : null
+}
 function median(xs: number[]) {
   const s = [...xs].sort((a, b) => a - b)
   return s.length ? s[Math.floor(s.length / 2)] : null
@@ -73,22 +90,27 @@ const summary = {
   ranAt: new Date().toISOString(),
   model: process.env.REDFLAG_MODEL ?? 'claude-opus-5-5',
   baselineModel: BASELINE,
-  n: results.length,
+  n: main.length,
   redflag: {
-    overall: rate(results, 'redflag_correct'),
+    overall: rate(main, 'redflag_correct'),
     scamsCaught: rate(by('scam'), 'redflag_correct'),
     injectionsCaught: rate(by('injection'), 'redflag_correct'),
     legitCleared: rate(by('legit'), 'redflag_correct'),
     patternMatch: by('scam').filter((r) => r.pattern_expected).filter((r) => r.pattern_got === r.pattern_expected).length / by('scam').filter((r) => r.pattern_expected).length,
-    medianMs: median(results.map((r) => r.ms as number).filter(Boolean)),
+    medianMs: median(main.map((r) => r.ms as number).filter(Boolean)),
   },
   hard: {
     n: results.filter((r) => r.set === 'hard').length,
     redflag: rate(results.filter((r) => r.set === 'hard'), 'redflag_correct'),
     baseline: rate(results.filter((r) => r.set === 'hard'), 'baseline_correct'),
   },
+  attacks: {
+    n: attacks.length,
+    redflag: rate(attacks, 'redflag_correct'),
+    baseline: rate(attacks, 'baseline_correct'),
+  },
   baseline: {
-    overall: rate(results, 'baseline_correct'),
+    overall: rate(main, 'baseline_correct'),
     scamsCaught: rate(by('scam'), 'baseline_correct'),
     injectionsCaught: rate(by('injection'), 'baseline_correct'),
     legitCleared: rate(by('legit'), 'baseline_correct'),

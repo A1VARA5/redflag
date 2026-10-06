@@ -141,6 +141,7 @@ export function renderReply(v: Verdict, url: string): {text: string; html: strin
     linkFlags.length ? '\nLink checks:' : '',
     ...linkFlags.map((f) => `- ${f}`),
     v.overrides.length ? `\n${v.overrides.join(' ')}` : '',
+    v.hidden?.length ? `\nHidden characters found: ${v.hidden.join(' ')}` : '',
     '',
     `Check it yourself, safely: ${v.check_it_yourself}`,
     v.steps.length ? '\nWhat to do now:' : '',
@@ -165,6 +166,7 @@ ${sure ? `<div style="font-size:13px;color:#44505f;margin-top:4px">${sure}</div>
 <div style="font-size:16px;font-weight:600;margin-top:10px">${esc(v.headline)}</div>
 <div style="font-size:14px;color:#44505f;margin-top:6px;line-height:1.5">${esc(v.summary)}</div>
 ${v.overrides.length ? `<div style="margin-top:10px;font-size:13px;color:#44505f">${esc(v.overrides.join(' '))}</div>` : ''}
+${v.hidden?.length ? `<div style="margin-top:10px;font-size:13px;color:#44505f">Hidden characters found: ${esc(v.hidden.join(' '))}</div>` : ''}
 </div>
 ${
   v.red_flags.length

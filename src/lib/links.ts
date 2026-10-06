@@ -27,6 +27,7 @@ export type LinkReport = {
   flags: LinkFlag[]
   vt?: VtResult | null
   scan?: Scan | null
+  fromQr?: boolean
 }
 
 type Brand = {brand: string; domains: string[]; keywords: string[]}

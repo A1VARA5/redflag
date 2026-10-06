@@ -87,6 +87,12 @@ export default async function How() {
             <strong className="font-semibold text-ink">Where the link really goes</strong>, after short links and redirects, without loading the page.
           </li>
           <li>
+            <strong className="font-semibold text-ink">QR codes in screenshots</strong>, read by code so the hidden link gets the same checks.
+          </li>
+          <li>
+            <strong className="font-semibold text-ink">Invisible characters</strong>: hidden text is decoded and shown, direction tricks that disguise file names are flagged, and invisible spaces are removed before the link checks.
+          </li>
+          <li>
             <strong className="font-semibold text-ink">The words.</strong> {kinds} common scams, each based on an official warning from Report Fraud, NCSC, FCA, FTC, FBI, Europol or the company being copied.
           </li>
         </ul>
