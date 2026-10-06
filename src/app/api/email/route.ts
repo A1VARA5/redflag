@@ -1,7 +1,7 @@
 import {after} from 'next/server'
 import {check} from '@/lib/verdict'
 import {saveVerdict} from '@/lib/store'
-import {attachmentText, downloadAttachment, getMessage, htmlToText, renderReply, reply, senderOf, senderVerified, verifyMailroom, type MailMessage} from '@/lib/email'
+import {attachmentText, downloadAttachment, getMessage, hiddenHtmlText, htmlToText, renderReply, reply, senderOf, senderVerified, verifyMailroom, type MailMessage} from '@/lib/email'
 
 export const maxDuration = 60
 
@@ -66,7 +66,10 @@ export async function POST(req: Request) {
         .filter(Boolean)
         .join('\n')
 
+      // The plain text part can look clean while the HTML hides instructions for an AI, so scan the HTML too.
+      const hiddenText = m.html ? hiddenHtmlText(m.html) : []
       const v = await check({
+        hiddenText,
         text,
         image: img ? {mediaType: imgAtt!.content_type as 'image/png', data: img.data} : null,
         source: 'email',

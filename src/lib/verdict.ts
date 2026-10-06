@@ -172,6 +172,8 @@ export type CheckInput = {
   situation?: Situation
   source?: Verdict['source']
   extraSignals?: string | null
+  // Text the sender hid from the reader (found by code in an email's HTML).
+  hiddenText?: string[]
   onLinks?: (links: LinkReport[]) => void
   country?: string | null
 }
@@ -183,7 +185,11 @@ export async function check(input: CheckInput): Promise<Verdict> {
   // Long messages: links are found in the whole text; the model reads the start and the end, where scams hide.
   // Invisible characters are counted and removed first, so they can't split a link or hide words from the checks.
   const hidden = scanHidden(input.text.slice(0, 60_000))
-  const hiddenNotes = hiddenFindings(hidden)
+  const hiddenNotes = [
+    ...hiddenFindings(hidden),
+    ...(input.hiddenText ?? []).map((t) => `Hidden in the email's HTML, so your mail app doesn't show it, but an AI would read it: "${t}"`),
+  ]
+  const hostileHidden = hiddenIsHostile(hidden) || (input.hiddenText?.length ?? 0) > 0
   const full = hidden.cleaned
   const truncated = full.length > 8000
   const text = truncated ? `${full.slice(0, 5000)}\n\n[… ${full.length - 8000} characters in the middle not shown …]\n\n${full.slice(-3000)}` : full
@@ -264,7 +270,7 @@ export async function check(input: CheckInput): Promise<Verdict> {
     allLinks = [...links, ...extra]
   }
   const shownText = text || mv.transcript || ''
-  const {verdict, confidence, overrides} = applyOverrides(mv, allLinks, hiddenIsHostile(hidden))
+  const {verdict, confidence, overrides} = applyOverrides(mv, allLinks, hostileHidden)
   const pattern = PATTERNS.find((p) => p.id === mv.pattern_id) ?? null
   const radar = pattern ? await latestRadar().catch(() => null) : null
   const hot = radar?.scams.find((s) => s.pattern_id === pattern?.id)

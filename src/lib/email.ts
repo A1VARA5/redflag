@@ -106,6 +106,25 @@ export function senderOf(m: MailMessage): string {
   return (f.address ?? f.email ?? '').toLowerCase()
 }
 
+// Text an email's HTML hides from the reader: display:none, visibility:hidden, zero size or opacity, the hidden
+// attribute, and comments. Newsletters hide harmless preview text this way, so only text that talks to an AI or
+// a checker counts. A human never sees it; a careless AI reads it as an order.
+const HIDING = /display\s*:\s*none|visibility\s*:\s*hidden|font-size\s*:\s*0+(px|pt|em|%)?\s*(;|$)|opacity\s*:\s*0+(\.0+)?\s*(;|$)|max-height\s*:\s*0+(px)?\s*(;|$)/i
+const TALKS_TO_AI = /\b(ignore|disregard|forget)\b.{0,40}\b(instruction|previous|above|prior|rules)|\b(ai|assistant|model|llm|chatbot|gpt|claude|checker|filter|classifier|system prompt)\b|\bclassify\b|\bmark (this|it) as\b/i
+
+export function hiddenHtmlText(html: string): string[] {
+  const found: string[] = []
+  for (const m of html.matchAll(/<(\w+)\b([^>]*)>([\s\S]*?)<\/\1>/gi)) {
+    const attrs = m[2]
+    const style = /\bstyle\s*=\s*("([^"]*)"|'([^']*)')/i.exec(attrs)
+    if ((style && HIDING.test(style[2] ?? style[3] ?? '')) || /\bhidden\b(?!\s*=\s*["']?false)/i.test(attrs.replace(/style\s*=\s*("[^"]*"|'[^']*')/i, ''))) {
+      found.push(htmlToText(m[3]))
+    }
+  }
+  for (const m of html.matchAll(/<!--([\s\S]*?)-->/g)) found.push(m[1].trim())
+  return [...new Set(found.map((t) => t.replace(/\s+/g, ' ').trim()))].filter((t) => t.length >= 8 && TALKS_TO_AI.test(t)).slice(0, 5).map((t) => t.slice(0, 300))
+}
+
 export function htmlToText(html: string) {
   return html
     .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
