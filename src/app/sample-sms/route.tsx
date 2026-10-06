@@ -12,7 +12,7 @@ export function GET() {
       <div style={{width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: '#fff', fontFamily: 'sans-serif'}}>
         <div style={{display: 'flex', justifyContent: 'space-between', padding: '22px 36px 0', fontSize: 24, fontWeight: 700, color: '#111'}}>
           <span>09:41</span>
-          <span>5G ▮▮▮</span>
+          <span>5G</span>
         </div>
         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '26px 0 22px', borderBottom: '1px solid #ddd'}}>
           <div style={{width: 78, height: 78, borderRadius: 39, background: '#9aa0a6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 34}}>E</div>
