@@ -58,6 +58,10 @@ As soon as a link appears in the box, it is checked in about a second. In the fu
 2. By email, forward a suspicious email to **redflag@homingbox.net** (an Agentboxd inbox) and the result comes back as a reply. Agentboxd's own phishing and prompt injection scores are passed in as evidence. Red Flag only replies when the sender's mail server passed SPF or DKIM, so a forged From address can't make it email a stranger. Attached PDFs and documents are read too (Agentboxd extracts the text, with OCR for scans), because fake invoices usually arrive as an attachment.
 3. In Discord, [add the app](https://discord.com/oauth2/authorize?client_id=1556639934457184256), then right click any message, Apps, **Red Flag this**, or type **/redflag** and paste a message, a link, a screenshot or a PDF (PDFs shared in a message are read too). Only you see the answer, and it works in DMs from strangers. On a scam result, **Warn the channel** posts a short public warning with the report link, without pinging anyone.
 
+| A fake invoice PDF shared in Discord | A link hidden in a QR code |
+|---|---|
+| ![Discord: fake invoice PDF flagged as a scam](docs/media/discord-invoice-pdf.png) | ![Discord: QR code on a fake delivery card read and flagged](docs/media/discord-qr-card.png) |
+
 ## How it works
 
 ```

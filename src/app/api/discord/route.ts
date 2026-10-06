@@ -50,7 +50,8 @@ function resultMessage(v: Verdict, site: string) {
     ...new Set(
       v.links.flatMap((l) => [
         ...(l.fromQr ? [`\`${l.host}\`: read from a QR code in the image.`] : []),
-        ...l.flags.filter((f) => f.severity === 'high').map((f) => `\`${l.host}\`: ${f.detail}`),
+        ...(l.flags.some((f) => f.severity === 'high') ? l.flags.filter((f) => f.severity === 'high') : l.flags.filter((f) => f.severity === 'medium' && f.code !== 'qr-code'))
+          .map((f) => `\`${l.host}\`: ${f.detail}`),
       ]),
     ),
   ].slice(0, 4)
