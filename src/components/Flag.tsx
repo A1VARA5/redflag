@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export function Flag({size = 28}: {size?: number}) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
@@ -10,9 +12,9 @@ export function Flag({size = 28}: {size?: number}) {
 
 export function Logo() {
   return (
-    <a href="/" className="flex items-center gap-2.5 text-[17px] font-semibold tracking-tight text-ink">
+    <Link href="/" className="flex items-center gap-2.5 text-[17px] font-semibold tracking-tight text-ink">
       <Flag />
       Red Flag
-    </a>
+    </Link>
   )
 }

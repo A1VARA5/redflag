@@ -4,13 +4,15 @@ import {sign} from '@/lib/sign'
 
 export const maxDuration = 60
 
+const CHECKS_PER_10_MIN = Number(process.env.REDFLAG_RATE_MAX ?? 20)
+
 const REGIONS = new Set(['UK', 'US', 'EU'])
 const SITUATIONS = new Set(['received_only', 'clicked_link', 'entered_details', 'paid_money', 'gave_code_or_remote_access'])
 const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif'])
 
 // Streams newline-delimited JSON: {"type":"links"} as soon as the non-AI checks finish, then {"type":"verdict"} or {"type":"error"}.
 export async function POST(req: Request) {
-  const limited = rateLimited(req)
+  const limited = rateLimited(req, {name: 'check', max: CHECKS_PER_10_MIN, windowMs: 10 * 60_000, message: `That's ${CHECKS_PER_10_MIN} checks in ten minutes. Please wait a few minutes and try again.`})
   if (limited) return limited
   let body: {text?: string; image?: {mediaType?: string; data?: string} | null; region?: string; situation?: string; country?: string}
   try {
@@ -21,7 +23,7 @@ export async function POST(req: Request) {
   const text = (body.text ?? '').toString().trim()
   const image = body.image?.data && IMAGE_TYPES.has(body.image.mediaType ?? '') ? body.image : null
   if (!text && !image) return Response.json({error: 'Paste a message or add a screenshot.'}, {status: 400})
-  if (image && image.data!.length > 5_500_000) return Response.json({error: 'Screenshot is over 4 MB.'}, {status: 413})
+  if (image && image.data!.length > 4_400_000) return Response.json({error: 'That screenshot is too big. Try a smaller one.'}, {status: 413})
 
   const enc = new TextEncoder()
   const stream = new ReadableStream({

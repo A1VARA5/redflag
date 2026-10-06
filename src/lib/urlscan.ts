@@ -1,17 +1,22 @@
 // urlscan.io: opens a link in a sandboxed browser and records what the page looks like.
-// We reuse a recent public scan of the same domain when there is one, otherwise start an unlisted scan.
+// We reuse a recent public scan of the same address when there is one, otherwise start an unlisted scan.
+// The whole address has to match: on shared hosting, another page on the same domain says nothing about this one.
 export type Scan = {uuid: string; time: string | null; malicious: boolean | null; pending: boolean; reused: boolean; page: string}
 
 const KEY = () => process.env.URLSCAN_API_KEY
 
-export async function recentScan(host: string): Promise<Scan | null> {
+export async function recentScan(url: string): Promise<Scan | null> {
   const key = KEY()
   if (!key) return null
   try {
+    const host = new URL(url).hostname
     const q = encodeURIComponent(`page.domain:${host} AND date:>now-30d`)
-    const res = await fetch(`https://urlscan.io/api/v1/search/?q=${q}&size=1`, {headers: {'API-Key': key}, signal: AbortSignal.timeout(4000)})
+    const res = await fetch(`https://urlscan.io/api/v1/search/?q=${q}&size=50`, {headers: {'API-Key': key}, signal: AbortSignal.timeout(4000)})
     if (!res.ok) return null
-    const r = ((await res.json()) as {results?: {_id: string; task?: {time?: string}; verdicts?: {malicious?: boolean}}[]}).results?.[0]
+    type Hit = {_id: string; task?: {time?: string; url?: string}; page?: {url?: string}; verdicts?: {malicious?: boolean}}
+    const results = ((await res.json()) as {results?: Hit[]}).results ?? []
+    const same = (u?: string) => u === url || u === url.replace(/\/$/, '')
+    const r = results.find((h) => same(h.task?.url) || same(h.page?.url))
     if (!r) return null
     return {uuid: r._id, time: r.task?.time?.slice(0, 10) ?? null, malicious: r.verdicts?.malicious ?? null, pending: false, reused: true, page: `https://urlscan.io/result/${r._id}/`}
   } catch {

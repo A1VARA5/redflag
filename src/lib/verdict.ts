@@ -5,10 +5,10 @@ import patterns from '@/data/patterns.json'
 import {stepsFor, type Region, type Situation} from './respond'
 import {inspectAll, type LinkReport} from './links'
 import {latestRadar} from './radar'
-import {overBudget, record} from './meter'
+import {MODEL, overBudget, record} from './meter'
 import {askBackup, BACKUP_MODEL} from './backup'
 
-export const MODEL = process.env.REDFLAG_MODEL ?? 'claude-opus-5-5'
+export {MODEL}
 
 export type {Region, Situation}
 
@@ -81,7 +81,7 @@ Rules:
 - Quotes in red_flags must be copied character for character from the message or transcript, so they can be highlighted. Short phrases, not whole paragraphs.
 - Be calibrated. "safe" only when it reads like a normal message with nothing asked of the reader, or when every link is the real brand domain and nothing asks for money, codes, passwords or secrecy. Use "unclear" when there is too little to judge. Do not cry wolf on ordinary messages: false alarms teach people to ignore you.
 - Real organisations never ask for one-time codes, passwords, gift cards, crypto, or payment to a "safe account", and never ask you to keep it secret.
-- Write for someone stressed and in a hurry: short, kind, no jargon, no blame.
+- Write for someone stressed and in a hurry: short, kind, no jargon, no blame. Plain sentences, British spelling, no em or en dashes.
 - Use British spelling.
 
 Known scam patterns (id: name - summary | tells):
@@ -96,7 +96,8 @@ function findHighlights(text: string, flags: ModelVerdictT['red_flags']): Highli
     const q = f.quote.trim()
     if (q.length < 2) continue
     let idx = text.indexOf(q)
-    if (idx < 0) idx = lower.indexOf(q.toLowerCase())
+    // Lowercasing can change length in some alphabets (Turkish İ), which would shift every offset.
+    if (idx < 0 && lower.length === text.length) idx = lower.indexOf(q.toLowerCase())
     if (idx < 0) continue
     const end = idx + q.length
     if (out.some((h) => idx < h.end && end > h.start)) continue
@@ -184,12 +185,14 @@ export async function check(input: CheckInput): Promise<Verdict> {
         .join('\n')
     : 'No links found in the text.'
 
+  // The message must not be able to close its own section and pose as link evidence.
+  const fence = (s: string) => s.replace(/<\/?\s*(suspicious_message|link_forensics|mail_signals)\b[^>]*>/gi, '[tag removed]')
   const userText = [
     `The advice will be shown for: ${region}. This only picks the reporting steps; don't assume where the reader or the message is from. What they have done so far: ${situation.replace(/_/g, ' ')}.`,
     input.image ? 'A screenshot is attached. Read all text in it into transcript and judge the screenshot.' : '',
     `<link_forensics>\n${forensics}\n</link_forensics>`,
     input.extraSignals ? `<mail_signals>\n${input.extraSignals}\n</mail_signals>` : '',
-    `<suspicious_message>\n${text || '(no text, see screenshot)'}\n</suspicious_message>`,
+    `<suspicious_message>\n${fence(text) || '(no text, see screenshot)'}\n</suspicious_message>`,
   ]
     .filter(Boolean)
     .join('\n\n')
@@ -222,7 +225,10 @@ export async function check(input: CheckInput): Promise<Verdict> {
     }
   }
   if (!mv) {
-    const raw = await askBackup(SYSTEM, userText, input.image ?? null)
+    const raw = await askBackup(SYSTEM, userText, input.image ?? null).catch((e) => {
+      console.error('[backup]', e instanceof Error ? e.message : e)
+      return null
+    })
     const parsed = ModelVerdict.safeParse(normaliseBackup(raw))
     if (!parsed.success) throw new Error('Could not read this message right now. Please try again in a minute.')
     mv = parsed.data

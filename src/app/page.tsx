@@ -11,7 +11,7 @@ const DISCORD = `https://discord.com/oauth2/authorize?client_id=${process.env.DI
 
 export default async function Home() {
   const [bl, radar] = await Promise.all([blocklistMeta().catch(() => null), latestRadar().catch(() => null)])
-  const blocklistSize = bl ? bl.total.toLocaleString('en-GB') : '560,000'
+  const blocklistSize = bl ? bl.total.toLocaleString('en-GB') : 'over 550,000'
 
   return (
     <main>
@@ -28,14 +28,14 @@ export default async function Home() {
       </section>
 
       <section className="mx-auto grid w-full max-w-6xl gap-x-10 gap-y-8 px-4 pt-14 sm:px-6 md:grid-cols-3">
-        <Point icon={<LinkIcon className="h-5 w-5" />} title="Every link is checked">
-          Against Google Safe Browsing and {blocklistSize} known phishing sites, with the domain&apos;s age and whether it really belongs to the brand it names. When a link is known to be bad, the answer is scam. No arguing.
+        <Point icon={<LinkIcon className="h-5 w-5" />} title="Links are checked first">
+          Against Google Safe Browsing and {blocklistSize} known phishing sites, with the domain&apos;s age and whether it really belongs to the brand it names. When a link is known to be bad, the answer is scam.
         </Point>
         <Point icon={<ShieldCheck className="h-5 w-5" />} title="It shows its reasons">
           You see the exact words that give it away and why, so you learn to spot the next one yourself. It knows {(patterns as unknown[]).length} common scams and the real web addresses of {(brands as unknown[]).length} banks, couriers and services.
         </Point>
         <Point icon={<Lock className="h-5 w-5" />} title="Private by default">
-          Nothing you paste is kept. A result is saved only if you share it, and shared results are signed so nobody can fake a &ldquo;no red flags&rdquo; result for their own scam.
+          Nothing you paste on the website is kept. A result is saved only if you share it, and shared results are signed so nobody can fake a &ldquo;no red flags&rdquo; result for their own scam.
         </Point>
       </section>
 

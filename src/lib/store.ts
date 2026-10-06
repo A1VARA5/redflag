@@ -1,16 +1,16 @@
 // Private Vercel Blob store in production (not reachable by URL, only through this app); a local folder in dev.
-// Holds shared verdicts ("send this to Mum") and the weekly radar.
+// Holds shared verdicts and the scam radar.
 import {put, get} from '@vercel/blob'
 import {promises as fs} from 'node:fs'
 import path from 'node:path'
 import type {Verdict} from './verdict'
 
 const LOCAL = path.join(process.cwd(), '.data')
-const useBlob = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN)
+const blobEnabled = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN)
 
 export async function saveJson(key: string, value: unknown) {
   const json = JSON.stringify(value)
-  if (useBlob()) {
+  if (blobEnabled()) {
     await put(key, json, {access: 'private', contentType: 'application/json', addRandomSuffix: false, allowOverwrite: true})
   } else {
     const file = path.join(LOCAL, key)
@@ -21,7 +21,7 @@ export async function saveJson(key: string, value: unknown) {
 
 export async function loadJson<T>(key: string): Promise<T | null> {
   try {
-    if (useBlob()) {
+    if (blobEnabled()) {
       const res = await get(key, {access: 'private', useCache: false})
       if (!res || res.statusCode !== 200) return null
       return (await new Response(res.stream).json()) as T

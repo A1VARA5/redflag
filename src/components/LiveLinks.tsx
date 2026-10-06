@@ -9,29 +9,34 @@ export function LiveLinks({text}: {text: string}) {
   const [links, setLinks] = useState<LinkReport[] | null>(null)
   const [loading, setLoading] = useState(false)
   const last = useRef('')
+  const seq = useRef(0)
+
+  const hasLink = /https?:\/\/|hxxps?:\/\/|\b[a-z0-9-]+\.(com|co\.uk|uk|net|org|info|top|xyz|io|app|link|me|site|online|shop|click|live|ly|gd)\b/i.test(text)
 
   useEffect(() => {
-    const hasLink = /https?:\/\/|hxxps?:\/\/|\b[a-z0-9-]+\.(com|co\.uk|uk|net|org|info|top|xyz|io|app|link|me|site|online|shop|click|live|ly|gd)\b/i.test(text)
     if (!hasLink) {
-      setLinks(null)
       last.current = ''
       return
     }
     const t = setTimeout(async () => {
       if (text === last.current) return
       last.current = text
+      // A slow answer for older text must not replace a newer one.
+      const mine = ++seq.current
       setLoading(true)
       try {
         const res = await fetch('/api/links', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({text})})
-        if (res.ok) setLinks((await res.json()).links)
+        if (res.ok && mine === seq.current) setLinks((await res.json()).links)
+      } catch {
+        // The full check still runs; the instant one is a bonus.
       } finally {
-        setLoading(false)
+        if (mine === seq.current) setLoading(false)
       }
     }, 500)
     return () => clearTimeout(t)
-  }, [text])
+  }, [text, hasLink])
 
-  if (!loading && (!links || links.length === 0)) return null
+  if (!hasLink || (!loading && (!links || links.length === 0))) return null
   return (
     <div className="mt-3 rounded-xl border border-line bg-card p-4">
       <div className="flex items-center gap-2 text-[14px] font-semibold text-ink">

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import {Logo} from './Flag'
 
 export function Footer() {
@@ -13,10 +14,10 @@ export function Footer() {
         <div>
           <div className="font-semibold text-ink">Red Flag</div>
           <ul className="mt-3 space-y-2">
-            <li><a href="/" className="hover:text-ink">Check a message</a></li>
-            <li><a href="/radar" className="hover:text-ink">This week's scams</a></li>
-            <li><a href="/how" className="hover:text-ink">How it works</a></li>
-            <li><a href="/eval" className="hover:text-ink">Test results</a></li>
+            <li><Link href="/" className="hover:text-ink">Check a message</Link></li>
+            <li><Link href="/radar" className="hover:text-ink">This week&apos;s scams</Link></li>
+            <li><Link href="/how" className="hover:text-ink">How it works</Link></li>
+            <li><Link href="/eval" className="hover:text-ink">Test results</Link></li>
             <li><a href="https://github.com/A1VARA5/redflag" target="_blank" rel="noreferrer" className="hover:text-ink">Source code</a></li>
           </ul>
         </div>

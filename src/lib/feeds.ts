@@ -1,5 +1,5 @@
 // Phishing blocklists. Two layers:
-// 1. A combined list of ~600k known phishing hosts and URLs from five public feeds, rebuilt daily by a cron job
+// 1. A combined list of over 500k known phishing hosts and URLs from five public feeds, rebuilt daily by a cron job
 //    and split into 64 hashed shards in private storage. A lookup loads only the one shard it needs.
 // 2. The OpenPhish feed fetched live (every 30 min per server), so the last few hours are covered too.
 import {createHash} from 'node:crypto'
@@ -12,8 +12,6 @@ const PATH_PLATFORMS =
 // Platforms that hand each customer their own subdomain (name.vercel.app): that subdomain belongs to one person, so it can be blocked whole.
 const SUBDOMAIN_PLATFORMS =
   /\.(vercel\.app|netlify\.app|pages\.dev|workers\.dev|web\.app|firebaseapp\.com|github\.io|blogspot\.com|wixsite\.com|weebly\.com|webflow\.io|glitch\.me|replit\.app|framer\.app|notion\.site|canva\.site|r2\.dev|wordpress\.com|square\.site|azurewebsites\.net|000webhostapp\.com|godaddysites\.com|mystrikingly\.com|jimdosite\.com|herokuapp\.com|onrender\.com|fly\.dev|surge\.sh|translate\.goog)$/
-// Kept for the link checker: hosts where a blocklist hit on the host alone means little.
-export const SHARED_HOSTING = PATH_PLATFORMS
 const urlOnly = (host: string) => PATH_PLATFORMS.test(host) || (/\.(google|googleusercontent|amazonaws|sharepoint|dropbox)\.com$/.test(host) && !SUBDOMAIN_PLATFORMS.test(host))
 
 export const SOURCES = [
@@ -23,7 +21,6 @@ export const SOURCES = [
   {id: 'phishingdb', name: 'Phishing.Database', url: 'https://raw.githubusercontent.com/Phishing-Database/Phishing.Database/master/phishing-domains-ACTIVE.txt', kind: 'domains'},
   {id: 'phishingarmy', name: 'Phishing Army', url: 'https://phishing.army/download/phishing_army_blocklist.txt', kind: 'domains'},
 ] as const
-export type SourceId = (typeof SOURCES)[number]['id']
 
 const SHARDS = 64
 const shardOf = (key: string) => parseInt(createHash('sha1').update(key).digest('hex').slice(0, 4), 16) % SHARDS
@@ -89,7 +86,12 @@ export async function buildBlocklist(): Promise<BlocklistMeta> {
           }
         } else {
           const urls = s.kind === 'csv' ? parseCsvUrls(text) : text.split('\n').filter((l) => /^https?:\/\//.test(l.trim()))
-          for (const u of urls) for (const k of keysForUrl(u)) (add(k, s.id), n++)
+          for (const u of urls) {
+            for (const k of keysForUrl(u)) {
+              add(k, s.id)
+              n++
+            }
+          }
         }
         sources.push({id: s.id, name: s.name, ok: true, entries: n})
       } catch {
@@ -124,6 +126,7 @@ async function liveOpenPhish(): Promise<Set<string>> {
   if (live && Date.now() - live.at < 30 * 60_000) return live.keys
   try {
     const res = await fetch(SOURCES[0].url, {signal: AbortSignal.timeout(5000)})
+    if (!res.ok) throw new Error(`OpenPhish ${res.status}`)
     const keys = new Set((await res.text()).split('\n').flatMap(keysForUrl))
     live = {at: Date.now(), keys}
   } catch {}

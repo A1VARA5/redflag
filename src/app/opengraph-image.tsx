@@ -15,10 +15,10 @@ export default function Image() {
           Red Flag
         </div>
         <div style={{display: 'flex', flexDirection: 'column', fontSize: 74, fontWeight: 700, lineHeight: 1.08, letterSpacing: -2}}>
-          <span>Got a message that doesn’t feel right?</span>
+          <span>{"Got a message that doesn't feel right?"}</span>
           <span style={{color: '#0f2a47'}}>Check it before you click.</span>
         </div>
-        <div style={{display: 'flex', fontSize: 28, color: '#44505f'}}>Google Safe Browsing · 566,000 known phishing sites · the exact words that give it away</div>
+        <div style={{display: 'flex', fontSize: 28, color: '#44505f'}}>Google Safe Browsing · over 550,000 known phishing sites · the exact words that give it away</div>
       </div>
     ),
     size,

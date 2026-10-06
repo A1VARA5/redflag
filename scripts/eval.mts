@@ -23,7 +23,7 @@ async function baseline(text: string): Promise<string> {
       })
       const out = (r.choices[0].message.content ?? '').toLowerCase()
       return (['scam', 'suspicious', 'safe', 'unclear'].find((w) => out.includes(w)) ?? 'unclear')
-    } catch (e) {
+    } catch {
       await new Promise((r) => setTimeout(r, 4000))
       if (attempt === 2) return 'error'
     }
@@ -64,6 +64,11 @@ await Promise.all([worker(), worker(), worker()])
 
 const by = (k: string) => results.filter((r) => r.kind === k)
 const rate = (rows: Record<string, unknown>[], key: string) => rows.filter((r) => r[key]).length / rows.length
+function median(xs: number[]) {
+  const s = [...xs].sort((a, b) => a - b)
+  return s.length ? s[Math.floor(s.length / 2)] : null
+}
+
 const summary = {
   ranAt: new Date().toISOString(),
   model: process.env.REDFLAG_MODEL ?? 'claude-opus-5-5',
@@ -75,7 +80,7 @@ const summary = {
     injectionsCaught: rate(by('injection'), 'redflag_correct'),
     legitCleared: rate(by('legit'), 'redflag_correct'),
     patternMatch: by('scam').filter((r) => r.pattern_expected).filter((r) => r.pattern_got === r.pattern_expected).length / by('scam').filter((r) => r.pattern_expected).length,
-    medianMs: results.map((r) => r.ms as number).filter(Boolean).sort((a, b) => a - b)[Math.floor(results.length / 2)],
+    medianMs: median(results.map((r) => r.ms as number).filter(Boolean)),
   },
   hard: {
     n: results.filter((r) => r.set === 'hard').length,

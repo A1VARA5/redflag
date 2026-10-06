@@ -5,7 +5,7 @@ export const SAMPLES = [
     text: 'Royal Mail: Your parcel could not be delivered due to an unpaid shipping fee of £1.45. Pay now to rearrange delivery: https://royalmail-redelivery.info/track Failure to pay within 24 hours will result in return to sender.',
   },
   {
-    label: '“Hi Mum” WhatsApp',
+    label: '"Hi Mum" WhatsApp',
     text: "Hi mum it's me, this is my new number my phone fell in the bath 🙈 can you save this one. Are you free? I need a favour, I have to pay a bill today and my banking app is locked for 24 hours. Can you send it and I'll pay you back tomorrow. Please don't tell dad yet x",
   },
   {

@@ -80,7 +80,8 @@ export function extractUrls(text: string): string[] {
   const found = new Set<string>()
   const withScheme = /\bhttps?:\/\/[^\s<>"'`)\]]+/gi
   for (const m of refanged.matchAll(withScheme)) found.add(trimUrl(m[0]))
-  const bare = /\b(?:[a-z0-9-]+\.)+[a-z]{2,24}(?:\/[^\s<>"'`)\]]*)?/gi
+  // Unicode letters too, so a look-alike like "аррle.com" (Cyrillic) is read whole, not as "le.com".
+  const bare = /(?<![\p{L}\p{N}-])(?:[\p{L}\p{N}-]+\.)+\p{L}{2,24}(?:\/[^\s<>"'`)\]]*)?/giu
   const stripped = refanged.replace(withScheme, ' ')
   for (const m of stripped.matchAll(bare)) {
     const candidate = trimUrl(m[0])
@@ -88,9 +89,25 @@ export function extractUrls(text: string): string[] {
     // Only keep bare tokens that end in a real public suffix, so "e.g" and "file.txt" stay out.
     if (p.domain && p.isIcann && !/\.(txt|png|jpe?g|pdf|docx?|zip)$/i.test(candidate)) found.add('https://' + candidate)
   }
-  // Scammers pad messages with decoy links; with many, check the first four and the last four.
+  // Scammers pad messages with decoy links. With more than MAX_LINKS, links on a known brand's real domain
+  // are dropped first, then the first and last ones are kept.
   const all = [...found]
-  return all.length > 8 ? [...all.slice(0, 4), ...all.slice(-4)] : all
+  if (all.length <= MAX_LINKS) return all
+  const unknown = all.filter((u) => !isOfficialUrl(u))
+  const pool = unknown.length ? unknown : all
+  const half = MAX_LINKS / 2
+  return pool.length > MAX_LINKS ? [...pool.slice(0, half), ...pool.slice(-half)] : pool
+}
+
+export const MAX_LINKS = 12
+
+function isOfficialUrl(u: string) {
+  try {
+    const host = new URL(u).hostname.toLowerCase()
+    return BRANDS.some((b) => b.domains.some((d) => host === d || host.endsWith('.' + d)))
+  } catch {
+    return false
+  }
 }
 
 function trimUrl(u: string) {
@@ -140,13 +157,15 @@ function brandFor(host: string, domain: string | null): {brand: Brand | null; of
   return {brand: null, official: false, flags}
 }
 
-const PRIVATE = /^(10\.|127\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|0\.|::1|fc|fd|fe80)/i
+const PRIVATE = /^(10\.|127\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|0\.|::$|::1$|fc|fd|fe80)/i
 
+// Refuses hosts that resolve to a private or local address, so a link can't be used to probe our own network.
 async function safeToFetch(host: string): Promise<boolean> {
+  host = host.replace(/^\[|\]$/g, '')
   if (host === 'localhost' || host.endsWith('.local') || host.endsWith('.internal')) return false
   try {
-    const ip = isIP(host) ? host : (await lookup(host)).address
-    return !PRIVATE.test(ip)
+    const ips = isIP(host) ? [host] : (await lookup(host, {all: true})).map((a) => a.address)
+    return ips.length > 0 && ips.every((ip) => !PRIVATE.test(ip.replace(/^::ffff:/i, '')))
   } catch {
     return false
   }
@@ -295,7 +314,7 @@ export async function inspectUrl(input: string, deep = false): Promise<LinkRepor
   const dead = flags.some((f) => f.code === 'dead-domain')
   if (deep && !b.official) {
     const target = finalUrl ?? url.toString()
-    ;[vt, scan] = await Promise.all([virusTotal(target), recentScan(finalHost)])
+    ;[vt, scan] = await Promise.all([virusTotal(target), recentScan(target)])
     if (!scan && !dead) scan = await submitScan(target)
     if (vt) {
       const bad = vt.malicious + vt.suspicious
@@ -308,6 +327,26 @@ export async function inspectUrl(input: string, deep = false): Promise<LinkRepor
   return {input, url: url.toString(), host, domain, finalUrl, hops, ageDays: age.ageDays, registered: age.registered, brand: b.brand?.brand ?? null, official: b.official, flags, vt, scan}
 }
 
+// A slow or stalling site must not hold up the verdict, so each link gets a fixed time budget.
+const LINK_BUDGET_MS = 15_000
+
+function withBudget(u: string, deep: boolean): Promise<LinkReport> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const slow = new Promise<LinkReport>((resolve) => {
+    timer = setTimeout(() => {
+      let host = ''
+      try {
+        host = new URL(u).hostname.toLowerCase()
+      } catch {}
+      resolve({
+        input: u, url: u, host, domain: parse(host).domain ?? null, finalUrl: null, hops: [], ageDays: null, registered: null, brand: null, official: false,
+        flags: [{code: 'slow', severity: 'low', detail: 'This site was too slow to check in time, so some checks were skipped.'}],
+      })
+    }, LINK_BUDGET_MS)
+  })
+  return Promise.race([inspectUrl(u, deep), slow]).finally(() => clearTimeout(timer))
+}
+
 export async function inspectAll(text: string, deep = false): Promise<LinkReport[]> {
-  return Promise.all(extractUrls(text).map((u) => inspectUrl(u, deep)))
+  return Promise.all(extractUrls(text).map((u) => withBudget(u, deep)))
 }

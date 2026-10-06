@@ -2,6 +2,8 @@
 // Kept per server instance (Vercel reuses a handful), so it is a guard rail, not exact accounting.
 const CAP_USD = Number(process.env.REDFLAG_DAILY_USD ?? 6)
 
+export const MODEL = process.env.REDFLAG_MODEL ?? 'claude-opus-5-5'
+
 // Claude Opus 5.5 list prices, USD per million tokens.
 const PRICE = {input: 4, output: 20, cacheRead: 0.2, cacheWrite: 5}
 
@@ -29,4 +31,3 @@ export function record(u: {input_tokens?: number | null; output_tokens?: number 
   return usd
 }
 
-export const meter = () => ({day, spentUsd: Number(spent.toFixed(4)), capUsd: CAP_USD})

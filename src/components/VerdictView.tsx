@@ -6,12 +6,13 @@ import type {LinkReport} from '@/lib/links'
 import {SITUATIONS, respondFor, type Region, type Situation} from '@/lib/respond'
 import {External, ShieldAlert, ShieldCheck, ShieldQ, ShieldX} from './Icons'
 import {ScanShot} from './ScanShot'
+import {VERDICT_TITLE, confidenceText} from '@/lib/labels'
 
 const LOOK = {
-  scam: {title: 'This is a scam', sub: "Don't reply, click or pay.", Icon: ShieldX, fg: 'text-danger', bg: 'bg-danger-bg', line: 'border-danger-line', solid: 'bg-danger'},
-  suspicious: {title: 'This looks suspicious', sub: 'Treat it as a scam until you have checked it yourself.', Icon: ShieldAlert, fg: 'text-warn', bg: 'bg-warn-bg', line: 'border-warn-line', solid: 'bg-warn'},
-  unclear: {title: "We can't tell", sub: "There isn't enough to go on. Check it the safe way below.", Icon: ShieldQ, fg: 'text-ink-2', bg: 'bg-muted-bg', line: 'border-line-2', solid: 'bg-ink-2'},
-  safe: {title: 'No red flags found', sub: 'Nothing here looks like a scam. No checker can promise that, so stay alert.', Icon: ShieldCheck, fg: 'text-safe', bg: 'bg-safe-bg', line: 'border-safe-line', solid: 'bg-safe'},
+  scam: {title: VERDICT_TITLE.scam, sub: "Don't reply, click or pay.", Icon: ShieldX, fg: 'text-danger', bg: 'bg-danger-bg', line: 'border-danger-line', solid: 'bg-danger'},
+  suspicious: {title: VERDICT_TITLE.suspicious, sub: 'Treat it as a scam until you have checked it yourself.', Icon: ShieldAlert, fg: 'text-warn', bg: 'bg-warn-bg', line: 'border-warn-line', solid: 'bg-warn'},
+  unclear: {title: VERDICT_TITLE.unclear, sub: "There isn't enough to go on. Check it the safe way below.", Icon: ShieldQ, fg: 'text-ink-2', bg: 'bg-muted-bg', line: 'border-line-2', solid: 'bg-ink-2'},
+  safe: {title: VERDICT_TITLE.safe, sub: 'Nothing here looks like a scam. No checker can promise that, so stay alert.', Icon: ShieldCheck, fg: 'text-safe', bg: 'bg-safe-bg', line: 'border-safe-line', solid: 'bg-safe'},
 } as const
 
 const KIND: Record<string, string> = {
@@ -64,7 +65,7 @@ export function LinkPanel({links}: {links: LinkReport[]}) {
   return (
     <section className="rounded-xl border border-line bg-card p-5 sm:p-6">
       <h3 className="text-lg font-semibold">Link checks</h3>
-      <p className="mt-1 text-sm text-ink-3">Google Safe Browsing, VirusTotal, 566,000 known phishing sites, domain age, look-alike brand names and redirects. Plain code, not AI.</p>
+      <p className="mt-1 text-sm text-ink-3">Google Safe Browsing, VirusTotal, over 550,000 known phishing sites, domain age, look-alike brand names and redirects. Plain code, not AI.</p>
       {links.length === 0 && <p className="mt-4 text-[15px] text-ink-2">There are no links in this message.</p>}
       <ul className="mt-4 divide-y divide-line">
         {links.map((l) => (
@@ -141,7 +142,7 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <h2 className={`text-2xl font-bold tracking-tight sm:text-[28px] ${look.fg}`}>{look.title}</h2>
-              {(v.verdict === 'scam' || v.verdict === 'suspicious') && <span className="text-sm font-medium text-ink-2">{v.confidence}% confident</span>}
+              {confidenceText(v) && <span className="text-sm font-medium text-ink-2">{confidenceText(v)}</span>}
             </div>
             <p className="mt-1.5 text-[17px] font-medium text-ink">{v.headline}</p>
             <p className="mt-1 text-[15px] text-ink-2">{look.sub}</p>
@@ -149,7 +150,7 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
         </div>
         {v.overrides.length > 0 && (
           <div className="mt-4 rounded-lg border border-line-2 bg-card px-4 py-3 text-[14px] text-ink-2">
-            <span className="font-semibold text-ink">Our link checks overruled the AI. </span>
+            <span className="font-semibold text-ink">Our checks overruled the AI. </span>
             {v.overrides.join(' ')}
           </div>
         )}
@@ -163,7 +164,7 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
             {v.impersonating && <span className="rounded-md border border-danger-line bg-danger-bg px-2 py-0.5 text-[13px] font-medium text-danger">Pretending to be {v.impersonating}</span>}
           </div>
           {v.truncated && (
-            <p className="mt-2 text-[14px] text-ink-3">This is a long message. Every link in it was checked; the AI read the beginning and the end, where scams usually put the request.</p>
+            <p className="mt-2 text-[14px] text-ink-3">This is a long message. Links anywhere in it were checked, and the AI read the beginning and the end, where scams usually put the request.</p>
           )}
           <div className={`mt-4 ${image ? 'grid gap-5 sm:grid-cols-[minmax(0,1fr)_140px]' : ''}`}>
             <Marked text={v.text} highlights={v.highlights} />
@@ -212,7 +213,7 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
           <p className="mt-2 text-[15px] leading-relaxed text-ink-2">{v.summary}</p>
           {v.pattern?.aiAngle && (
             <p className="mt-3 text-[14px] leading-relaxed text-ink-2">
-              <span className="font-semibold text-ink">Why it's getting harder to spot: </span>
+              <span className="font-semibold text-ink">Why it&apos;s getting harder to spot: </span>
               {v.pattern.aiAngle}
             </p>
           )}
@@ -291,7 +292,7 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-card px-5 py-4">
         <div className="text-[15px] text-ink-2">
-          {shared ? 'This result was shared with you. It is signed by Red Flag, so it hasn\'t been edited.' : 'Know someone who would fall for this? Send them the result.'}
+          {shared ? 'This result was shared with you. It is signed by Red Flag, so it hasn\'t been edited.' : 'Know someone who might get this too? Send them the result.'}
         </div>
         <button onClick={share} className="rounded-lg bg-navy px-4 py-2 text-[15px] font-semibold text-white hover:bg-navy-2">
           {shareState === 'copied' ? 'Link copied' : shareState === 'error' ? 'Try again' : shared ? 'Share again' : 'Share the result'}

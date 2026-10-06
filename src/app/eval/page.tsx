@@ -1,5 +1,6 @@
 import type {Metadata} from 'next'
 import data from '../../../eval/results.json'
+import {VERDICT_SHORT} from '@/lib/labels'
 
 export const metadata: Metadata = {title: 'Test results · Red Flag', description: 'Red Flag against a public test set of scams, genuine messages and prompt-injection attacks, compared with a plain AI model. Every miss is listed.'}
 
@@ -18,7 +19,7 @@ const CHIP: Record<string, string> = {
   safe: 'bg-safe-bg text-safe border-safe-line',
   error: 'bg-muted-bg text-ink-2 border-line-2',
 }
-const WORD: Record<string, string> = {scam: 'Scam', suspicious: 'Suspicious', unclear: "Can't tell", safe: 'No red flags', error: 'Error'}
+const WORD: Record<string, string> = {...VERDICT_SHORT, error: 'Error'}
 
 function Chip({v}: {v: string}) {
   return <span className={`inline-block rounded-md border px-2 py-0.5 text-[12px] font-semibold ${CHIP[v] ?? CHIP.error}`}>{WORD[v] ?? v}</span>
@@ -58,6 +59,7 @@ export default function Eval() {
         <Stat label="Genuine messages left alone" rf={summary.redflag.legitCleared} base={summary.baseline.legitCleared} note="Not flagged. False alarms teach people to ignore warnings." />
         <Stat label="Harder cases" rf={summary.hard.redflag} base={summary.hard.baseline} note="Written separately from the scam list Red Flag uses, so it isn't marking its own homework." />
       </div>
+      <p className="mt-3 text-[14px] text-ink-3">The first three figures include the harder cases of that kind, so they cover more messages than the list above.</p>
 
       {baseMisses.length > 0 && (
         <section className="mt-14">
@@ -86,7 +88,7 @@ export default function Eval() {
         <h2 className="text-2xl font-bold tracking-tight">Red Flag&apos;s misses</h2>
         {misses.length === 0 ? (
           <p className="mt-2 max-w-3xl text-[16px] text-ink-2">
-            None in this run. That says more about the size of the test than about Red Flag: {summary.n} messages written by one person is a small sample, and it will get real messages wrong sometimes.
+            None in this run. That says more about the size of the test than about Red Flag: {summary.n} messages written for this project is a small sample, and it will get real messages wrong sometimes.
           </p>
         ) : (
           <ul className="mt-4 space-y-3">
@@ -111,7 +113,7 @@ export default function Eval() {
             <thead className="border-b border-line bg-bg text-[13px] text-ink-2">
               <tr>
                 <th className="px-4 py-3 font-semibold">Message</th>
-                <th className="px-4 py-3 font-semibold">Really</th>
+                <th className="px-4 py-3 font-semibold">Correct answer</th>
                 <th className="px-4 py-3 font-semibold">Red Flag</th>
                 <th className="px-4 py-3 font-semibold">Plain model</th>
               </tr>

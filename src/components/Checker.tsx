@@ -17,7 +17,7 @@ type Phase = 'idle' | 'checking' | 'done' | 'error'
 
 async function fileToImg(file: File): Promise<Img | null> {
   if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) return null
-  if (file.size > 4 * 1024 * 1024) {
+  if (file.size > 3 * 1024 * 1024) {
     const bmp = await createImageBitmap(file)
     const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height))
     const c = document.createElement('canvas')
@@ -73,27 +73,22 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
   const [drag, setDrag] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [wasImage, setWasImage] = useState(false)
-  const [country, setCountry] = useState<string | null>(null)
   const resultRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    let stored: string | null = null
     try {
-      const r = localStorage.getItem('rf-region')
-      if (r === 'UK' || r === 'US' || r === 'EU') setRegion(r)
+      stored = localStorage.getItem('rf-region')
     } catch {}
+    const saved = stored === 'UK' || stored === 'US' || stored === 'EU' ? stored : null
     // Default advice region from the visitor's country (the server sees it; nothing is stored).
     fetch('/api/geo')
       .then((r) => r.json())
-      .then((g: {country: string | null; region: 'UK' | 'US' | 'EU'}) => {
-        setCountry(g.country)
-        try {
-          if (!localStorage.getItem('rf-region')) setRegion(g.region)
-        } catch {
-          setRegion(g.region)
-        }
+      .then((g: {region: 'UK' | 'US' | 'EU'}) => setRegion(saved ?? g.region))
+      .catch(() => {
+        if (saved) setRegion(saved)
       })
-      .catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -111,7 +106,6 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
   useEffect(() => {
     if (phase !== 'checking') return
     const start = Date.now()
-    setElapsed(0)
     const t = setInterval(() => setElapsed(Math.floor((Date.now() - start) / 1000)), 250)
     return () => clearInterval(t)
   }, [phase])
@@ -141,6 +135,7 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
       localStorage.setItem('rf-region', region)
     } catch {}
     setWasImage(Boolean(useImg))
+    setElapsed(0)
     setPhase('checking')
     setLinks(null)
     setResult(null)
@@ -161,11 +156,12 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
       })
       if (!res.ok || !res.body) {
         const j = await res.json().catch(() => ({}))
-        throw new Error(j.error ?? `Error ${res.status}`)
+        throw new Error(j.error ?? (res.status === 413 ? 'That screenshot is too big. Try a smaller one.' : `The check failed (error ${res.status}). Please try again.`))
       }
       const reader = res.body.getReader()
       const dec = new TextDecoder()
       let buf = ''
+      let gotVerdict = false
       for (;;) {
         const {done, value} = await reader.read()
         if (done) break
@@ -178,11 +174,13 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
           const ev = JSON.parse(line)
           if (ev.type === 'links') setLinks(ev.links)
           else if (ev.type === 'verdict') {
+            gotVerdict = true
             setResult({v: ev.verdict, sig: ev.sig, image: useImg?.preview})
             setPhase('done')
           } else if (ev.type === 'error') throw new Error(ev.error)
         }
       }
+      if (!gotVerdict) throw new Error('The check took too long and stopped. Please try again.')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.')
       setPhase('error')
@@ -300,7 +298,7 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
           ))}
         </div>
         <p className="mt-2 flex items-center gap-1.5 text-sm text-ink-3">
-          <Lock className="h-4 w-4" /> Nothing you paste is stored unless you choose to share the result.
+          <Lock className="h-4 w-4" /> Nothing you paste here is stored unless you choose to share the result.
         </p>
       </div>
 
@@ -332,10 +330,10 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
         )}
         {phase === 'error' && (
           <div className="rounded-xl border border-warn-line bg-warn-bg p-5">
-            <p className="font-semibold text-ink">We couldn't finish this check.</p>
+            <p className="font-semibold text-ink">We couldn&apos;t finish this check.</p>
             <p className="mt-1 text-sm text-ink-2">{error}</p>
             <p className="mt-2 text-sm text-ink-2">
-              If you're worried right now: don't click, reply or pay. Contact the company yourself using a number or app you already trust.
+              If you&apos;re worried right now: don&apos;t click, reply or pay. Contact the company yourself using a number or app you already trust.
             </p>
           </div>
         )}

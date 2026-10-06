@@ -4,12 +4,13 @@ import {after} from 'next/server'
 import {createPublicKey, verify as edVerify} from 'node:crypto'
 import {check} from '@/lib/verdict'
 import {saveVerdict} from '@/lib/store'
+import {VERDICT_COLOR, VERDICT_TITLE, confidenceText} from '@/lib/labels'
 
 export const maxDuration = 60
 
-const WORD = {scam: 'SCAM', suspicious: 'SUSPICIOUS', unclear: "CAN'T TELL", safe: 'NO RED FLAGS FOUND'} as const
-const COLOR = {scam: 0xd7261e, suspicious: 0xe08a00, unclear: 0x4a5568, safe: 0x2f6b4f} as const
 const EPHEMERAL = 64
+// Discord tells us the user's language; it picks the advice region.
+const EU_LOCALES: Record<string, string> = {de: 'DE', fr: 'FR', nl: 'NL', 'es-ES': 'ES', it: 'IT', lt: 'LT', pl: 'PL', da: 'DK', fi: 'FI', 'sv-SE': 'SE', cs: 'CZ', ro: 'RO', hu: 'HU', el: 'GR', bg: 'BG', hr: 'HR'}
 
 function verifyDiscord(raw: string, sig: string | null, ts: string | null): boolean {
   const pub = process.env.DISCORD_PUBLIC_KEY
@@ -52,33 +53,33 @@ export async function POST(req: Request) {
           if (r.ok) image = {mediaType: (img.content_type!.split(';')[0]) as 'image/png', data: Buffer.from(await r.arrayBuffer()).toString('base64')}
         }
         if (!text && !image) throw new Error('That message has no text or image to check.')
-        // Discord tells us the user's language; use it to pick the advice region.
         const loc = String(i.locale ?? '')
-        const EU_LOC: Record<string, string> = {de: 'DE', fr: 'FR', nl: 'NL', 'es-ES': 'ES', it: 'IT', lt: 'LT', pl: 'PL', da: 'DK', fi: 'FI', 'sv-SE': 'SE', cs: 'CZ', ro: 'RO', hu: 'HU', el: 'GR', bg: 'BG', hr: 'HR'}
-        const region = loc === 'en-US' || loc === 'es-419' ? 'US' : EU_LOC[loc] ? 'EU' : 'UK'
-        const v = await check({text, image, source: 'discord', region, country: EU_LOC[loc] ?? (region === 'US' ? 'US' : 'GB')})
+        const region = loc === 'en-US' || loc === 'es-419' ? 'US' : EU_LOCALES[loc] ? 'EU' : 'UK'
+        const v = await check({text, image, source: 'discord', region, country: EU_LOCALES[loc] ?? (region === 'US' ? 'US' : 'GB')})
         await saveVerdict(v)
         const site = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin
-        const links = v.links.flatMap((l) => l.flags.filter((f) => f.severity === 'high').map((f) => `\`${l.host}\` ${f.detail}`)).slice(0, 3)
+        const links = v.links.flatMap((l) => l.flags.filter((f) => f.severity === 'high').map((f) => `\`${l.host}\`: ${f.detail}`)).slice(0, 3)
+        const sure = confidenceText(v)
         await edit({
           embeds: [
             {
-              title: `${WORD[v.verdict]}${v.verdict === 'scam' || v.verdict === 'suspicious' ? ` · ${v.confidence}% sure` : ''}`,
+              title: `${VERDICT_TITLE[v.verdict]}${sure ? ` · ${sure}` : ''}`,
               description: `**${v.headline}**\n${v.summary}`,
-              color: COLOR[v.verdict],
+              color: parseInt(VERDICT_COLOR[v.verdict].slice(1), 16),
               fields: [
-                ...(v.red_flags.length ? [{name: 'Warning signs', value: v.red_flags.slice(0, 5).map((f, n) => `${n + 1}. "${f.quote}" ${f.why}`).join('\n').slice(0, 1024)}] : []),
-                ...(links.length ? [{name: 'Hard checks on the links', value: links.join('\n').slice(0, 1024)}] : []),
+                ...(v.red_flags.length ? [{name: 'Warning signs', value: v.red_flags.slice(0, 5).map((f, n) => `${n + 1}. "${f.quote}": ${f.why}`).join('\n').slice(0, 1024)}] : []),
+                ...(links.length ? [{name: 'Link checks', value: links.join('\n').slice(0, 1024)}] : []),
                 ...(v.overrides.length ? [{name: 'Checks overruled the AI', value: v.overrides.join(' ').slice(0, 1024)}] : []),
                 {name: 'Check it yourself', value: v.check_it_yourself.slice(0, 1024)},
               ],
               footer: {text: 'Red Flag can be wrong. Only you can see this.'},
             },
           ],
-          components: [{type: 1, components: [{type: 2, style: 5, label: 'Full marked-up report', url: `${site}/v/${v.id}`}]}],
+          components: [{type: 1, components: [{type: 2, style: 5, label: 'Full report', url: `${site}/v/${v.id}`}]}],
         })
       } catch (e) {
-        await edit({content: `Red Flag couldn't check that: ${e instanceof Error ? e.message : 'something went wrong'}. If in doubt, don't click and don't log in through any link.`})
+        const why = e instanceof Error ? e.message.replace(/\.$/, '') : 'something went wrong'
+        await edit({content: `Red Flag couldn't check that: ${why}. If in doubt, don't click and don't log in through any link.`})
       }
     })
     return Response.json({type: 5, data: {flags: EPHEMERAL}})

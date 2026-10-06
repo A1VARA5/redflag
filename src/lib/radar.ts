@@ -1,10 +1,11 @@
-// The weekly radar: what scams official bodies and real people are reporting right now.
+// The scam radar, rebuilt daily: what scams official bodies and real people are reporting right now.
 // Built daily from public feeds (FTC, FBI IC3, NCSC, FCA, GOV.UK, Which?, Europol, CISA, r/Scams).
 // Claude groups the items into this week's top scams; every claim must point at an item it was given.
 import Anthropic from '@anthropic-ai/sdk'
 import {betaZodOutputFormat} from '@anthropic-ai/sdk/helpers/beta/zod'
 import * as z from 'zod/v4'
 import {loadJson, saveJson} from './store'
+import {MODEL} from './meter'
 import patterns from '@/data/patterns.json'
 
 const FEEDS = [
@@ -102,17 +103,18 @@ export async function buildRadar(): Promise<RadarData> {
   const list = items.map((i) => `[${i.n}] ${i.source} (${i.region}${i.date ? ', ' + i.date : ''}): ${i.title}${i.snippet ? ' | ' + i.snippet : ''}`).join('\n')
   const client = new Anthropic()
   const res = await client.beta.messages.parse({
-    model: process.env.REDFLAG_MODEL ?? 'claude-opus-5-5',
+    model: MODEL,
     max_tokens: 6000,
     betas: ['server-side-fallback-2026-07-01'],
     fallbacks: 'default',
     output_config: {effort: 'medium', format: betaZodOutputFormat(Radar)},
-    system: `You write a weekly scam radar for ordinary people. You get recent items from official bodies (FTC, FBI IC3, NCSC, FCA, GOV.UK, Europol, CISA), consumer journalism (Which?) and public victim posts (r/Scams).
+    system: `You write a daily scam radar for ordinary people. You get recent items from official bodies (FTC, FBI IC3, NCSC, FCA, GOV.UK, Europol, CISA), consumer journalism (Which?) and public victim posts (r/Scams).
 Pick the 4 to 7 scams people are most likely to meet this week. Ignore items that are not about scams or fraud aimed at the public (corporate breaches, enforcement against firms, policy news) unless they warn the public about a live scam.
 Every scam must cite the item numbers that support it. Never claim anything the items do not say. Prefer official sources; Reddit posts alone can support "people are reporting" but mark such scams "ongoing" unless an official item says new or rising.
 Known pattern ids: ${(patterns as {id: string; name: string}[]).map((p) => `${p.id} (${p.name})`).join(', ')}.
-Readers are mostly in the UK and US: include UK scams whenever UK items support them, and say which region each scam is in.
-British spelling, calm, no hype.`,
+Readers are in the UK, US and EU. Balance the regions where the items allow it, include UK scams whenever UK items support them, and say which region each scam is in.
+Describe scam patterns people could meet, not single news stories about one victim.
+British spelling, calm, no hype, plain sentences, no em or en dashes.`,
     messages: [{role: 'user', content: `Items from the last three weeks:\n${list}`}],
   })
   if (!res.parsed_output) throw new Error(`radar: no output (${res.stop_reason})`)
