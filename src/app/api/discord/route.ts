@@ -1,6 +1,6 @@
 // Discord, over HTTP interactions (no gateway bot):
 // - right-click any message > Apps > "Red Flag this"
-// - /redflag with pasted text, a link or a screenshot, for things that arrived outside Discord
+// - /redflag with pasted text, a link, a screenshot or a PDF, for things that arrived outside Discord
 // - a "Warn the channel" button on scam results, so a mod or friend can warn everyone in one tap
 // Discord wants an answer within 3 s, so checks are deferred (ephemeral) and the reply is edited when ready.
 import {after} from 'next/server'
@@ -8,6 +8,7 @@ import {createPublicKey, verify as edVerify} from 'node:crypto'
 import {check, type Verdict} from '@/lib/verdict'
 import {loadVerdict, saveVerdict} from '@/lib/store'
 import {VERDICT_COLOR, VERDICT_TITLE, confidenceText} from '@/lib/labels'
+import {pdfText} from '@/lib/pdf'
 
 export const maxDuration = 60
 
@@ -15,6 +16,7 @@ const EPHEMERAL = 64
 // Discord tells us the user's language; it picks the advice region.
 const EU_LOCALES: Record<string, string> = {de: 'DE', fr: 'FR', nl: 'NL', 'es-ES': 'ES', it: 'IT', lt: 'LT', pl: 'PL', da: 'DK', fi: 'FI', 'sv-SE': 'SE', cs: 'CZ', ro: 'RO', hu: 'HU', el: 'GR', bg: 'BG', hr: 'HR'}
 const IMAGE = /^image\/(png|jpeg|webp|gif)/
+const isPdf = (a: Attachment) => /^application\/pdf/.test(a.content_type ?? '') || /\.pdf$/i.test(a.filename ?? '')
 
 function verifyDiscord(raw: string, sig: string | null, ts: string | null): boolean {
   const pub = process.env.DISCORD_PUBLIC_KEY
@@ -28,9 +30,9 @@ function verifyDiscord(raw: string, sig: string | null, ts: string | null): bool
   }
 }
 
-type Attachment = {url: string; content_type?: string; size: number}
+type Attachment = {url: string; content_type?: string; size: number; filename?: string}
 type Msg = {content: string; attachments?: Attachment[]; embeds?: {title?: string; description?: string; url?: string}[]}
-type Input = {text: string; image: Attachment | null}
+type Input = {text: string; image: Attachment | null; pdf: Attachment | null; other: boolean}
 
 async function download(a: Attachment) {
   const r = await fetch(a.url, {signal: AbortSignal.timeout(8000)})
@@ -122,18 +124,23 @@ export async function POST(req: Request) {
     const msg: Msg | undefined = i.data.resolved?.messages?.[i.data.target_id]
     if (msg) {
       const embedText = (msg.embeds ?? []).map((e) => [e.title, e.description, e.url].filter(Boolean).join('\n')).join('\n')
+      const atts = msg.attachments ?? []
       input = {
         text: [msg.content, embedText].filter(Boolean).join('\n\n'),
-        image: msg.attachments?.find((a) => IMAGE.test(a.content_type ?? '') && a.size < 4_000_000) ?? null,
+        image: atts.find((a) => IMAGE.test(a.content_type ?? '') && a.size < 4_000_000) ?? null,
+        pdf: atts.find((a) => isPdf(a) && a.size < 10_000_000) ?? null,
+        other: atts.length > 0,
       }
     }
   } else if (i.type === 2 && i.data?.type === 1 && i.data.name === 'redflag') {
     const opts = (i.data.options ?? []) as {name: string; value: string}[]
-    const attId = opts.find((o) => o.name === 'screenshot')?.value
+    const attId = opts.find((o) => o.name === 'file' || o.name === 'screenshot')?.value
     const att: Attachment | undefined = attId ? i.data.resolved?.attachments?.[attId] : undefined
     input = {
       text: String(opts.find((o) => o.name === 'message')?.value ?? ''),
       image: att && IMAGE.test(att.content_type ?? '') && att.size < 4_000_000 ? att : null,
+      pdf: att && isPdf(att) && att.size < 10_000_000 ? att : null,
+      other: Boolean(att),
     }
   } else {
     return Response.json({type: 4, data: {content: 'Unknown command.', flags: EPHEMERAL}})
@@ -147,8 +154,17 @@ export async function POST(req: Request) {
     try {
       if (!input) throw new Error('Could not read that message')
       const image = input.image ? await download(input.image) : null
-      if (!input.text && !image) throw new Error('There is no text or image to check')
-      const v = await check({text: input.text, image, source: 'discord', ...regionFor(String(i.locale ?? ''))})
+      let text = input.text
+      if (input.pdf) {
+        const r = await fetch(input.pdf.url, {signal: AbortSignal.timeout(10_000)})
+        const fromPdf = r.ok ? await pdfText(await r.arrayBuffer()) : null
+        if (fromPdf) text = `${text}\n\n[Attached file: ${input.pdf.filename ?? 'document.pdf'}]\n${fromPdf}`.trim()
+        else if (!text && !image) throw new Error('That PDF has no text Red Flag can read (it may be a scan). Send a screenshot of it instead')
+      }
+      if (!text && !image) {
+        throw new Error(input.other ? 'Red Flag can read text, screenshots and PDFs, but not that kind of file' : 'There is no text or image to check')
+      }
+      const v = await check({text, image, source: 'discord', ...regionFor(String(i.locale ?? ''))})
       await saveVerdict(v)
       await edit(resultMessage(v, site))
     } catch (e) {

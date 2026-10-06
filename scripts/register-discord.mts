@@ -11,13 +11,13 @@ const commands = [
   {
     name: 'redflag',
     type: 1,
-    description: 'Check a message, link or screenshot for scams. Only you see the answer.',
+    description: 'Check a message, link, screenshot or PDF for scams. Only you see the answer.',
     integration_types: [0, 1],
     contexts: [0, 1, 2],
     // 3 = text, 11 = file
     options: [
       {type: 3, name: 'message', description: 'Paste the message or link', required: false, max_length: 4000},
-      {type: 11, name: 'screenshot', description: 'Or add a screenshot', required: false},
+      {type: 11, name: 'file', description: 'Or add a screenshot or a PDF', required: false},
     ],
   },
 ]

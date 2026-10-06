@@ -70,3 +70,4 @@ Timestamped so anyone can see everything was built during the event (3 to 10 Oct
 - QR codes: screenshots are scanned with jsQR and the link inside goes through the full link checks, marked "Read from a QR code".
 - Discord: new /redflag command (paste text, a link or a screenshot) and a "Warn the channel" button on scam results that posts a short public warning without pinging anyone.
 - Attack test set: 9 cases aimed at the checker itself (hidden instruction, flipped file name, split brand, Cyrillic look-alike, fake evidence tags, padding plus hidden text, QR link, plus emoji and Arabic messages that must stay clean). Red Flag 9/9. The plain model also caught the text ones, so the page says so.
+- Discord reads PDFs: right clicking a message with a PDF (or adding one to /redflag) used to say "no text or image to check". The PDF text is now extracted with unpdf and checked; scanned PDFs without text get a clear message asking for a screenshot.
