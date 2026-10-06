@@ -12,13 +12,13 @@ Built for **ForgeHacks 2026**, AI + Cybersecurity track: *help people recognise,
 
 ## The problem
 
-Scams arrive as ordinary looking messages, and people decide in seconds whether to click.
+Every online community I'm in gets the same scams every week. Hacked accounts posting "free Nitro". Fake "Discord staff" DMing mods. A stranger with a 40% a month crypto opportunity and a very nice profile picture. "Brand collab" offers for small creators that only need a quick verification fee. Outside the group chat it's the "Hi Mum, new number" text, the bank calling about a "safe account", the £1.45 parcel fee, and the fake invoice saying "our bank details have changed".
 
 - UK bank customers lost **£1.28 billion** to fraud in 2025, about **£3.5 million a day** ([UK Finance, 2026](https://www.ukfinance.org.uk/news-and-insight/press-release/fraud-report-2026-press-release)).
 - Americans reported losing a record **$15.9 billion** to fraud in 2025 ([FTC, 2026](https://www.ftc.gov/news-events/news/press-releases/2026/03/ftc-testifies-joint-economic-committee-agencys-efforts-combat-fraud)).
-- UK reports naming AI rose **395%** in a year, with losses up from £1.2m to £9.6m ([Report Fraud annual assessment, Sep 2026](https://www.cityoflondon.police.uk/news/city-of-london/news/2026/september/city-of-london-police-intelligence-assessment-highlights-emerging-fraud-trends-and-evolving-threats/)). AI writes fluent messages without typos, so "look for spelling mistakes" no longer works.
+- UK reports naming AI rose **395%** in a year, with losses up from £1.2m to £9.6m ([Report Fraud annual assessment, Sep 2026](https://www.cityoflondon.police.uk/news/city-of-london/news/2026/september/city-of-london-police-intelligence-assessment-highlights-emerging-fraud-trends-and-evolving-threats/)). Scammers write fluent English now, so "look for spelling mistakes" is dead.
 
-Most people have nobody to ask in that moment. Generic AI chatbots will answer, but they can be talked round by the message itself and can't check whether a link is on a phishing list. Red Flag is built for that moment. You paste once and get an answer with its reasons and what to do next.
+The message lands, you've got about five seconds, and there's nobody to ask. The mod is asleep, your mate who "knows about this stuff" is on shift, and a chatbot can be talked round by the message itself and can't check whether a link is on a phishing list. Red Flag is the friend you can ask in those five seconds: one paste, a straight answer with its reasons, and what to do next.
 
 ## Test it in 60 seconds
 
