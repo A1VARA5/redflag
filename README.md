@@ -55,7 +55,7 @@ As soon as a link appears in the box, it is checked in about a second. In the fu
 ## Three ways in, nothing to install
 
 1. On the web, paste text or add a screenshot of an SMS or WhatsApp. Claude reads the image.
-2. By email, forward a suspicious email to **redflag@homingbox.net** (an Agentboxd inbox) and the result comes back as a reply. Agentboxd's own phishing and prompt injection scores are passed in as evidence. Red Flag only replies when the sender's mail server passed SPF or DKIM, so a forged From address can't make it email a stranger.
+2. By email, forward a suspicious email to **redflag@homingbox.net** (an Agentboxd inbox) and the result comes back as a reply. Agentboxd's own phishing and prompt injection scores are passed in as evidence. Red Flag only replies when the sender's mail server passed SPF or DKIM, so a forged From address can't make it email a stranger. Attached PDFs and documents are read too (Agentboxd extracts the text, with OCR for scans), because fake invoices usually arrive as an attachment.
 3. In Discord, [add the app](https://discord.com/oauth2/authorize?client_id=1556639934457184256), then right click any message, Apps, **Red Flag this**. Only you see the answer, and it works in DMs from strangers.
 
 ## How it works

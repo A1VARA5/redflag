@@ -1,7 +1,7 @@
 import {after} from 'next/server'
 import {check} from '@/lib/verdict'
 import {saveVerdict} from '@/lib/store'
-import {downloadAttachment, getMessage, htmlToText, renderReply, reply, senderOf, senderVerified, verifyMailroom, type MailMessage} from '@/lib/email'
+import {attachmentText, downloadAttachment, getMessage, htmlToText, renderReply, reply, senderOf, senderVerified, verifyMailroom, type MailMessage} from '@/lib/email'
 
 export const maxDuration = 60
 
@@ -46,13 +46,20 @@ export async function POST(req: Request) {
         console.error('[email] no readable content', m.id, heldReason)
         return
       }
-      const text = m.subject ? `Subject: ${m.subject}\n\n${body}` : body
       const imgAtt = m.attachments?.find((a) => /^image\/(png|jpeg|webp|gif)$/.test(a.content_type ?? ''))
-      const img = imgAtt ? await downloadAttachment(imgAtt.id) : null
+      const docs = (m.attachments ?? []).filter((a) => a !== imgAtt).slice(0, 2)
+      const [img, ...docTexts] = await Promise.all([imgAtt ? downloadAttachment(imgAtt.id) : null, ...docs.map((a) => attachmentText(m.id, a.id))])
+      const attached = docs
+        .map((a, i) => (docTexts[i] ? `\n\n[Attached file: ${a.filename ?? 'document'}]\n${docTexts[i]}` : ''))
+        .join('')
+      const text = (m.subject ? `Subject: ${m.subject}\n\n${body}` : body) + attached
 
       const signals = [
         m.ai?.risk?.phishing !== undefined ? `Agentboxd phishing score for this email: ${m.ai.risk.phishing}` : '',
         m.ai?.risk?.injection !== undefined ? `Agentboxd prompt-injection score: ${m.ai.risk.injection}` : '',
+        m.ai?.local_screen?.hidden_chars ? `Agentboxd found ${m.ai.local_screen.hidden_chars} hidden or invisible characters in this email, a common way to hide instructions from people.` : '',
+        m.ai?.local_screen?.flagged ? `Agentboxd's own screen flagged this email${m.ai.local_screen.reasons?.length ? ` (${m.ai.local_screen.reasons.join(', ')})` : ''}.` : '',
+        docs.length ? `The email has ${docs.length} attached file(s); their text is included below the email body.` : '',
         heldReason ? `The mail provider quarantined this email before any agent could read it (reason: ${heldReason}).` : '',
         'This email was most likely forwarded by the person asking. The forwarder is not the suspect; judge the forwarded content underneath. Sender authentication results describe the forward, not the original.',
       ]

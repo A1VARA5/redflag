@@ -36,7 +36,13 @@ export type MailMessage = {
   text?: string | null
   html?: string | null
   extracted_text?: string | null
-  ai?: {category?: unknown; risk?: {injection?: number; phishing?: number}; needs_human?: unknown; verification?: unknown}
+  ai?: {
+    category?: unknown
+    risk?: {injection?: number; phishing?: number}
+    needs_human?: unknown
+    verification?: unknown
+    local_screen?: {flagged?: boolean; reasons?: string[]; hidden_chars?: number}
+  }
   labels?: string[]
   headers?: Record<string, string>
   attachments?: {id: string; filename?: string; content_type?: string; size?: number}[]
@@ -62,6 +68,25 @@ export async function downloadAttachment(id: string): Promise<{data: string; typ
   const buf = Buffer.from(await res.arrayBuffer())
   if (buf.length > 4 * 1024 * 1024) return null
   return {data: buf.toString('base64'), type: res.headers.get('content-type') ?? ''}
+}
+
+// Text of a document attachment (PDF, Word, Excel, scans), read by Agentboxd. Fake invoices and "payment
+// instructions" often arrive as a PDF with a short covering email, so the attachment is where the scam is.
+// OCR can take a few seconds, so this waits briefly while extraction is still running.
+export async function attachmentText(messageId: string, attachmentId: string, maxChars = 20_000): Promise<string | null> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      const res = await fetch(`${API}/messages/${messageId}/attachments/${attachmentId}/text?max_chars=${maxChars}`, {headers: auth(), signal: AbortSignal.timeout(8000)})
+      if (!res.ok) return null
+      const j = (await res.json()) as {text?: string | null; extraction?: {status?: string}}
+      if (j.text) return j.text.slice(0, maxChars)
+      if (j.extraction?.status && j.extraction.status !== 'pending' && j.extraction.status !== 'processing') return null
+    } catch {
+      return null
+    }
+    await new Promise((r) => setTimeout(r, 2000))
+  }
+  return null
 }
 
 export async function reply(inboxId: string, messageId: string, text: string, html: string) {
