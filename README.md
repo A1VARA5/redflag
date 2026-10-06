@@ -105,7 +105,7 @@ Design decisions:
 
 The first three rows include the harder cases of that kind.
 
-A separate set of 9 attacks targets the checker itself: a hidden instruction in invisible characters, a file name flipped with a direction control, a brand split with invisible spaces, a Cyrillic look-alike domain, a message faking the checker's own evidence, a link buried under padding with hidden text, a link hidden in a QR code, and two normal messages (emoji, Arabic) that must not be flagged. Red Flag got 9 of 9. The plain model also caught the text ones, since the scam was obvious in the visible words, and can't read the QR screenshot.
+A separate set of 9 attacks targets the checker itself: a hidden instruction in invisible characters, a file name flipped with a direction control, a brand split with invisible spaces, a Cyrillic lookalike domain, a message faking the checker's own evidence, a link buried under padding with hidden text, a link hidden in a QR code, and two normal messages (emoji, Arabic) that must not be flagged. Red Flag got 9 of 9. The plain model also caught the text ones, since the scam was obvious in the visible words, and can't read the QR screenshot.
 
 ![Attacks on the checker, all caught](docs/media/attacks.jpg)
 
