@@ -92,7 +92,7 @@ ${PATTERNS.map((p) => `- ${p.id}: ${p.name} - ${p.summary} | ${p.tells.join('; '
 
 const client = new Anthropic()
 
-function findHighlights(text: string, flags: ModelVerdictT['red_flags']): Highlight[] {
+export function findHighlights(text: string, flags: ModelVerdictT['red_flags']): Highlight[] {
   const out: Highlight[] = []
   const lower = text.toLowerCase()
   for (const f of flags) {
@@ -110,7 +110,7 @@ function findHighlights(text: string, flags: ModelVerdictT['red_flags']): Highli
 }
 
 // Non-AI evidence can push a verdict up, never down. Every push is recorded and shown to the user.
-function applyOverrides(v: ModelVerdictT, links: LinkReport[], hostileHidden: boolean): {verdict: ModelVerdictT['verdict']; confidence: number; overrides: string[]} {
+export function applyOverrides(v: ModelVerdictT, links: LinkReport[], hostileHidden: boolean): {verdict: ModelVerdictT['verdict']; confidence: number; overrides: string[]} {
   const overrides: string[] = []
   let {verdict, confidence} = v
   const high = links.flatMap((l) => l.flags.filter((f) => f.severity === 'high').map((f) => ({...f, host: l.host})))
