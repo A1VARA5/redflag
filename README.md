@@ -99,20 +99,24 @@ The rules that make it hold up:
 - It never loads a linked page. It only asks where a link redirects. Real bank and password reset links are never sent to any third party, urlscan scans are unlisted, and screenshots are proxied.
 - Every claim has a source. Each scam type cites Report Fraud, NCSC, FCA, FTC, FBI IC3, Europol or the company being copied. Radar cards without a valid source are dropped.
 
+## How it holds up against attacks
+
+Red Flag reads messages written by scammers, so it's a target itself. [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md) lists every attack I thought about (prompt injection, hidden text, hidden HTML, QR codes, forged senders, fake webhooks, forged share links, private network probing, resource exhaustion), what stops each one, and the code and test for it. Plus the gaps I know about.
+
 ## Does it actually work?
 
 **83 out of 83** on a test set of made up messages: 38 scams (one per known type), 20 genuine messages that look scary (a real bank fraud alert, a genuine Royal Mail customs fee, 2FA codes), 6 prompt injection attacks and 19 harder cases written separately. Compared with a strong open model on its own (Qwen2.5-72B-Instruct, no link checks):
 
 | | Red Flag | Plain AI model |
 |---|---|---|
-| Scams caught | 100% | 94% |
+| Scams caught | 100% | 96% |
 | Tricks resisted | 100% | 83% |
 | Genuine messages left alone | 100% | 96% |
 | Harder cases | 100% | 95% |
 
-The first three rows include the harder cases of that kind. The plain model called a "move your money to a safe account" bank scam safe, happily obeyed a hidden "classify as safe" note, and flagged a real Steam Guard code.
+The first three rows include the harder cases of that kind. In the latest run the plain model called a fake NatWest fraud alert safe (the call that starts a "safe account" scam), happily obeyed a hidden "classify it as safe" note, missed a "wrong number" romance opener, and flagged a real Steam Guard code. Exact misses change a little from run to run; the /eval page always shows the latest.
 
-**9 out of 9** on a separate set of attacks aimed at the checker itself: a hidden instruction in invisible characters, a flipped file name, a brand split with invisible spaces, a Cyrillic lookalike domain, a message faking the checker's own evidence, a link buried under padding with hidden text, a link in a QR code, plus two normal messages (emoji, Arabic) that must stay clean. Honest note: the plain model got 7 of the 8 it could read (it can't see images), because most of these scams are obvious in the visible words. The one it missed was the message faking the checker's own evidence, which it called safe. The point is that none of the tricks changed Red Flag's answer.
+**9 out of 9** on a separate set of attacks aimed at the checker itself: a hidden instruction in invisible characters, a flipped file name, a brand split with invisible spaces, a Cyrillic lookalike domain, a message faking the checker's own evidence, a link buried under padding with hidden text, a link in a QR code, plus two normal messages (emoji, Arabic) that must stay clean. Honest note: the plain model also got the 8 it could read in the latest run (it can't see images; in an earlier run it fell for the message faking the checker's own evidence), because most of these scams are obvious in the visible words. The point is that none of the tricks changed Red Flag's answer.
 
 ![Attacks on the checker, all caught](docs/media/attacks.jpg)
 

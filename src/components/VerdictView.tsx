@@ -1,6 +1,6 @@
 'use client'
 
-import {useMemo, useState} from 'react'
+import {useEffect, useMemo, useRef, useState} from 'react'
 import type {Verdict} from '@/lib/verdict'
 import type {LinkReport} from '@/lib/links'
 import {SITUATIONS, respondFor, type Region, type Situation} from '@/lib/respond'
@@ -102,6 +102,11 @@ export function LinkPanel({links}: {links: LinkReport[]}) {
 }
 
 export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: string; shared?: boolean; image?: string}) {
+  // When a fresh result arrives, move focus to its heading so screen readers announce it.
+  const titleRef = useRef<HTMLHeadingElement>(null)
+  useEffect(() => {
+    if (!shared) titleRef.current?.focus({preventScroll: true})
+  }, [shared, v.id])
   const look = LOOK[v.verdict]
   const [region, setRegion] = useState<Region>(v.region)
   const [situation, setSituation] = useState<Situation>(v.situation)
@@ -129,7 +134,9 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
         setShareState('copied')
         setTimeout(() => setShareState('idle'), 2500)
       }
-    } catch {
+    } catch (e) {
+      // Closing the phone's share sheet isn't a failure.
+      if (e instanceof Error && e.name === 'AbortError') return
       setShareState('error')
     }
   }
@@ -142,7 +149,7 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
           <look.Icon className={`h-11 w-11 shrink-0 ${look.fg}`} />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <h2 className={`text-2xl font-bold tracking-tight sm:text-[28px] ${look.fg}`}>{look.title}</h2>
+              <h2 ref={titleRef} tabIndex={-1} className={`text-2xl font-bold tracking-tight outline-none sm:text-[28px] ${look.fg}`}>{look.title}</h2>
               {confidenceText(v) && <span className="text-sm font-medium text-ink-2">{confidenceText(v)}</span>}
             </div>
             <p className="mt-1.5 text-[17px] font-medium text-ink">{v.headline}</p>
@@ -254,7 +261,7 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
             <h3 className="text-xl font-semibold">What to do now</h3>
             <div className="flex rounded-lg bg-white/10 p-0.5 text-[13px] font-medium">
               {(['UK', 'US', 'EU'] as Region[]).map((r) => (
-                <button key={r} onClick={() => setRegion(r)} className={`rounded-md px-3 py-1 ${region === r ? 'bg-white text-navy' : 'text-white/80 hover:text-white'}`}>
+                <button key={r} aria-pressed={region === r} onClick={() => setRegion(r)} className={`rounded-md px-3 py-1 ${region === r ? 'bg-white text-navy' : 'text-white/80 hover:text-white'}`}>
                   {r}
                 </button>
               ))}
@@ -264,6 +271,7 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
             {SITUATIONS.map((s) => (
               <button
                 key={s.id}
+                aria-pressed={situation === s.id}
                 onClick={() => setSituation(s.id)}
                 className={`rounded-lg border px-3 py-1.5 text-[14px] font-medium ${situation === s.id ? 'border-white bg-white text-navy' : 'border-white/25 text-white/85 hover:border-white/60'}`}
               >
@@ -306,7 +314,7 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
         </button>
       </div>
       <p className="text-[13px] text-ink-3">
-        Checked {new Date(v.createdAt).toLocaleString('en-GB', {dateStyle: 'medium', timeStyle: 'short'})} in {(v.ms / 1000).toFixed(1)}s, read by{' '}
+        Checked {new Date(v.createdAt).toLocaleString('en-GB', {dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/London'})} UK time, in {(v.ms / 1000).toFixed(1)}s, read by{' '}
         {v.engine === 'backup' ? 'the backup model (Qwen3-VL, open source, on Featherless)' : 'Claude (Anthropic)'}.{shared ? '' : ' Not stored unless you share it.'}
       </p>
     </section>

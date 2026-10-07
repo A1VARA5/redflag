@@ -5,11 +5,10 @@ import './globals.css'
 import {Header} from '@/components/Header'
 import {Footer} from '@/components/Footer'
 
-const plex = localFont({variable: '--font-plex', display: 'swap', src: [
-  {path: '../../public/fonts/geist-300.ttf', weight: '300'},
-  {path: '../../public/fonts/geist-400.ttf', weight: '400'},
-  {path: '../../public/fonts/geist-500.ttf', weight: '500'},
-  {path: '../../public/fonts/geist-600.ttf', weight: '600'},
+const geist = localFont({variable: '--font-geist', display: 'swap', src: [
+  {path: '../../public/fonts/geist-400.woff2', weight: '400'},
+  {path: '../../public/fonts/geist-500.woff2', weight: '500'},
+  {path: '../../public/fonts/geist-600.woff2', weight: '600'},
 ]})
 const plexMono = IBM_Plex_Mono({variable: '--font-plex-mono', weight: ['400', '500'], subsets: ['latin']})
 
@@ -30,7 +29,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({children}: LayoutProps<'/'>) {
   return (
-    <html lang="en-GB" data-theme="dark" data-scroll-behavior="smooth" className={`${plex.variable} ${plexMono.variable}`}>
+    <html lang="en-GB" data-theme="dark" data-scroll-behavior="smooth" className={`${geist.variable} ${plexMono.variable}`}>
       <body className="flex min-h-dvh flex-col">
         <Header />
         <div id="main-content" className="flex-1" tabIndex={-1}>{children}</div>

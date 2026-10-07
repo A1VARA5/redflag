@@ -19,9 +19,9 @@ export default async function How() {
   const channels = Object.keys((respond as unknown as {channels: object}).channels).length
   const kinds = (patterns as unknown[]).length
   return (
-    <>
+    <main>
       <PageHero kicker="The method / 01" title="Behind the second look." />
-      <main className="site-width how-body">
+      <div className="site-width how-body">
         <p className="how-lead">
           Two kinds of checking, and a rule for when they disagree. Code checks the links, because a list of known phishing sites can&apos;t be talked round.
           Claude, an AI model by Anthropic, reads the words or the screenshot, looking for the tricks scammers use. When the hard evidence says scam, the answer
@@ -87,7 +87,7 @@ export default async function How() {
             <li>To be read, the message is sent to Claude (Anthropic), or to the backup model on Featherless if Claude is unavailable.</li>
             <li>Shared results are signed, so nobody can edit one into a fake &ldquo;no red flags&rdquo; result for their own scam.</li>
             <li>
-              Red Flag never loads a linked page. To see where a link leads, it only asks the site whether it redirects, without downloading the page. Links
+              Red Flag never opens a linked page for you. To see where a link leads, it asks the site where the link goes and stops before reading the page. That one request can still tell a scammer the link was checked. Links
               that don&apos;t belong to a known brand are sent to VirusTotal and urlscan.io (as an unlisted scan) so security tools can look at them; links to
               real banks and services are never sent, so your genuine account or password reset links stay private.
             </li>
@@ -119,7 +119,7 @@ export default async function How() {
         <Section title="Built with">
           <ul className="list-disc space-y-1.5 pl-5">
             <li>
-              Claude Opus 5.5 by Anthropic, for reading messages and screenshots. If Claude is unavailable or the day&apos;s budget is used up, an open-source
+              Claude Opus 5.5 by Anthropic, for reading messages and screenshots. If Claude is unavailable or the day&apos;s budget is used up, an open source
               backup model (Qwen3-VL on Featherless AI) reads the message instead, and the result says which one was used.
             </li>
             <li>
@@ -138,8 +138,8 @@ export default async function How() {
             </li>
           </ul>
         </Section>
-      </main>
-    </>
+      </div>
+    </main>
   )
 }
 

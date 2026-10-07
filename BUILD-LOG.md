@@ -95,3 +95,15 @@ Timestamped so anyone can see everything was built during the event (3 to 10 Oct
 - Found a real bug while testing: if both AI readers failed, the empty backup answer turned into a finished "can't tell" verdict. It now fails honestly with a retry. A genuine "can't tell" still works. Two new tests, 19 in total.
 - One Discord invite link shared by every button (src/lib/public-links.ts).
 - Smoke tested on the live site: Hi Mum scam, dentist reminder, fake invoice PDF and the screenshot sample all came back right. Email and Discord weren't re tested in this pass.
+
+## 2026-10-07
+- Ran the full test set again after the design changes: Red Flag 83 of 83 and 9 of 9 attacks. The plain model's mistakes moved around between runs (this time it called a fake NatWest fraud alert safe, obeyed the hidden "classify it as safe" note and missed a wrong number romance opener), so the README now says what the latest run showed and points at /eval for the live numbers.
+- New docs/THREAT-MODEL.md: every attack on Red Flag itself I could think of, what stops it, and the code and test for each, plus the gaps I know about.
+- Third review, this time of the website code. Fixed:
+  - Shared result pages logged a React hydration error, because the server wrote the time in UTC and UK browsers in BST. The time is now always UK time.
+  - The WebGL flag was created on phones where it's hidden, and its loop woke 60 times a second even when paused or off screen. Phones no longer create it, and the loop sleeps until something changes.
+  - Screen readers heard nothing when a result arrived. Focus now moves to the verdict heading.
+  - The region and situation buttons say which one is selected, closing the share sheet on a phone isn't treated as an error, the location lookup never overrides a region you already picked, and the mobile menu closes when you go back or forward.
+  - Fonts: woff2 instead of ttf, and the barely used light weight dropped (about 290 KB down to 84 KB).
+  - Copy: "never loads a linked page" became "asks the site where the link goes and stops before reading the page", because that one request can still tell a scammer the link was checked. No hyphenated prose.
+  - Removed unused components and CSS left over from earlier designs.

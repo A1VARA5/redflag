@@ -78,6 +78,7 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
   const [doc, setDoc] = useState<Doc | null>(null)
   const [fileNote, setFileNote] = useState<string | null>(null)
   const [region, setRegion] = useState<'UK' | 'US' | 'EU'>('UK')
+  const regionTouched = useRef(false)
   const [phase, setPhase] = useState<Phase>('idle')
   const [links, setLinks] = useState<LinkReport[] | null>(null)
   const [result, setResult] = useState<{
@@ -102,7 +103,9 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
     // Default advice region from the visitor's country (the server sees it; nothing is stored).
     fetch('/api/geo')
       .then((r) => r.json())
-      .then((g: {region: 'UK' | 'US' | 'EU'}) => setRegion(saved ?? g.region))
+      .then((g: {region: 'UK' | 'US' | 'EU'}) => {
+        if (!regionTouched.current) setRegion(saved ?? g.region)
+      })
       .catch(() => {
         if (saved) setRegion(saved)
       })
@@ -339,8 +342,10 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
             <label className="advice-region"><span>Advice for</span><select
               disabled={busy}
               value={region}
-              onChange={(e) => setRegion(e.target.value as typeof region)}
-              aria-label="Country for advice"
+              onChange={(e) => {
+                regionTouched.current = true
+                setRegion(e.target.value as typeof region)
+              }}
               className="rounded-lg border border-line-2 bg-card px-3 py-2 text-sm font-medium text-ink-2"
             >
               <option value="UK">United Kingdom</option>

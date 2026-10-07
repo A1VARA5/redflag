@@ -72,11 +72,11 @@ export default function Eval() {
   const counts = (k: string, set?: string) => main.filter((r) => r.kind === k && (!set || r.set === set)).length
   const baseMisses = main.filter((r) => r.baseline_correct === false)
   return (
-    <>
+    <main>
       <PageHero kicker="Test results" title="Test results" />
-      <main className="site-width pt-10">
+      <div className="site-width pt-10">
         <p className="mt-4 max-w-3xl text-lg leading-relaxed text-ink-2">
-          {summary.n} made-up messages, checked by Red Flag and, for comparison, by a capable AI model on its own ({summary.baselineModel}) with no link checks
+          {summary.n} invented messages, checked by Red Flag and, for comparison, by a capable AI model on its own ({summary.baselineModel}) with no link checks
           and no knowledge of known scams. Run on {new Date(summary.ranAt).toLocaleDateString('en-GB', {dateStyle: 'long'})}.
         </p>
         <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-[15px] text-ink-2">
@@ -232,7 +232,7 @@ export default function Eval() {
             on the official warnings each scam type cites.
           </p>
         </section>
-      </main>
-    </>
+      </div>
+    </main>
   )
 }

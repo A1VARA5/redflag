@@ -28,7 +28,7 @@ export default async function Home() {
           <a href="/how" className="text-link">Inside the checks <Arrow className="h-4 w-4" /></a>
         </div>
         <Pipeline />
-        <div className="proof-note"><p>No checker can promise a message is safe. We show the evidence and say when we’re unsure.</p><a href="/eval">{passed}/{results.length} synthetic tests passed<span className="proof-caveat">Made-up cases, not a real-world accuracy claim.</span></a></div>
+        <div className="proof-note"><p>No checker can promise a message is safe. We show the evidence and say when we’re unsure.</p><a href="/eval">{passed}/{results.length} synthetic tests passed<span className="proof-caveat">Invented cases, not a claim about real world accuracy.</span></a></div>
         <details className="example-disclosure" id="closer">
           <summary><span><span className="summary-title">Explore an example</span><span className="summary-detail">Email, PDF, screenshot or message</span></span><span className="disclosure-plus" aria-hidden>+</span></summary>
           <div className="example-layout"><div><h3>A familiar name isn’t proof.</h3><p>Choose a format. Move the divider to see the details that deserve a second look.</p><p className="example-caption">Illustrative examples. To try the real checker, use a sample above.</p></div><EvidenceDemo /></div>

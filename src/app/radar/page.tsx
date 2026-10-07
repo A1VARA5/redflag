@@ -18,9 +18,9 @@ const STATUS = {
 export default async function RadarPage() {
   const r = await latestRadar()
   return (
-    <>
+    <main>
       <PageHero kicker="Going around right now" title="This week's scams" />
-      <main className="site-width pt-10">
+      <div className="site-width pt-10">
         {r ? (
           <>
             <p className="mt-3 max-w-3xl text-lg leading-relaxed text-ink-2">{r.headline}</p>
@@ -72,7 +72,7 @@ export default async function RadarPage() {
         ) : (
           <p className="mt-3 text-ink-2">The first report is being put together. Check back in a few minutes.</p>
         )}
-      </main>
-    </>
+      </div>
+    </main>
   )
 }

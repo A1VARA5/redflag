@@ -70,7 +70,11 @@ export function FlagScene({paused}: {paused: boolean}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const pauseRef = useRef(paused)
   const [ready, setReady] = useState(false)
-  useEffect(() => {pauseRef.current = paused}, [paused])
+  const wakeRef = useRef<() => void>(() => {})
+  useEffect(() => {
+    pauseRef.current = paused
+    wakeRef.current()
+  }, [paused])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -170,18 +174,30 @@ export function FlagScene({paused}: {paused: boolean}) {
     const pointer = {x: 0, y: 0}, smooth = {x: 0, y: 0}
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
     let reduced = media.matches
-    const mediaChanged = () => {reduced = media.matches; dirty = true}
-    const onContextLost = () => {contextLost = true; setReady(false)}
+    // The loop sleeps when there's nothing to draw (hidden, off screen, paused) and wakes on the events below.
+    let running = false
+    const wake = () => {
+      dirty = true
+      if (running) return
+      running = true
+      last = performance.now()
+      frame = requestAnimationFrame(render)
+    }
+    wakeRef.current = wake
+    const mediaChanged = () => {reduced = media.matches; wake()}
+    const onContextLost = (event: Event) => {event.preventDefault(); contextLost = true; setReady(false)}
     canvas.addEventListener('webglcontextlost', onContextLost)
+    document.addEventListener('visibilitychange', wake)
     media.addEventListener('change', mediaChanged)
     const resize = new ResizeObserver(([entry]) => {
       width = entry.contentRect.width; height = entry.contentRect.height; dirty = true
       const dpr = Math.min(devicePixelRatio, 1.75)
       canvas.width = Math.round(width*dpr); canvas.height = Math.round(height*dpr)
       gl.viewport(0, 0, canvas.width, canvas.height)
+      wake()
     })
     resize.observe(canvas)
-    const observer = new IntersectionObserver(([entry]) => {inView = entry.isIntersecting})
+    const observer = new IntersectionObserver(([entry]) => {inView = entry.isIntersecting; if (inView) wake()})
     observer.observe(canvas)
     const move = (event: PointerEvent) => {
       const rect = canvas.getBoundingClientRect()
@@ -192,11 +208,14 @@ export function FlagScene({paused}: {paused: boolean}) {
     canvas.addEventListener('pointermove', move)
     canvas.addEventListener('pointerleave', leave)
     function render(now: number) {
-      frame = requestAnimationFrame(render)
       const delta = Math.min((now-last)/1000, .04)
       last = now
-      if (!inView || document.hidden || contextLost || !gl || width === 0 || height === 0) return
-      if ((pauseRef.current || reduced) && !dirty) return
+      const still = pauseRef.current || reduced
+      if (!inView || document.hidden || contextLost || !gl || width === 0 || height === 0 || (still && !dirty)) {
+        running = false
+        return
+      }
+      frame = requestAnimationFrame(render)
       dirty = false
       if (!pauseRef.current && !reduced) time += delta
       smooth.x += (pointer.x-smooth.x)*.045; smooth.y += (pointer.y-smooth.y)*.045
@@ -208,13 +227,15 @@ export function FlagScene({paused}: {paused: boolean}) {
       gl.uniform2f(pointerUniform, reduced || pauseRef.current ? 0 : smooth.x, reduced || pauseRef.current ? 0 : smooth.y)
       gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0)
     }
-    frame = requestAnimationFrame(render)
+    wake()
     const readyFrame = requestAnimationFrame(() => setReady(true))
     return () => {
       cancelAnimationFrame(frame); cancelAnimationFrame(readyFrame)
       resize.disconnect(); observer.disconnect(); media.removeEventListener('change', mediaChanged)
       canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerleave', leave)
       canvas.removeEventListener('webglcontextlost', onContextLost)
+      document.removeEventListener('visibilitychange', wake)
+      wakeRef.current = () => {}
       gl.deleteBuffer(vertexBuffer); gl.deleteBuffer(indexBuffer); gl.deleteTexture(texture)
       shaders.forEach(shader => gl.deleteShader(shader)); gl.deleteProgram(program)
     }

@@ -15,7 +15,10 @@ const pages = [
 
 export function Header() {
   const pathname = usePathname()
-  const [open, setOpen] = useState(false)
+  // The menu belongs to the page it was opened on, so navigating anywhere (even back) closes it.
+  const [openOn, setOpenOn] = useState<string | null>(null)
+  const open = openOn === pathname
+  const setOpen = (value: boolean) => setOpenOn(value ? pathname : null)
   return (
     <header className="site-header" onKeyDown={e => {if (open && e.key === 'Escape') {setOpen(false); document.querySelector<HTMLButtonElement>('.menu-toggle')?.focus()}}}>
       <a href="#main-content" className="skip-link">Skip to content</a>
@@ -29,7 +32,7 @@ export function Header() {
         </nav>
         <div className="header-actions">
           <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="header-discord">Add to Discord <External className="h-4 w-4" /></a>
-          <Link href="/#check" className="button button-small button-ink" onClick={() => setOpen(false)}>Check<span className="header-check-detail"> for scams</span><span className="header-check-short"> now</span> <Arrow className="h-4 w-4" /></Link>
+          <Link href="/#check" className="button button-ink" onClick={() => setOpen(false)}>Check<span className="header-check-detail"> for scams</span><span className="header-check-short"> now</span> <Arrow className="h-4 w-4" /></Link>
           <button className="menu-toggle" aria-expanded={open} aria-controls="mobile-navigation" aria-label={open ? 'Close menu' : 'Open menu'} onClick={() => setOpen(!open)}>
             <span aria-hidden>{open ? '×' : '☰'}</span>
           </button>
