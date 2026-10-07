@@ -53,7 +53,7 @@ Also try the **Fake invoice PDF** and **Screenshot of a text** examples, type a 
 - Anything hidden from you on purpose: invisible text only an AI can read, file names flipped so a program looks like a PDF, brand names split with invisible spaces, and instructions hidden in an email's HTML.
 - What to do now, depending on how far it got (just got it, clicked, typed details, paid, gave a code), with only the reporting channels that fit: 37 official places across 10 countries in the UK, US and EU.
 
-![Tricks Red Flag catches: hidden instructions, QR codes, disguised file names](docs/media/tricks.jpg)
+![See what raised the flag: unpack the message, check where it leads, know your next step](docs/media/steps.jpg)
 
 ![A scam verdict with the message marked up and the warning signs listed](docs/media/verdict.jpg)
 
@@ -120,7 +120,7 @@ The first three rows include the harder cases of that kind. The plain model call
 
 83 messages written for this project is a small test, and Red Flag will get real messages wrong sometimes. Full table: [/eval](https://getredflag.vercel.app/eval). Run it yourself with `npx tsx --env-file=.env.local scripts/eval.mts` (or `EVAL_SET=attack` for just the attacks).
 
-On top of that, `npm test` runs 17 tests on the security checks that don't need any AI or network (hidden text, hidden HTML in a real email layout, typos that look like links, link padding, forged senders, signatures, override rules, QR and PDF reading), and CI runs lint, type checks and tests on every push.
+On top of that, `npm test` runs 19 tests on the security checks that don't need any AI or network (hidden text, hidden HTML in a real email layout, typos that look like links, link padding, forged senders, signatures, override rules, QR and PDF reading), and CI runs lint, type checks and tests on every push.
 
 ## This week's scams
 
@@ -177,7 +177,7 @@ npm test                     # no keys needed
 
 ## Stack
 
-Next.js 16 on Vercel (private Blob storage, Cron, Firewall) · Anthropic TypeScript SDK with Claude Opus 5.5, structured outputs and server side refusal fallbacks · Google Safe Browsing, VirusTotal and urlscan.io APIs · OpenPhish, PhishTank, URLhaus, Phishing.Database, Phishing Army · IANA RDAP bootstrap · Agentboxd · Discord HTTP interactions · jsQR, sharp, unpdf · IBM Plex.
+Next.js 16 on Vercel (private Blob storage, Cron, Firewall) · Anthropic TypeScript SDK with Claude Opus 5.5, structured outputs and server side refusal fallbacks · Google Safe Browsing, VirusTotal and urlscan.io APIs · OpenPhish, PhishTank, URLhaus, Phishing.Database, Phishing Army · IANA RDAP bootstrap · Agentboxd · Discord HTTP interactions · jsQR, sharp, unpdf · Geist and IBM Plex Mono.
 
 ## Credits and references
 

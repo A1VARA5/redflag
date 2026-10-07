@@ -17,7 +17,7 @@ export default async function SharedVerdict({params}: PageProps<'/v/[id]'>) {
   const v = await loadVerdict(id)
   if (!v) notFound()
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 pt-10 sm:px-6">
+    <main className="site-width pt-10">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-ink-2">Someone checked this message with Red Flag and wanted you to see the result.</p>
         <Link href="/" className="rounded-lg bg-navy px-4 py-2 text-[15px] font-semibold text-white hover:bg-navy-2">Check your own message</Link>

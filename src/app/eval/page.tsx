@@ -73,8 +73,8 @@ export default function Eval() {
   const baseMisses = main.filter((r) => r.baseline_correct === false)
   return (
     <>
-      <PageHero kicker="Test results" title="Test results" width="max-w-6xl" />
-      <main className="mx-auto w-full max-w-6xl px-4 pt-10 sm:px-6">
+      <PageHero kicker="Test results" title="Test results" />
+      <main className="site-width pt-10">
         <p className="mt-4 max-w-3xl text-lg leading-relaxed text-ink-2">
           {summary.n} made-up messages, checked by Red Flag and, for comparison, by a capable AI model on its own ({summary.baselineModel}) with no link checks
           and no knowledge of known scams. Run on {new Date(summary.ranAt).toLocaleDateString('en-GB', {dateStyle: 'long'})}.
@@ -149,9 +149,9 @@ export default function Eval() {
             </p>
             <ul className="mt-5 grid gap-3 md:grid-cols-2">
               {attacks.map((r) => (
-                <li key={r.id} className="flex items-start justify-between gap-4 rounded-xl border border-line bg-card p-4">
+                <li key={r.id} className="flex flex-col items-start justify-between gap-4 rounded-xl border border-line bg-card p-4 xl:flex-row">
                   <span className="text-[15px] text-ink">{r.label ?? r.id}</span>
-                  <span className="flex shrink-0 flex-col items-end gap-1 text-[13px] text-ink-3">
+                  <span className="flex shrink-0 flex-col items-start gap-1 text-[13px] text-ink-3 xl:items-end">
                     <span className="flex items-center gap-2">
                       Red Flag <Chip v={r.redflag} /> <span className={r.redflag_correct ? 'text-safe' : 'text-danger'}>{r.redflag_correct ? '✓' : '✗'}</span>
                     </span>

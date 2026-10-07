@@ -142,14 +142,19 @@ export function applyOverrides(v: ModelVerdictT, links: LinkReport[], hostileHid
 
 // Open models are looser with JSON: clamp and default fields before validating.
 function normaliseBackup(raw: unknown): unknown {
-  const o = (raw ?? {}) as Record<string, unknown>
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const o = raw as Record<string, unknown>
+  // An outage or malformed response is not an uncertain assessment of the message.
+  if (!['scam', 'suspicious', 'safe', 'unclear'].includes(String(o.verdict)) ||
+      typeof o.headline !== 'string' || !o.headline.trim() ||
+      typeof o.summary !== 'string' || !o.summary.trim()) return null
   const kinds = new Set<string>(FLAG_KINDS)
   const arr = (x: unknown) => (Array.isArray(x) ? x : [])
   return {
-    verdict: ['scam', 'suspicious', 'safe', 'unclear'].includes(String(o.verdict)) ? o.verdict : 'unclear',
-    confidence: Math.max(0, Math.min(100, Math.round(Number(o.confidence) || 50))),
-    headline: String(o.headline ?? 'Checked by the backup model.'),
-    summary: String(o.summary ?? o.headline ?? ''),
+    verdict: o.verdict,
+    confidence: Math.max(0, Math.min(100, Math.round(Number(o.confidence) || 0))),
+    headline: o.headline,
+    summary: o.summary,
     pattern_id: typeof o.pattern_id === 'string' && PATTERNS.some((p) => p.id === o.pattern_id) ? o.pattern_id : null,
     impersonating: typeof o.impersonating === 'string' && o.impersonating ? o.impersonating : null,
     red_flags: arr(o.red_flags)
@@ -164,6 +169,12 @@ function normaliseBackup(raw: unknown): unknown {
     check_it_yourself: String(o.check_it_yourself ?? 'Contact the company or person yourself using details you already trust.'),
     injection_attempt: Boolean(o.injection_attempt),
   }
+}
+
+export function parseBackupVerdict(raw: unknown): ModelVerdictT {
+  const parsed = ModelVerdict.safeParse(normaliseBackup(raw))
+  if (!parsed.success) throw new Error('Could not read this message right now. Please try again in a minute.')
+  return parsed.data
 }
 
 export type CheckInput = {
@@ -259,9 +270,7 @@ export async function check(input: CheckInput): Promise<Verdict> {
       console.error('[backup]', e instanceof Error ? e.message : e)
       return null
     })
-    const parsed = ModelVerdict.safeParse(normaliseBackup(raw))
-    if (!parsed.success) throw new Error('Could not read this message right now. Please try again in a minute.')
-    mv = parsed.data
+    mv = parseBackupVerdict(raw)
     modelName = BACKUP_MODEL
     engine = 'backup'
   }

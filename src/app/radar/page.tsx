@@ -19,8 +19,8 @@ export default async function RadarPage() {
   const r = await latestRadar()
   return (
     <>
-      <PageHero kicker="Going around right now" title="This week's scams" width="max-w-6xl" />
-      <main className="mx-auto w-full max-w-6xl px-4 pt-10 sm:px-6">
+      <PageHero kicker="Going around right now" title="This week's scams" />
+      <main className="site-width pt-10">
         {r ? (
           <>
             <p className="mt-3 max-w-3xl text-lg leading-relaxed text-ink-2">{r.headline}</p>

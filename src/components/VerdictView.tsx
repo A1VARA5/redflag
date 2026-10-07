@@ -249,7 +249,7 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
       {v.links.length === 0 && <p className="-mt-2 px-1 text-[14px] text-ink-3">No links in this message, so there was nothing to check against Google Safe Browsing or the phishing lists.</p>}
 
       {v.verdict !== 'safe' && (
-        <section className="rounded-xl bg-navy p-5 text-white sm:p-6">
+        <section className="rounded-xl border border-line bg-card p-5 text-white sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="text-xl font-semibold">What to do now</h3>
             <div className="flex rounded-lg bg-white/10 p-0.5 text-[13px] font-medium">

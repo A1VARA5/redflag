@@ -4,106 +4,13 @@ import patterns from '@/data/patterns.json'
 import brands from '@/data/brands.json'
 import respond from '@/data/respond.json'
 import {PageHero} from '@/components/PageHero'
+import {Pipeline} from '@/components/Landing'
 
 export const revalidate = 3600
 export const metadata: Metadata = {
   title: 'How Red Flag works',
   description:
     'How Red Flag checks a message: link checks against Google Safe Browsing and public blocklists, an AI reading of the message, and rules that let the hard evidence win.',
-}
-
-function Box({
-  x,
-  y,
-  w,
-  h,
-  title,
-  lines,
-  tone = 'card',
-}: {
-  x: number
-  y: number
-  w: number
-  h: number
-  title: string
-  lines: string[]
-  tone?: 'card' | 'danger' | 'navy'
-}) {
-  const fill = tone === 'danger' ? 'var(--danger-bg)' : tone === 'navy' ? 'var(--navy)' : 'var(--card)'
-  const stroke = tone === 'danger' ? 'var(--danger-line)' : tone === 'navy' ? 'var(--navy)' : 'var(--line-2)'
-  const ink = tone === 'navy' ? '#fff' : tone === 'danger' ? 'var(--danger)' : 'var(--ink)'
-  const sub = tone === 'navy' ? 'rgba(255,255,255,0.82)' : 'var(--ink-2)'
-  return (
-    <g>
-      <rect x={x} y={y} width={w} height={h} rx="10" fill={fill} stroke={stroke} strokeWidth="1.5" />
-      <text x={x + 16} y={y + 28} fontWeight="600" fontSize="15" fill={ink}>
-        {title}
-      </text>
-      {lines.map((l, i) => (
-        <text key={i} x={x + 16} y={y + 50 + i * 19} fontSize="13" fill={sub}>
-          {l}
-        </text>
-      ))}
-    </g>
-  )
-}
-
-function Diagram({sites, kinds}: {sites: string; kinds: number}) {
-  return (
-    <svg
-      viewBox="0 0 960 400"
-      className="h-auto w-full"
-      role="img"
-      aria-label="A message arrives by web, email or Discord. Links are checked by code, the message is read by Claude, and the hard evidence can overrule the AI. The verdict goes back the same way it came."
-    >
-      <defs>
-        <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-          <path d="M0 0L10 5L0 10z" fill="var(--ink-3)" />
-        </marker>
-      </defs>
-      <g fontFamily="var(--font-plex)">
-        <Box x={10} y={40} w={190} h={64} title="Web page" lines={['text or screenshot']} />
-        <Box x={10} y={168} w={190} h={64} title="Email" lines={['forward to Red Flag']} />
-        <Box x={10} y={296} w={190} h={64} title="Discord" lines={['right-click a message']} />
-        <path d="M200 72 L270 150 M200 200 L270 200 M200 328 L270 250" stroke="var(--ink-3)" strokeWidth="1.5" fill="none" markerEnd="url(#a)" />
-        <Box
-          x={275}
-          y={20}
-          w={330}
-          h={110}
-          title="1  Link checks (code)"
-          lines={['Google Safe Browsing, VirusTotal, urlscan', `${sites} known phishing sites`, 'domain age, look-alike brand names']}
-        />
-        <Box
-          x={275}
-          y={145}
-          w={330}
-          h={110}
-          title="2  Claude reads the message"
-          lines={['text or screenshot, as untrusted data', `compares with ${kinds} known scam types`, 'quotes the exact giveaway words']}
-        />
-        <Box
-          x={275}
-          y={270}
-          w={330}
-          h={110}
-          title="3  Evidence beats opinion"
-          tone="danger"
-          lines={['known bad link: scam', 'fake brand address: never "safe"', 'text aimed at the checker: scam']}
-        />
-        <path d="M605 200 L680 200" stroke="var(--ink-3)" strokeWidth="1.5" markerEnd="url(#a)" />
-        <Box
-          x={685}
-          y={135}
-          w={265}
-          h={130}
-          title="Verdict"
-          tone="navy"
-          lines={['marked-up message', 'what to do, UK / US / EU', 'who to report it to', 'back the same way it came']}
-        />
-      </g>
-    </svg>
-  )
 }
 
 export default async function How() {
@@ -113,17 +20,15 @@ export default async function How() {
   const kinds = (patterns as unknown[]).length
   return (
     <>
-      <PageHero kicker="How it works" title="How it works" width="max-w-4xl" />
-      <main className="mx-auto w-full max-w-4xl px-4 pt-10 sm:px-6">
-        <p className="mt-4 text-lg leading-relaxed text-ink-2">
+      <PageHero kicker="The method / 01" title="Behind the second look." />
+      <main className="site-width how-body">
+        <p className="how-lead">
           Two kinds of checking, and a rule for when they disagree. Code checks the links, because a list of known phishing sites can&apos;t be talked round.
           Claude, an AI model by Anthropic, reads the words or the screenshot, looking for the tricks scammers use. When the hard evidence says scam, the answer
           is scam.
         </p>
 
-        <div className="mt-8 rounded-xl border border-line bg-card p-4 sm:p-6">
-          <Diagram sites={sites} kinds={kinds} />
-        </div>
+        <div className="how-flow"><div className="how-formats"><span>THE INPUT</span><p>Email <i>/</i> PDF <i>/</i> Screenshot <i>/</i> Text</p></div><Pipeline /><p className="how-flow-note">One process, whatever you bring. {sites} known phishing sites and {kinds} scam patterns help inform the result.</p></div>
 
         <Section title="What gets checked">
           <ul className="list-disc space-y-2 pl-5">
@@ -196,7 +101,7 @@ export default async function How() {
             <li>A brand new scam site that isn&apos;t on any list and doesn&apos;t use a brand name relies on the reading of the message alone.</li>
             <li>Email replies come from a new address and can land in spam. Every reply also links to the result on this site.</li>
             <li>
-              Email replies are limited to 20 a day for now, and only go to senders whose mail server passed SPF or DKIM, so a forged address can&apos;t make
+              Email replies are limited to 18 a day and six per sender, and only go to senders whose authentication matches their address, so a forged address can&apos;t make
               Red Flag email someone else.
             </li>
             <li>With more than 12 links in one message, links on real brand sites are skipped first so the unknown ones get checked.</li>
@@ -223,7 +128,7 @@ export default async function How() {
             </li>
             <li>Agentboxd for the email inbox; Discord interactions for the Discord app.</li>
             <li>Daily scam radar from the FTC, FBI IC3, NCSC, FCA, GOV.UK, Which?, Europol, CISA and r/Scams.</li>
-            <li>Next.js on Vercel. Font: IBM Plex.</li>
+            <li>Next.js on Vercel. Type: Geist and IBM Plex Mono.</li>
             <li>
               Built by Aivaras Navardauskas for ForgeHacks 2026.{' '}
               <a href="https://github.com/A1VARA5/redflag" className="font-medium text-navy underline underline-offset-4">
@@ -240,9 +145,9 @@ export default async function How() {
 
 function Section({title, children}: {title: string; children: React.ReactNode}) {
   return (
-    <section className="mt-12">
-      <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
-      <div className="mt-3 text-[16px] leading-relaxed text-ink-2">{children}</div>
+    <section className="how-section">
+      <h2>{title}</h2>
+      <div className="how-section-content">{children}</div>
     </section>
   )
 }

@@ -85,3 +85,13 @@ Timestamped so anyone can see everything was built during the event (3 to 10 Oct
   - The eval no longer counts a crash as a correct answer.
   - hidden.ts had raw invisible characters in its own source code. Embarrassing for a scam checker; now written as escape codes.
 - Tests: 17, run by GitHub Actions on every push with lint and type checks.
+
+### Tue 6 Oct, evening: the website, properly this time
+- The first redesign still looked like a template, so I went through a few rounds until it felt like a product. Looked at Linear and 1Password for how they show a product, and Lusion and Active Theory for motion.
+- Now: dark ink, warm ivory and signal red, Geist (self hosted, OFL licence in public/fonts), and the checker right next to the headline instead of halfway down the page. The home page went from about 8,600 px tall to about 2,200.
+- A red cloth flag on a pole, drawn with WebGL by hand (no 3D library). It moves with your mouse, stops drawing when it's off screen, has a pause button, and falls back to a plain flag when WebGL or motion isn't available.
+- "Explore an example": drag a slider across a fake email, PDF, screenshot or message to uncover the warning signs. Clearly labelled as an illustration; real checks run in the checker above it.
+- Mobile menu, keyboard focus styles, bigger tap targets, clearer loading, retry and file errors, and no double checks while one is running. Checked at 320, 390, 768 px and desktop with no sideways scrolling.
+- Found a real bug while testing: if both AI readers failed, the empty backup answer turned into a finished "can't tell" verdict. It now fails honestly with a retry. A genuine "can't tell" still works. Two new tests, 19 in total.
+- One Discord invite link shared by every button (src/lib/public-links.ts).
+- Smoke tested on the live site: Hi Mum scam, dentist reminder, fake invoice PDF and the screenshot sample all came back right. Email and Discord weren't re tested in this pass.

@@ -6,7 +6,7 @@ import type {LinkReport} from '@/lib/links'
 import {SAMPLES} from '@/lib/samples'
 import {VerdictView} from './VerdictView'
 import {LiveLinks} from './LiveLinks'
-import {Check, Image as ImageIcon, Lock, Spinner} from './Icons'
+import {Arrow, Check, Image as ImageIcon, Lock, Spinner} from './Icons'
 
 type Img = {
   mediaType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif'
@@ -91,6 +91,7 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
   const [wasImage, setWasImage] = useState(false)
   const resultRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const runningRef = useRef(false)
 
   useEffect(() => {
     let stored: string | null = null
@@ -109,11 +110,11 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
 
   useEffect(() => {
     const onPaste = async (e: ClipboardEvent) => {
+      if (runningRef.current) return
       const file = [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith('image/'))
       if (file) {
         e.preventDefault()
-        const i = await fileToImg(file)
-        if (i) setImg(i)
+        await addFile(file)
       }
     }
     window.addEventListener('paste', onPaste)
@@ -129,36 +130,57 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
 
   // Screenshots go to the AI as images; PDFs are turned into text on the server.
   async function addFile(f: File) {
+    if (runningRef.current) return
     setFileNote(null)
-    if (f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) {
-      if (f.size > MAX_PDF) return setFileNote('That PDF is over 3 MB. Try a screenshot of the important page instead.')
-      setDoc({name: f.name, data: await fileToBase64(f)})
-      return
+    try {
+      if (f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) {
+        if (f.size > MAX_PDF) return setFileNote('That PDF is over 3 MB. Try a screenshot of the important page instead.')
+        setDoc({name: f.name, data: await fileToBase64(f)})
+        return
+      }
+      const i = await fileToImg(f)
+      if (!i) return setFileNote('Red Flag can read screenshots (PNG, JPEG, WebP, GIF) and PDFs.')
+      setImg(i)
+    } catch {
+      setFileNote('That file could not be read. Try another screenshot or PDF.')
     }
-    const i = await fileToImg(f)
-    if (!i) return setFileNote('Red Flag can read screenshots (PNG, JPEG, WebP, GIF) and PDFs.')
-    setImg(i)
   }
 
   async function runSamplePdf() {
-    const blob = await (await fetch('/sample-invoice.pdf')).blob()
-    const sample = {name: 'Invoice-BL-20461.pdf', data: await fileToBase64(new File([blob], 'Invoice-BL-20461.pdf', {type: 'application/pdf'}))}
-    setText('')
-    setImg(null)
-    setDoc(sample)
-    run('', undefined, sample)
+    if (runningRef.current) return
+    try {
+      const response = await fetch('/sample-invoice.pdf')
+      if (!response.ok) throw new Error('Example unavailable')
+      const blob = await response.blob()
+      const sample = {name: 'Invoice-BL-20461.pdf', data: await fileToBase64(new File([blob], 'Invoice-BL-20461.pdf', {type: 'application/pdf'}))}
+      setText('')
+      setImg(null)
+      setDoc(sample)
+      run('', undefined, sample)
+    } catch {
+      setFileNote('The example could not load. Please try again or paste a message.')
+    }
   }
 
   async function runSampleImage() {
-    const blob = await (await fetch('/sample-sms')).blob()
-    const sample = await fileToImg(new File([blob], 'sample.png', {type: 'image/png'}))
-    if (!sample) return
-    setText('')
-    setImg(sample)
-    run(undefined, sample)
+    if (runningRef.current) return
+    try {
+      const response = await fetch('/sample-sms')
+      if (!response.ok) throw new Error('Example unavailable')
+      const blob = await response.blob()
+      const sample = await fileToImg(new File([blob], 'sample.png', {type: 'image/png'}))
+      if (!sample) return
+      setText('')
+      setImg(sample)
+      setDoc(null)
+      run(undefined, sample)
+    } catch {
+      setFileNote('The example could not load. Please try again or paste a message.')
+    }
   }
 
   async function run(override?: string, imgOverride?: Img, docOverride?: Doc) {
+    if (runningRef.current) return
     const useImg = imgOverride ?? (override !== undefined ? null : img)
     const useDoc = docOverride ?? (override !== undefined || imgOverride ? null : doc)
     const body = {
@@ -181,6 +203,8 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
     try {
       localStorage.setItem('rf-region', region)
     } catch {}
+    runningRef.current = true
+    setFileNote(null)
     setWasImage(Boolean(useImg))
     setElapsed(0)
     setPhase('checking')
@@ -190,7 +214,7 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
     setTimeout(
       () =>
         resultRef.current?.scrollIntoView({
-          behavior: 'smooth',
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
           block: 'start',
         }),
       50,
@@ -231,6 +255,8 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.')
       setPhase('error')
+    } finally {
+      runningRef.current = false
     }
   }
 
@@ -238,12 +264,14 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
   const linkCount = links?.length ?? 0
 
   return (
-    <div>
-      <div className="w-full">
+    <div className="checker">
+      <section className="checker-composer" id="check" aria-labelledby="check-title">
+        <div className="checker-topline"><h2 id="check-title">Check a message</h2><span>No account needed</span></div>
+        <p className="checker-instruction">Paste text, or add a screenshot or PDF.</p>
         <div
           onDragOver={(e) => {
             e.preventDefault()
-            setDrag(true)
+            if (!busy) setDrag(true)
           }}
           onDragLeave={() => setDrag(false)}
           onDrop={async (e) => {
@@ -252,20 +280,21 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
             const f = e.dataTransfer.files[0]
             if (f) await addFile(f)
           }}
-          className={`overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_rgba(13,27,42,0.06),0_8px_24px_-12px_rgba(13,27,42,0.18)] transition-colors ${drag ? 'border-navy ring-2 ring-navy/20' : 'border-line-2'}`}
+          className={`checker-input overflow-hidden border transition-colors ${drag ? 'border-navy ring-2 ring-navy/20' : 'border-line-2'}`}
         >
           <label htmlFor="msg" className="sr-only">
             The message you are unsure about
           </label>
           <textarea
             id="msg"
+            disabled={busy}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) run()
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); run() }
             }}
             rows={5}
-            placeholder="Paste the text, email or message here…"
+            placeholder="Paste a message or email here…"
             className="block w-full resize-y bg-transparent px-5 pt-4 pb-3 text-[17px] leading-7 text-ink outline-none placeholder:text-ink-3"
           />
           {img && (
@@ -273,7 +302,7 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={img.preview} alt="Your screenshot" className="h-14 w-14 rounded-md object-cover" />
               <span className="text-sm text-ink-2">Screenshot added</span>
-              <button onClick={() => setImg(null)} className="ml-auto rounded-md px-2 py-1 text-sm text-ink-3 hover:bg-muted-bg hover:text-ink">
+              <button disabled={busy} onClick={() => setImg(null)} className="ml-auto rounded-md px-2 py-1 text-sm text-ink-3 hover:bg-muted-bg hover:text-ink">
                 Remove
               </button>
             </div>
@@ -282,14 +311,15 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
             <div className="mx-4 mb-3 flex items-center gap-3 rounded-lg border border-line bg-bg p-2">
               <span className="flex h-14 w-14 items-center justify-center rounded-md border border-line-2 bg-card text-[13px] font-semibold text-ink-2">PDF</span>
               <span className="min-w-0 truncate text-sm text-ink-2">{doc.name}</span>
-              <button onClick={() => setDoc(null)} className="ml-auto rounded-md px-2 py-1 text-sm text-ink-3 hover:bg-muted-bg hover:text-ink">
+              <button disabled={busy} onClick={() => setDoc(null)} className="ml-auto rounded-md px-2 py-1 text-sm text-ink-3 hover:bg-muted-bg hover:text-ink">
                 Remove
               </button>
             </div>
           )}
-          {fileNote && <p className="mx-5 mb-3 text-sm text-warn">{fileNote}</p>}
-          <div className="flex flex-wrap items-center gap-2 border-t border-line bg-bg/60 px-3 py-3 sm:px-4">
+          {fileNote && <p role="alert" className="mx-5 mb-3 text-sm text-warn">{fileNote}</p>}
+          <div className="checker-toolbar flex flex-wrap items-center gap-2 border-t border-line bg-bg/60 px-3 py-3 sm:px-4">
             <button
+              disabled={busy}
               onClick={() => fileRef.current?.click()}
               className="flex items-center gap-2 rounded-lg border border-line-2 bg-card px-3 py-2 text-sm font-medium text-ink-2 hover:border-ink hover:text-ink"
             >
@@ -306,27 +336,28 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
                 e.target.value = ''
               }}
             />
-            <select
+            <label className="advice-region"><span>Advice for</span><select
+              disabled={busy}
               value={region}
               onChange={(e) => setRegion(e.target.value as typeof region)}
-              aria-label="Where you live"
+              aria-label="Country for advice"
               className="rounded-lg border border-line-2 bg-card px-3 py-2 text-sm font-medium text-ink-2"
             >
               <option value="UK">United Kingdom</option>
               <option value="US">United States</option>
               <option value="EU">European Union</option>
-            </select>
+            </select></label>
             <button
               onClick={() => run()}
               disabled={busy || (!text.trim() && !img && !doc)}
-              className="ml-auto flex items-center gap-2 rounded-lg bg-navy px-5 py-2.5 text-[15px] font-semibold text-white hover:bg-navy-2 disabled:cursor-not-allowed disabled:opacity-40"
+              className="checker-submit ml-auto flex items-center gap-2 rounded-lg bg-navy px-5 py-2.5 text-[15px] font-semibold text-white hover:bg-navy-2 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {busy ? (
                 <>
                   <Spinner className="h-4 w-4" /> Checking
                 </>
               ) : (
-                'Check message'
+                <>Check for scams <Arrow className="h-4 w-4" /></>
               )}
             </button>
           </div>
@@ -334,47 +365,33 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
 
         {phase !== 'checking' && <LiveLinks text={text} />}
 
-        <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm">
-          <span className="text-ink-3">Try an example:</span>
-          <button
-            disabled={busy}
-            onClick={runSampleImage}
-            className="rounded-md px-2 py-1 font-medium text-navy underline decoration-line-2 underline-offset-4 hover:decoration-navy disabled:opacity-40"
-          >
-            Screenshot of a text
-          </button>
-          <button
-            disabled={busy}
-            onClick={runSamplePdf}
-            className="rounded-md px-2 py-1 font-medium text-navy underline decoration-line-2 underline-offset-4 hover:decoration-navy disabled:opacity-40"
-          >
-            Fake invoice PDF
-          </button>
-          {SAMPLES.map((s) => (
-            <button
-              key={s.label}
-              disabled={busy}
-              onClick={() => run(s.text)}
-              className="rounded-md px-2 py-1 font-medium text-navy underline decoration-line-2 underline-offset-4 hover:decoration-navy disabled:opacity-40"
-            >
-              {s.label}
-            </button>
-          ))}
+        <div className="example-list">
+          <span className="example-label">Try a sample:</span>
+          {SAMPLES.slice(0, 3).map((s) => <button type="button" key={s.label} disabled={busy} onClick={() => run(s.text)} className="example-chip">{s.label} <span aria-hidden>↗</span></button>)}
         </div>
-        <p className="mt-2 flex items-center gap-1.5 text-sm text-ink-3">
+        <details className="more-examples">
+          <summary>More sample checks</summary>
+          <div>
+            <button disabled={busy} onClick={runSampleImage} className="example-chip">Screenshot of a text</button>
+            <button disabled={busy} onClick={runSamplePdf} className="example-chip">Fake invoice PDF</button>
+            {SAMPLES.slice(3).map((s) => <button key={s.label} disabled={busy} onClick={() => run(s.text)} className="example-chip">{s.label}</button>)}
+          </div>
+        </details>
+        <p className="checker-privacy flex gap-1.5 text-ink-3">
           <Lock className="h-4 w-4" /> Nothing you paste here is stored unless you choose to share the result.
         </p>
-      </div>
+      </section>
 
-      <div ref={resultRef} className="scroll-mt-6 pt-10">
+      <div ref={resultRef} className="checker-result" aria-busy={busy}>
         {busy && (
-          <div className="fade-in max-w-3xl rounded-xl border border-line bg-card p-5 sm:p-6">
+          <div className="checking-state fade-in rounded-xl border border-line p-5 sm:p-6" role="status" aria-live="polite">
             <div className="flex items-center justify-between">
               <div className="font-semibold">Checking your message</div>
-              <div className="text-sm tabular-nums text-ink-3">{elapsed}s</div>
+              <div aria-hidden className="text-sm tabular-nums text-ink-3">{elapsed}s</div>
             </div>
+            <div className="checking-track" aria-hidden />
             <ol className="mt-4 space-y-3 text-[15px]">
-              <Step state="done">{wasImage ? 'Screenshot received' : 'Message received'}</Step>
+              <Step state="done">{wasImage ? 'Screenshot received' : doc ? 'PDF received' : 'Message received'}</Step>
               <Step state={links ? 'done' : 'active'}>
                 {links
                   ? linkCount === 0
@@ -393,9 +410,10 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
           </div>
         )}
         {phase === 'error' && (
-          <div className="rounded-xl border border-warn-line bg-warn-bg p-5">
+          <div role="alert" className="rounded-xl border border-warn-line bg-warn-bg p-5">
             <p className="font-semibold text-ink">We couldn&apos;t finish this check.</p>
             <p className="mt-1 text-sm text-ink-2">{error}</p>
+            <button type="button" onClick={() => run()} className="mt-3 rounded-md border border-warn-line px-4 py-2 text-sm font-semibold">Try again</button>
             <p className="mt-2 text-sm text-ink-2">
               If you&apos;re worried right now: don&apos;t click, reply or pay. Contact the company yourself using a number or app you already trust.
             </p>
