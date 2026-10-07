@@ -84,7 +84,7 @@ button,a {touch-action:manipulation}
 .flag-fallback {position:absolute;inset:22% 12% 38% 10%;display:grid;place-items:center;background:#cf352d;color:#f2ede4;transform:rotate(-3deg);font-size:38px;font-weight:400;letter-spacing:-.055em;box-shadow:inset -35px 0 50px #8d171f80}
 .flag-fallback::before {content:"";position:absolute;left:-4px;top:-9px;height:170%;width:3px;background:linear-gradient(90deg,#52616c,#cbd7dd,#52616c)}
 .flag-scene[data-ready="true"] .flag-fallback {opacity:0;pointer-events:none}
-.art-motion {position:absolute;right:-20px;bottom:12px;display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 12px;color:var(--ink-3);font-size:12px;border-radius:7px}
+.art-motion {position:absolute;left:16px;bottom:-34px;display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 12px;color:var(--ink-3);font-size:12px;border-radius:7px}
 .art-motion:hover {color:var(--ink);background:var(--card)}
 .art-motion>span:first-child {font-size:17px}
 .checker {display:contents}
