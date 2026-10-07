@@ -148,14 +148,14 @@ On top of that, `npm test` runs 21 tests on the security checks that don't need 
 ## What doesn't work yet
 
 - Phone calls and voice notes. Text, screenshots and PDFs only, and that hurts, because cloned voices are the next big thing.
-- A brand new scam site that isn't on any list and doesn't use a brand name relies on the AI reading the message.
-- Email replies come from a new sending domain and can land in spam, so each reply also links to the result on the web. 20 replies a day for now.
-- Scanned PDFs with no text layer work by email (Agentboxd reads them) but not yet on the website or in Discord. Send a screenshot instead.
+- A scam site that's a few months old, isn't on any list and doesn't use a brand name relies on the AI reading the message and the sandbox scan. Brand new ones (under 30 days old) can't come back as safe.
+- Email replies come from a new sending domain and can land in spam, so each reply also links to the result on the web.
+- Scanned PDFs with no text layer are read by Claude directly, so if Claude is down or today's budget is spent, send a screenshot instead (the backup model can't read PDFs).
 - VirusTotal's free tier allows 4 lookups a minute. When it's busy that check is skipped and the rest still run.
 - The backup model is slower (15 to 25 seconds) and less sharp than Claude.
 - Up to 12 links per message are checked. With more, links on real brand sites are skipped first.
-- The daily Claude budget and the in app rate limits are per server instance, so they're guard rails. A Vercel firewall rule limits checks per IP on top.
-- Checking where a link redirects sends one request to that site (no page is loaded). A link made just for you could tell the scammer it was opened, so Red Flag never sends real bank or password links anywhere.
+- The per user limits on the bots are counted per server, so they're guard rails. The daily Claude budget is shared across servers, and a Vercel firewall rule limits web checks per IP.
+- Checking where a link redirects sends one request to that site (no page is loaded). The request comes from Red Flag's server, not your phone, but a link made just for you could still tell the scammer it was checked, so Red Flag never sends real bank or password links anywhere.
 - Advice covers the UK, US and EU only.
 
 ## Where to look in the code

@@ -125,3 +125,8 @@ Timestamped so anyone can see everything was built during the event (3 to 10 Oct
   - Claude and the backup model had no real time limit inside the 60 second window. They do now.
 - 30 tests now. Test set run again: 83 of 83 and 9 of 9. The gaps I didn't fix (DNS rebinding, a PDF built to be slow) are in docs/THREAT-MODEL.md.
 - Closed the two gaps I'd written down. DNS rebinding: the private address check now also runs inside the connection, on the exact address it connects to. My first version broke every redirect (Node asks for all addresses at once and I returned one), which only showed up when I tried real links like http://github.com. Slow PDFs: reading now happens in a worker thread with a memory cap that gets killed at the time limit. A 160 KB test PDF used up 256 MB in 3 seconds; before, that would have hit the server itself. 32 tests.
+- Went through my own "known gaps" list and closed what I could:
+  - The daily Claude budget was counted per server, so with several servers running the $6 cap could really be several times that. Each server now writes its own total for the day and the cap adds them all up.
+  - Scanned PDFs with no text layer used to be refused on the web, Discord and Telegram. Claude reads PDFs directly, so a scan now goes to it as a document. Tested with a scanned fake HMRC letter: scam, 97%, and the link it read off the page got checked too.
+  - Email replies were capped at 18 a day from back when the inbox allowed 20. It allows 500 now, so the cap is 150.
+  - Reworded the rest so they say exactly what's left: brand new domains can't come back safe any more, and the redirect check comes from Red Flag's server, never the person's phone. Voice notes and the small test set stay on the list because they're true.

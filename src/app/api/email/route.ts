@@ -7,7 +7,8 @@ export const maxDuration = 60
 
 const perSender = new Map<string, number[]>()
 // Agentboxd allows 20 sends a day. Keep a few back, and stop one address using them all.
-const DAILY_REPLIES = 18
+// The inbox allows 500 sends a day; this leaves plenty of room for anything else it sends.
+const DAILY_REPLIES = 150
 const PER_SENDER_PER_DAY = 6
 let today = {day: '', sent: 0}
 const EU_TLDS = new Set(['ie', 'de', 'fr', 'nl', 'es', 'it', 'lt', 'pl', 'be', 'at', 'pt', 'se', 'dk', 'fi', 'cz', 'ro', 'hu', 'gr', 'bg', 'hr', 'sk', 'si', 'lv', 'ee', 'lu', 'mt', 'cy', 'eu'])

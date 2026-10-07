@@ -190,16 +190,19 @@ export async function POST(req: Request) {
       if (!input) throw new Error('Could not read that message')
       const image = input.image ? await download(input.image) : null
       let text = input.text
+      let scan: string | null = null
       if (input.pdf) {
         const r = await fetch(discordFile(input.pdf.url), {signal: AbortSignal.timeout(10_000)})
-        const fromPdf = r.ok ? await pdfText(await r.arrayBuffer()) : null
+        const bytes = r.ok ? await r.arrayBuffer() : null
+        const fromPdf = bytes ? await pdfText(bytes) : null
         if (fromPdf) text = `${text}\n\n[Attached file: ${input.pdf.filename ?? 'document.pdf'}]\n${fromPdf}`.trim()
-        else if (!text && !image) throw new Error('That PDF has no text Red Flag can read (it may be a scan). Send a screenshot of it instead')
+        // No text layer (a scan): Claude reads the PDF itself.
+        else if (bytes && bytes.byteLength < 3_300_000) scan = Buffer.from(bytes).toString('base64')
       }
-      if (!text && !image) {
+      if (!text && !image && !scan) {
         throw new Error(input.other ? 'Red Flag can read text, screenshots and PDFs, but not that kind of file' : 'There is no text or image to check')
       }
-      const v = await check({text, image, source: 'discord', ...regionFor(String(i.locale ?? ''))})
+      const v = await check({text, image, scan, source: 'discord', ...regionFor(String(i.locale ?? ''))})
       await saveVerdict(v)
       await edit(resultMessage(v, site))
     } catch (e) {

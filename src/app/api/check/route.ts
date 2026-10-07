@@ -24,14 +24,16 @@ export async function POST(req: Request) {
   let text = (body.text ?? '').toString().trim()
   const image = body.image?.data && IMAGE_TYPES.has(body.image.mediaType ?? '') ? body.image : null
   const doc = typeof body.document?.data === 'string' ? body.document : null
+  // A PDF with no text layer (a scan) goes to Claude as a document, which reads scans directly.
+  let scan: string | null = null
   if (doc) {
     if (doc.data!.length > 4_400_000) return Response.json({error: 'That PDF is too big. Try a screenshot of the important page.'}, {status: 413})
     const buf = Buffer.from(doc.data!, 'base64')
     const fromPdf = await pdfText(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.length))
-    if (!fromPdf && !text && !image) return Response.json({error: 'That PDF has no text Red Flag can read (it may be a scan). Add a screenshot of it instead.'}, {status: 400})
+    if (!fromPdf) scan = doc.data!
     if (fromPdf) text = `${text}\n\n[Attached file: ${String(doc.name ?? 'document.pdf').slice(0, 120)}]\n${fromPdf}`.trim()
   }
-  if (!text && !image) return Response.json({error: 'Paste a message or add a screenshot.'}, {status: 400})
+  if (!text && !image && !scan) return Response.json({error: 'Paste a message or add a screenshot.'}, {status: 400})
   if (image && image.data!.length > 4_400_000) return Response.json({error: 'That screenshot is too big. Try a smaller one.'}, {status: 413})
 
   const enc = new TextEncoder()
@@ -41,6 +43,7 @@ export async function POST(req: Request) {
       const input: CheckInput = {
         text,
         image: image ? {mediaType: image.mediaType as NonNullable<CheckInput['image']>['mediaType'], data: image.data!} : null,
+        scan,
         region: REGIONS.has(body.region ?? '') ? (body.region as Region) : 'UK',
         situation: SITUATIONS.has(body.situation ?? '') ? (body.situation as Situation) : 'received_only',
         source: 'web',

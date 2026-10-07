@@ -27,7 +27,7 @@ This page lists the attacks I thought about, what stops each one, and where to f
 | A brand split with invisible spaces so filters miss it (`Pay[invisible space]Pal`) | Invisible spaces are removed before the link checks run. | `hidden.ts`; test "invisible spaces are removed..." |
 | Lookalike letters from another alphabet (Cyrillic `аррle.com`) | The link finder reads every alphabet, so the whole fake domain is checked and flagged as encoded. | `extractUrls` in [`src/lib/links.ts`](../src/lib/links.ts); the test on domains in other alphabets |
 | A link hidden in a QR code on a screenshot | The QR code is read by code and its link gets the full link checks. | [`src/lib/qr.ts`](../src/lib/qr.ts); test "a QR code in a screenshot is read" |
-| A fake invoice where the scam is inside the PDF | PDF text is extracted (on the web and in Discord by Red Flag, in email by Agentboxd, with OCR for scans) and checked with the message. | [`src/lib/pdf.ts`](../src/lib/pdf.ts) |
+| A fake invoice where the scam is inside the PDF | PDF text is extracted (on the web and in Discord by Red Flag, in email by Agentboxd, with OCR for scans) and checked with the message. On the web, Discord and Telegram, a scan with no text layer is read by Claude directly. | [`src/lib/pdf.ts`](../src/lib/pdf.ts) |
 | Decoy links: a dozen harmless links with the phishing one in the middle | With more than 12 links, the most suspicious ones (no brand's real domain, cheap ending, brand name in the address, encoded letters) are checked first. | `extractUrls` in `links.ts`; test "with too many links, the suspicious one in the middle is still checked" |
 | Defanged links (`hxxps://`, `[.]`) to dodge filters | Refanged and checked. Typos like "phone.New number" are not treated as links. | test "defanged links are found, file names and typos are not links" |
 
@@ -40,7 +40,7 @@ This page lists the attacks I thought about, what stops each one, and where to f
 | Edit a shared result into a fake "no red flags found" card for your own scam | Shared results are HMAC signed when they're made and checked when shared. | [`src/lib/sign.ts`](../src/lib/sign.ts); test "a shared result cannot be edited..." |
 | Use a link to make Red Flag's server probe private addresses | Every DNS answer is checked against private, local and carrier ranges (including IPv4 written as IPv6), and the same check runs again inside the connection on the address it actually connects to, so a DNS server that changes its answer between the two (rebinding) gets nowhere. HEAD requests, plus a GET whose body is never read when a site refuses HEAD. Bad redirect headers end the walk instead of crashing the check. | `safeToFetch` and `guardedLookup` in `links.ts`; test "the connection itself refuses private addresses" |
 | Huge images, giant PDFs or broken HTML to hang a check | Images have a pixel limit and are shrunk first; PDFs are read in a separate worker thread with a 256 MB memory cap that is killed after 10 seconds, at most 20 pages; email HTML is capped at 200 KB and scanned in linear time; each link has a 15 second budget and its redirect walk 8 seconds. When a site runs out the clock, the address checks and the blocklists still count. | [`src/lib/image.ts`](../src/lib/image.ts), `pdf.ts`, `email.ts`, `links.ts`; tests "a huge or broken email does not hang the HTML scan" and "a PDF built to be slow is stopped on time" |
-| Hammer the checker to burn the Claude budget | A Vercel firewall rule limits checks per IP, there's an in app rate limit, and a daily Claude budget after which the backup model takes over. Telegram and Discord calls all come from their servers, so the bots are limited per user instead (8 checks in 10 minutes). | `src/lib/ratelimit.ts`, `src/lib/meter.ts` |
+| Hammer the checker to burn the Claude budget | A Vercel firewall rule limits checks per IP, there's an in app rate limit, and a daily Claude budget, added up across every server, after which the backup model takes over. Telegram and Discord calls all come from their servers, so the bots are limited per user instead (8 checks in 10 minutes). | `src/lib/ratelimit.ts`, `src/lib/meter.ts` |
 
 ## Privacy
 
@@ -52,9 +52,9 @@ This page lists the attacks I thought about, what stops each one, and where to f
 
 I'd rather say these than have someone find them:
 
-- Checking where a link redirects sends one request to that site. A link made just for you could tell the scammer it was opened.
-- A brand new scam site that isn't on any list and doesn't use a brand name relies on the AI reading the message.
-- The rate limit and daily budget counters are per server instance, so they're guard rails rather than exact limits. The firewall rule is the hard limit.
+- Checking where a link redirects sends one request to that site, from Red Flag's server, never from the person's phone. A link made just for one person could still tell the scammer it was checked (not who has it or where they are).
+- A scam site that's a few months old, isn't on any list and doesn't use a brand name relies on the AI reading the message and the sandbox scan. Brand new ones (under 30 days old) can't come back as safe.
+- The per user limits on the Telegram and Discord bots are counted per server instance, so someone determined can get a few extra checks. The daily Claude budget is shared across all servers, and the web checker has a hard firewall limit per IP.
 - Voice notes and phone calls aren't covered at all yet.
 - The test set is 83 messages plus 9 attacks, written for this project. It's a small test.
 

@@ -192,6 +192,8 @@ export function parseBackupVerdict(raw: unknown): ModelVerdictT {
 export type CheckInput = {
   text: string
   image?: {mediaType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif'; data: string} | null
+  // A PDF with no text layer (a scan), base64. Claude reads it directly; the backup model can't.
+  scan?: string | null
   region?: Region
   situation?: Situation
   source?: Verdict['source']
@@ -208,7 +210,7 @@ export async function check(input: CheckInput): Promise<Verdict> {
   const situation = input.situation ?? 'received_only'
   // Long messages: links are found in the whole text; the model reads the start and the end, where scams hide.
   if (input.image) input = {...input, image: await normaliseImage(input.image)}
-  if (!input.image && !input.text.trim()) throw new Error("That image couldn't be read. Try a smaller screenshot")
+  if (!input.image && !input.scan && !input.text.trim()) throw new Error("That image couldn't be read. Try a smaller screenshot")
   // Invisible characters are counted and removed first, so they can't split a link or hide words from the checks.
   // Cut after cleaning, not before: 60k invisible characters must not push the real text (or an attachment) out.
   const hidden = scanHidden(input.text.slice(0, 400_000))
@@ -243,6 +245,7 @@ export async function check(input: CheckInput): Promise<Verdict> {
   const userText = [
     `The advice will be shown for: ${region}. This only picks the reporting steps; don't assume where the reader or the message is from. What they have done so far: ${situation.replace(/_/g, ' ')}.`,
     input.image ? 'A screenshot is attached. Read all text in it into transcript and judge the screenshot.' : '',
+    input.scan ? 'A scanned PDF is attached. Read all text in it into transcript and judge it.' : '',
     `<link_forensics>\n${forensics}\n</link_forensics>`,
     input.extraSignals ? `<mail_signals>\n${input.extraSignals}\n</mail_signals>` : '',
     qr ? `<qr_code>\nCode found a QR code in the screenshot. Scanning it opens: ${fence(qr.slice(0, 500))}\n</qr_code>` : '',
@@ -256,10 +259,11 @@ export async function check(input: CheckInput): Promise<Verdict> {
   let mv: ModelVerdictT | null = null
   let modelName = MODEL
   let engine: Verdict['engine'] = 'claude'
-  if (!overBudget()) {
+  if (!(await overBudget())) {
     try {
       const content: Anthropic.Beta.BetaContentBlockParam[] = []
       if (input.image) content.push({type: 'image', source: {type: 'base64', media_type: input.image.mediaType, data: input.image.data}})
+      if (input.scan) content.push({type: 'document', source: {type: 'base64', media_type: 'application/pdf', data: input.scan}})
       content.push({type: 'text', text: userText})
       const res = await client.beta.messages.parse({
         model: MODEL,
@@ -270,7 +274,7 @@ export async function check(input: CheckInput): Promise<Verdict> {
         system: [{type: 'text', text: SYSTEM, cache_control: {type: 'ephemeral'}}],
         messages: [{role: 'user', content}],
       }, {signal: AbortSignal.timeout(25_000)})
-      record(res.usage)
+      await record(res.usage)
       if (res.stop_reason !== 'refusal' && res.parsed_output) {
         mv = res.parsed_output
         modelName = res.model
@@ -278,6 +282,9 @@ export async function check(input: CheckInput): Promise<Verdict> {
     } catch (e) {
       console.error('[claude] falling back:', e instanceof Error ? e.message : e)
     }
+  }
+  if (!mv && input.scan && !input.image && !full.trim()) {
+    throw new Error("That scanned PDF couldn't be read right now. Send a screenshot of the important page instead")
   }
   if (!mv) {
     const raw = await askBackup(SYSTEM, userText, input.image ?? null).catch((e) => {
@@ -291,7 +298,7 @@ export async function check(input: CheckInput): Promise<Verdict> {
 
   // Screenshot links only appear in the transcript, so run forensics on those too.
   let allLinks = links
-  if (input.image && mv.transcript) {
+  if ((input.image || input.scan) && mv.transcript) {
     const extra = (await inspectAll(mv.transcript, true)).filter((l) => !links.some((k) => k.url === l.url))
     allLinks = [...links, ...extra]
   }

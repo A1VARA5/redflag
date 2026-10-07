@@ -1,6 +1,6 @@
 // Private Vercel Blob store in production (not reachable by URL, only through this app); a local folder in dev.
 // Holds shared verdicts and the scam radar.
-import {put, get} from '@vercel/blob'
+import {put, get, list} from '@vercel/blob'
 import {promises as fs} from 'node:fs'
 import path from 'node:path'
 import type {Verdict} from './verdict'
@@ -42,7 +42,24 @@ export async function loadJson<T>(key: string, {strict = false} = {}): Promise<T
   }
 }
 
-export const saveVerdict = (v: Verdict) => saveJson(`verdicts/${v.id}.json`, v)
+// Keys under a folder, e.g. listKeys('meter/2026-10-08/').
+export async function listKeys(prefix: string): Promise<string[]> {
+  if (blobEnabled()) {
+    const keys: string[] = []
+    let cursor: string | undefined
+    do {
+      const page = await list({prefix, cursor, limit: 1000})
+      keys.push(...page.blobs.map((b) => b.pathname))
+      cursor = page.hasMore ? page.cursor : undefined
+    } while (cursor)
+    return keys
+  }
+  const dir = path.join(LOCAL, ...prefix.split('/').filter(Boolean))
+  const files = await fs.readdir(dir).catch(() => [] as string[])
+  return files.map((f) => `${prefix}${f}`)
+}
+
+export const saveVerdict =(v: Verdict) => saveJson(`verdicts/${v.id}.json`, v)
 
 export async function loadVerdict(id: string): Promise<Verdict | null> {
   if (!/^[a-f0-9]{12}$/.test(id)) return null

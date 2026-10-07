@@ -321,3 +321,20 @@ test('the connection itself refuses private addresses, so DNS rebinding gets now
   const err = await new Promise<Error | null>((r) => guardedLookup('localhost', {}, (e) => r(e)))
   assert.match(String(err?.message), /private address/)
 })
+
+test('the daily budget adds up every server, not just this one', async () => {
+  const {saveJson} = await import('../src/lib/store')
+  const {overBudget, record} = await import('../src/lib/meter')
+  const {rm, readdir} = await import('node:fs/promises')
+  const day = new Date().toISOString().slice(0, 10)
+  try {
+    // Another instance has already spent more than today's cap ($6 unless REDFLAG_DAILY_USD says otherwise).
+    await saveJson(`meter/${day}/otherinstance.json`, {usd: 1000})
+    assert.equal(await overBudget(), true)
+    // And this instance writes its own total where the others can read it.
+    await record({input_tokens: 1000})
+    assert.equal((await readdir(`.data/meter/${day}`)).length, 2)
+  } finally {
+    await rm(`.data/meter/${day}`, {recursive: true, force: true})
+  }
+})

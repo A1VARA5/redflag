@@ -175,6 +175,7 @@ export async function POST(req: Request) {
       await tg('sendChatAction', {chat_id: msg.chat.id, action: 'typing'})
       let body = [(t.text ?? t.caption ?? '').replace(/^\/check(@\w+)?\s*/i, '').trim(), hiddenLinks(t)].filter(Boolean).join('\n\n')
       let image: {mediaType: 'image/jpeg' | 'image/png'; data: string} | null = null
+      let scan: string | null = null
       const photo = t.photo?.at(-1)
       if (photo) {
         const buf = await download(photo.file_id, photo.file_size)
@@ -185,15 +186,17 @@ export async function POST(req: Request) {
         if (buf && (d.mime_type === 'application/pdf' || /\.pdf$/i.test(d.file_name ?? ''))) {
           const fromPdf = await pdfText(buf)
           if (fromPdf) body = `${body}\n\n[Attached file: ${d.file_name ?? 'document.pdf'}]\n${fromPdf}`.trim()
+          // No text layer (a scan): Claude reads the PDF itself.
+          else if (buf.byteLength < 3_300_000) scan = Buffer.from(buf).toString('base64')
         } else if (buf && /^image\/(png|jpeg)$/.test(d.mime_type ?? '')) {
           image = {mediaType: d.mime_type as 'image/png' | 'image/jpeg', data: Buffer.from(buf).toString('base64')}
         }
       }
-      if (!body && !image) {
+      if (!body && !image && !scan) {
         await send({text: "Send me the text, a screenshot or a PDF and I'll check it."})
         return
       }
-      const v = await check({text: body, image, source: 'telegram', region: regionFor(msg.from?.language_code)})
+      const v = await check({text: body, image, scan, source: 'telegram', region: regionFor(msg.from?.language_code)})
       await saveVerdict(v)
       const site = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin
       const neutral = isPrivate ? null : groupText(v, `${site}/v/${v.id}`)
