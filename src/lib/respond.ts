@@ -20,7 +20,7 @@ export type Context = {
   text: string
   impersonating: string | null
   pattern: string | null
-  source: 'web' | 'email' | 'discord'
+  source: 'web' | 'email' | 'discord' | 'telegram'
   hasLinks: boolean
   verdict?: 'scam' | 'suspicious' | 'safe' | 'unclear'
   country?: string | null
@@ -28,7 +28,7 @@ export type Context = {
 
 const isEmail = (c: Context) => c.source === 'email' || /^(subject|from):/im.test(c.text)
 // Looks like a text message: short, not an email, not from Discord, not WhatsApp.
-const isSms = (c: Context) => !isEmail(c) && c.source !== 'discord' && c.text.length < 800 && !/whatsapp|hi[- ]?(mum|mom|dad)|new number/i.test(c.text)
+const isSms = (c: Context) => !isEmail(c) && c.source !== 'discord' && c.source !== 'telegram' && c.text.length < 800 && !/whatsapp|hi[- ]?(mum|mom|dad)|new number/i.test(c.text)
 const about = (c: Context, re: RegExp) => re.test(`${c.text} ${c.impersonating ?? ''} ${c.pattern ?? ''}`)
 
 const RELEVANT: Record<string, (c: Context) => boolean> = {

@@ -83,7 +83,7 @@ export default async function How() {
               On the website, nothing you paste is stored. A result is saved only if you press &ldquo;Share the result&rdquo;, in private storage reachable only
               through this site.
             </li>
-            <li>Email and Discord checks are saved the same way, so the reply can link to the full report.</li>
+            <li>Email, Discord and Telegram checks are saved the same way, so the reply can link to the full report.</li>
             <li>To be read, the message is sent to Claude (Anthropic), or to the backup model on Featherless if Claude is unavailable.</li>
             <li>Shared results are signed, so nobody can edit one into a fake &ldquo;no red flags&rdquo; result for their own scam.</li>
             <li>
@@ -126,7 +126,7 @@ export default async function How() {
               Google Safe Browsing API, VirusTotal API, urlscan.io API; OpenPhish, PhishTank, URLhaus, Phishing.Database and Phishing Army; registry RDAP via
               IANA.
             </li>
-            <li>Agentboxd for the email inbox; Discord interactions for the Discord app.</li>
+            <li>Agentboxd for the email inbox; Discord interactions for the Discord app; the Telegram Bot API for @redflag_scam_bot.</li>
             <li>Daily scam radar from the FTC, FBI IC3, NCSC, FCA, GOV.UK, Which?, Europol, CISA and r/Scams.</li>
             <li>Next.js on Vercel. Type: Geist and IBM Plex Mono.</li>
             <li>

@@ -2,9 +2,22 @@
 
 **Got a message that doesn't feel right? Check it before you click.**
 
-[![CI](https://github.com/A1VARA5/redflag/actions/workflows/ci.yml/badge.svg)](https://github.com/A1VARA5/redflag/actions/workflows/ci.yml)
+[![Live site](https://img.shields.io/website?url=https%3A%2F%2Fgetredflag.vercel.app&label=live%20site&up_message=online&style=flat-square)](https://getredflag.vercel.app)
+[![CI](https://img.shields.io/github/actions/workflow/status/A1VARA5/redflag/ci.yml?branch=master&label=lint%20%C2%B7%20types%20%C2%B7%20tests&style=flat-square)](https://github.com/A1VARA5/redflag/actions/workflows/ci.yml)
+[![CodeQL](https://img.shields.io/github/actions/workflow/status/A1VARA5/redflag/codeql.yml?branch=master&label=CodeQL&style=flat-square)](https://github.com/A1VARA5/redflag/actions/workflows/codeql.yml)
+[![Test set](https://img.shields.io/badge/test%20set-83%2F83-0f6b46?style=flat-square)](https://getredflag.vercel.app/eval)
+[![Attacks](https://img.shields.io/badge/attacks%20on%20the%20checker-9%2F9%20held-0f6b46?style=flat-square)](docs/THREAT-MODEL.md)
+[![Threat model](https://img.shields.io/badge/threat%20model-documented-101c26?style=flat-square)](docs/THREAT-MODEL.md)
 
-Paste a text, DM or email, drop a screenshot or a PDF, forward the email, or right click it in Discord. Red Flag marks the exact words that give a scam away, checks every link for real (Google Safe Browsing, VirusTotal, over 550,000 known phishing sites, a sandbox screenshot of the page), reads QR codes and hidden text, and tells you what to do next and who to report it to in the UK, US or EU.
+[![Try it](https://img.shields.io/badge/try%20it-getredflag.vercel.app-d63a2f?style=flat-square)](https://getredflag.vercel.app)
+[![Discord](https://img.shields.io/badge/Discord-add%20the%20app-5865F2?logo=discord&logoColor=white&style=flat-square)](https://discord.com/oauth2/authorize?client_id=1556639934457184256)
+[![Telegram](https://img.shields.io/badge/Telegram-%40redflag__scam__bot-26A5E4?logo=telegram&logoColor=white&style=flat-square)](https://t.me/redflag_scam_bot)
+[![Email](https://img.shields.io/badge/email-redflag%40homingbox.net-555?logo=gmail&logoColor=white&style=flat-square)](mailto:redflag@homingbox.net)
+![Next.js](https://img.shields.io/badge/Next.js-16-000?logo=nextdotjs&style=flat-square)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white&style=flat-square)
+![Claude](https://img.shields.io/badge/Claude-Opus%205.5-D97757?logo=anthropic&logoColor=white&style=flat-square)
+
+Paste a text, DM or email, drop a screenshot or a PDF, forward the email, right click it in Discord, or send it to the Telegram bot. Red Flag marks the exact words that give a scam away, checks every link for real (Google Safe Browsing, VirusTotal, over 550,000 known phishing sites, a sandbox screenshot of the page), reads QR codes and hidden text, and tells you what to do next and who to report it to in the UK, US or EU.
 
 **Live:** https://getredflag.vercel.app &nbsp;·&nbsp; [This week's scams](https://getredflag.vercel.app/radar) &nbsp;·&nbsp; [Test results](https://getredflag.vercel.app/eval) &nbsp;·&nbsp; [How it works](https://getredflag.vercel.app/how)
 
@@ -61,11 +74,13 @@ Also try the **Fake invoice PDF** and **Screenshot of a text** examples, type a 
 
 ![What to do now, with relevant reporting channels](docs/media/what-to-do.jpg)
 
-## Three ways in, nothing to install
+## Four ways in, nothing to install
 
 1. On the website, paste text, drop a screenshot of an SMS or WhatsApp, or drop a PDF. Links get checked while you type.
 2. By email, forward it to **redflag@homingbox.net** and the verdict comes back as a reply, attachments and all.
 3. In Discord, right click any message, Apps, **Red Flag this**, or type **/redflag** with text, a link, a screenshot or a PDF. Only you see the answer, and it works in DMs from strangers (where most Nitro scams live).
+
+4. On Telegram, forward any message, screenshot or PDF to [@redflag_scam_bot](https://t.me/redflag_scam_bot). In a group, reply to a suspicious message with **/check** and the result goes to the whole group.
 
 My favourite bit is for community people. A scam result in Discord has a **Warn the channel** button: one tap posts a calm public heads up with the report link, no pings, no drama. Mods can protect a whole server in one click instead of typing "DON'T CLICK THAT" in caps for the fifth time this week.
 
@@ -152,6 +167,7 @@ On top of that, `npm test` runs 21 tests on the security checks that don't need 
 | [`src/lib/hidden.ts`](src/lib/hidden.ts) | Invisible characters, direction tricks and hidden tag text |
 | [`src/lib/email.ts`](src/lib/email.ts) | Webhook signatures, sender checks, hidden HTML, attachments, the reply |
 | [`src/app/api/discord/route.ts`](src/app/api/discord/route.ts) | Right click, /redflag, and Warn the channel |
+| [`src/app/api/telegram/route.ts`](src/app/api/telegram/route.ts) | The Telegram bot: private chats, and /check as a reply in groups |
 | [`src/lib/feeds.ts`](src/lib/feeds.ts) | The 550k+ phishing blocklist, sharded and rebuilt daily |
 | [`tests/security.test.ts`](tests/security.test.ts) | The tests above |
 | [`BUILD-LOG.md`](BUILD-LOG.md) | Everything I built, in order, including what broke |
@@ -175,6 +191,7 @@ npm test                     # no keys needed
 | `URLSCAN_API_KEY` | urlscan.io sandbox screenshots |
 | `AGENTBOXD_API_KEY`, `AGENTBOXD_INBOX_ID`, `AGENTBOXD_WEBHOOK_SECRET` | email channel |
 | `DISCORD_APPLICATION_ID`, `DISCORD_PUBLIC_KEY`, `DISCORD_BOT_TOKEN` | Discord app (`npx tsx scripts/register-discord.mts`) |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET` | Telegram bot (`npx tsx scripts/register-telegram.mts`) |
 | `CRON_SECRET` | daily blocklist and radar jobs |
 | `FEATHERLESS_API_KEY` | backup reader and the baseline model in the test runner |
 | `REDFLAG_DAILY_USD` | daily Claude budget before switching to the backup (default 6) |

@@ -1,4 +1,4 @@
-import {DISCORD_INVITE} from '@/lib/public-links'
+import {DISCORD_INVITE, TELEGRAM_BOT} from '@/lib/public-links'
 import {HomeIntro} from '@/components/HomeIntro'
 import {Checker} from '@/components/Checker'
 import {EvidenceDemo} from '@/components/EvidenceDemo'
@@ -40,6 +40,7 @@ export default async function Home() {
         <div className="compact-channels">
           <article><div className="channel-heading"><Mail className="h-6 w-6" /><h3>Forward an email.</h3></div><p>Send it to <a href="mailto:redflag@homingbox.net">redflag@homingbox.net</a>. Get the evidence back in a reply, attachments included.</p><a href="mailto:redflag@homingbox.net?subject=Is%20this%20a%20scam%3F" className="text-link">Open your email app <Arrow className="h-4 w-4" /></a></article>
           <article><div className="channel-heading"><Chat className="h-6 w-6" /><h3>Check it in Discord.</h3></div><p>Right click a message → Apps → Red Flag this. Or use <code>/redflag</code>. The result is private until you choose to warn the channel.</p><a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="text-link">Add to Discord <External className="h-4 w-4" /></a></article>
+          <article><div className="channel-heading"><Chat className="h-6 w-6" /><h3>Ask it in Telegram.</h3></div><p>Forward a message, screenshot or PDF to the bot. In a group, reply to a message with <code>/check</code> and everyone sees the result.</p><a href={TELEGRAM_BOT} target="_blank" rel="noreferrer" className="text-link">Open the bot <External className="h-4 w-4" /></a></article>
         </div>
         {latest && <a href="/radar" className="radar-brief"><span className="eyebrow">SCAM RADAR</span><span>{latest.title}</span><span className="radar-brief-action">See the latest warnings <Arrow className="h-4 w-4" /></span></a>}
       </section>

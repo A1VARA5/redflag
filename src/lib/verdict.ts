@@ -60,7 +60,7 @@ export type Verdict = ModelVerdictT & {
   model: string
   region: Region
   situation: Situation
-  source: 'web' | 'email' | 'discord'
+  source: 'web' | 'email' | 'discord' | 'telegram'
   text: string
   highlights: Highlight[]
   links: LinkReport[]
