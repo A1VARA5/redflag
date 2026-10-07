@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 import {createHmac} from 'node:crypto'
 import {readFileSync} from 'node:fs'
 import {hiddenFindings, hiddenIsHostile, scanHidden} from '../src/lib/hidden'
-import {hiddenHtmlText, senderVerified, verifyMailroom} from '../src/lib/email'
+import {hiddenHtmlText, htmlToText, senderOf, senderVerified, verifyMailroom} from '../src/lib/email'
 import {extractUrls, MAX_LINKS, type LinkReport} from '../src/lib/links'
 import {sign, verify} from '../src/lib/sign'
 import {applyOverrides, findHighlights, parseBackupVerdict, type ModelVerdictT} from '../src/lib/verdict'
@@ -183,4 +183,15 @@ test('text is pulled out of a PDF', async () => {
   const b = readFileSync('public/sample-invoice.pdf')
   const text = await pdfText(b.buffer.slice(b.byteOffset, b.byteOffset + b.length) as ArrayBuffer)
   assert.match(text ?? '', /OUR BANK DETAILS HAVE CHANGED/)
+})
+
+test('HTML entities are decoded once, not twice', () => {
+  assert.equal(htmlToText('<p>Tom &amp;lt;3 &amp; Jerry</p>'), 'Tom &lt;3 & Jerry')
+})
+
+test('a hostile From header is read quickly and safely', () => {
+  const t = Date.now()
+  assert.equal(senderOf({from: '<'.repeat(200_000) + 'x'}), '<'.repeat(500))
+  assert.equal(senderOf({from: 'PayPal <service@paypal.com>'}), 'service@paypal.com')
+  assert.ok(Date.now() - t < 200)
 })

@@ -62,15 +62,22 @@ function auth() {
 // Agentboxd can quarantine ("hold") mail it thinks is phishing and hide its content from agents.
 // For a scam checker that is backwards, so the workspace runs with screening off: we still get Agentboxd's
 // phishing and injection scores as evidence, plus the content to explain.
+// Ids come from a signed webhook, but they still go into URL paths, so only id characters are allowed.
+const SAFE_ID = /^[A-Za-z0-9_-]{1,100}$/
+const idPath = (id: string) => {
+  if (!SAFE_ID.test(id)) throw new Error('Unexpected id from the mail provider')
+  return encodeURIComponent(id)
+}
+
 export async function getMessage(messageId: string): Promise<MailMessage | null> {
-  const res = await fetch(`${API}/messages/${messageId}`, {headers: auth(), signal: AbortSignal.timeout(10_000)})
+  const res = await fetch(`${API}/messages/${idPath(messageId)}`, {headers: auth(), signal: AbortSignal.timeout(10_000)})
   if (!res.ok) return null
   const j = await res.json()
   return (j.id ? j : j.data) as MailMessage
 }
 
 export async function downloadAttachment(id: string): Promise<{data: string; type: string} | null> {
-  const res = await fetch(`${API}/attachments/${id}`, {headers: auth(), signal: AbortSignal.timeout(10_000)})
+  const res = await fetch(`${API}/attachments/${idPath(id)}`, {headers: auth(), signal: AbortSignal.timeout(10_000)})
   if (!res.ok) return null
   const buf = Buffer.from(await res.arrayBuffer())
   if (buf.length > 4 * 1024 * 1024) return null
@@ -83,7 +90,7 @@ export async function downloadAttachment(id: string): Promise<{data: string; typ
 export async function attachmentText(messageId: string, attachmentId: string, maxChars = 20_000): Promise<string | null> {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await fetch(`${API}/messages/${messageId}/attachments/${attachmentId}/text?max_chars=${maxChars}`, {headers: auth(), signal: AbortSignal.timeout(5000)})
+      const res = await fetch(`${API}/messages/${idPath(messageId)}/attachments/${idPath(attachmentId)}/text?max_chars=${maxChars}`, {headers: auth(), signal: AbortSignal.timeout(5000)})
       if (!res.ok) return null
       const j = (await res.json()) as {text?: string | null; extraction?: {status?: string}}
       if (j.text) return j.text.slice(0, maxChars)
@@ -97,7 +104,7 @@ export async function attachmentText(messageId: string, attachmentId: string, ma
 }
 
 export async function reply(inboxId: string, messageId: string, text: string, html: string) {
-  const res = await fetch(`${API}/inboxes/${inboxId}/messages/${messageId}/reply`, {
+  const res = await fetch(`${API}/inboxes/${idPath(inboxId)}/messages/${idPath(messageId)}/reply`, {
     method: 'POST',
     headers: auth(),
     body: JSON.stringify({text, html}),
@@ -109,7 +116,10 @@ export async function reply(inboxId: string, messageId: string, text: string, ht
 export function senderOf(m: Pick<MailMessage, 'from'>): string {
   const f = m.from
   if (!f) return ''
-  if (typeof f === 'string') return (f.match(/<([^>]+)>/)?.[1] ?? f).toLowerCase()
+  if (typeof f === 'string') {
+    const s = f.slice(0, 500)
+    return (s.match(/<([^<>]+)>/)?.[1] ?? s).toLowerCase()
+  }
   return (f.address ?? f.email ?? '').toLowerCase()
 }
 
@@ -132,6 +142,7 @@ function hides(attrs: string): boolean {
 
 // Index of the tag that closes the element opened just before `from`, counting nested tags of the same name.
 function closeOf(html: string, name: string, from: number): number {
+  if (!/^[a-z][a-z0-9]*$/.test(name)) return Math.min(html.length, from + 2000)
   const re = new RegExp(`<(/?)${name}\\b[^<>]*>`, 'gi')
   re.lastIndex = from
   let depth = 1
@@ -174,11 +185,11 @@ export function htmlToText(html: string) {
     .replace(/<a\b[^<>]*?\bhref="([^"<>]+)"[^<>]*>/gi, ' ($1) ')
     .replace(/<[^<>]+>/g, ' ')
     .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&#39;|&apos;/g, "'")
     .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
     .replace(/[ \t]+/g, ' ')
     .replace(/\n\s*\n\s*\n+/g, '\n\n')
     .trim()

@@ -45,7 +45,7 @@ export async function POST(req: Request) {
       // Never answer ourselves, bounces or auto-replies: that is how mail loops start.
       if (!from || from === inboxAddress || /mailer-daemon|postmaster|no-?reply/i.test(from) || /^(re: )?red flag verdict/i.test(m.subject ?? '')) return
       if (!senderVerified(m)) {
-        console.warn('[email] sender failed SPF/DKIM, not replying', m.id)
+        console.warn('[email] sender failed SPF/DKIM, not replying', JSON.stringify(m.id))
         return
       }
       const now = Date.now()
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       if (today.day !== day) today = {day, sent: 0}
       const recent = (perSender.get(from) ?? []).filter((t) => now - t < 86_400_000)
       if (recent.length >= PER_SENDER_PER_DAY || today.sent >= DAILY_REPLIES) {
-        console.warn('[email] reply limit reached', from, today.sent)
+        console.warn('[email] reply limit reached', JSON.stringify(from), today.sent)
         return
       }
       perSender.set(from, [...recent, now])
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       const html = m.html?.slice(0, HTML_LIMIT) ?? null
       const body = (m.text?.trim() || (html ? htmlToText(html) : '') || m.extracted_text || '').slice(0, 60_000)
       if (!body && !m.attachments?.length) {
-        console.error('[email] no readable content', m.id, heldReason)
+        console.error('[email] no readable content', JSON.stringify(m.id), JSON.stringify(heldReason))
         return
       }
       const imgAtt = m.attachments?.find((a) => /^image\/(png|jpeg|webp|gif)$/.test(a.content_type ?? ''))

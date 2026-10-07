@@ -8,12 +8,19 @@ import type {Verdict} from './verdict'
 const LOCAL = path.join(process.cwd(), '.data')
 const blobEnabled = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN)
 
+const SAFE_KEY = /^[a-z0-9_-]+(\/[a-z0-9_-]+)*\.json$/i
+function localPath(key: string): string {
+  if (!SAFE_KEY.test(key)) throw new Error(`Bad storage key: ${JSON.stringify(key)}`)
+  return path.join(LOCAL, ...key.split('/'))
+}
+
 export async function saveJson(key: string, value: unknown) {
+  if (!SAFE_KEY.test(key)) throw new Error(`Bad storage key: ${JSON.stringify(key)}`)
   const json = JSON.stringify(value)
   if (blobEnabled()) {
     await put(key, json, {access: 'private', contentType: 'application/json', addRandomSuffix: false, allowOverwrite: true})
   } else {
-    const file = path.join(LOCAL, key)
+    const file = localPath(key)
     await fs.mkdir(path.dirname(file), {recursive: true})
     await fs.writeFile(file, json)
   }
@@ -26,7 +33,7 @@ export async function loadJson<T>(key: string): Promise<T | null> {
       if (!res || res.statusCode !== 200) return null
       return (await new Response(res.stream).json()) as T
     }
-    return JSON.parse(await fs.readFile(path.join(LOCAL, key), 'utf8')) as T
+    return JSON.parse(await fs.readFile(localPath(key), 'utf8')) as T
   } catch {
     return null
   }

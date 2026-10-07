@@ -61,6 +61,8 @@ I'd rather say these than have someone find them:
 ## Run the checks yourself
 
 ```bash
-npm test                                                    # 19 tests, no keys or network needed
+npm test                                                    # 21 tests, no keys or network needed
 EVAL_SET=attack npx tsx --env-file=.env.local scripts/eval.mts   # the 9 attacks, needs API keys
 ```
+
+GitHub CodeQL also scans every push with the extended security queries. Its first scan found a double HTML decoding bug, a slow pattern on long From headers and raw sender text in logs, all fixed, plus places where ids from signed webhooks went into URLs, which are now validated and encoded anyway.

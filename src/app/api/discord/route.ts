@@ -34,8 +34,16 @@ type Attachment = {url: string; content_type?: string; size: number; filename?: 
 type Msg = {content: string; attachments?: Attachment[]; embeds?: {title?: string; description?: string; url?: string}[]}
 type Input = {text: string; image: Attachment | null; pdf: Attachment | null; other: boolean}
 
+// Attachment links come inside a signed interaction, but only Discord's own file servers are fetched.
+const DISCORD_CDN = new Set(['cdn.discordapp.com', 'media.discordapp.net'])
+function discordFile(url: string): string {
+  const u = new URL(url)
+  if (u.protocol !== 'https:' || !DISCORD_CDN.has(u.hostname)) throw new Error('That file is not hosted by Discord')
+  return u.toString()
+}
+
 async function download(a: Attachment) {
-  const r = await fetch(a.url, {signal: AbortSignal.timeout(8000)})
+  const r = await fetch(discordFile(a.url), {signal: AbortSignal.timeout(8000)})
   if (!r.ok) return null
   return {mediaType: a.content_type!.split(';')[0] as 'image/png', data: Buffer.from(await r.arrayBuffer()).toString('base64')}
 }
@@ -147,17 +155,21 @@ export async function POST(req: Request) {
     return Response.json({type: 4, data: {content: 'Unknown command.', flags: EPHEMERAL}})
   }
 
-  const appId = i.application_id
-  const token = i.token
+  // The reply goes to Discord's webhook for this interaction; check both parts before building the URL.
+  const appId = String(i.application_id ?? '')
+  const token = String(i.token ?? '')
+  if ((process.env.DISCORD_APPLICATION_ID && appId !== process.env.DISCORD_APPLICATION_ID) || !/^\d{5,25}$/.test(appId) || !/^[\w.:=-]{20,1000}$/.test(token)) {
+    return new Response('bad interaction', {status: 400})
+  }
   after(async () => {
     const edit = (body: object) =>
-      fetch(`https://discord.com/api/v10/webhooks/${appId}/${token}/messages/@original`, {method: 'PATCH', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)})
+      fetch(`https://discord.com/api/v10/webhooks/${encodeURIComponent(appId)}/${encodeURIComponent(token)}/messages/@original`, {method: 'PATCH', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)})
     try {
       if (!input) throw new Error('Could not read that message')
       const image = input.image ? await download(input.image) : null
       let text = input.text
       if (input.pdf) {
-        const r = await fetch(input.pdf.url, {signal: AbortSignal.timeout(10_000)})
+        const r = await fetch(discordFile(input.pdf.url), {signal: AbortSignal.timeout(10_000)})
         const fromPdf = r.ok ? await pdfText(await r.arrayBuffer()) : null
         if (fromPdf) text = `${text}\n\n[Attached file: ${input.pdf.filename ?? 'document.pdf'}]\n${fromPdf}`.trim()
         else if (!text && !image) throw new Error('That PDF has no text Red Flag can read (it may be a scan). Send a screenshot of it instead')

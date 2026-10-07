@@ -124,7 +124,7 @@ The first three rows include the harder cases of that kind. In the latest run th
 
 83 messages written for this project is a small test, and Red Flag will get real messages wrong sometimes. Full table: [/eval](https://getredflag.vercel.app/eval). Run it yourself with `npx tsx --env-file=.env.local scripts/eval.mts` (or `EVAL_SET=attack` for just the attacks).
 
-On top of that, `npm test` runs 19 tests on the security checks that don't need any AI or network (hidden text, hidden HTML in a real email layout, typos that look like links, link padding, forged senders, signatures, override rules, QR and PDF reading), and CI runs lint, type checks and tests on every push.
+On top of that, `npm test` runs 21 tests on the security checks that don't need any AI or network (hidden text, hidden HTML in a real email layout, typos that look like links, link padding, forged senders, signatures, override rules, QR and PDF reading), and CI runs lint, type checks and tests on every push, GitHub CodeQL scans every push with its extended security queries, and Dependabot watches the dependencies.
 
 ## This week's scams
 
