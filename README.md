@@ -71,6 +71,8 @@ Also try the **Fake invoice PDF** and **Screenshot of a text** examples, type a 
 
 ![A scam verdict with the message marked up and the warning signs listed](docs/media/verdict.jpg)
 
+![Each link check reporting in while the AI reads](docs/media/live-checks.jpg)
+
 ![Link checks: blocklist, VirusTotal and a sandbox screenshot of a fake AT&T page](docs/media/link-checks-sandbox.jpg)
 
 ![What to do now, with relevant reporting channels](docs/media/what-to-do.jpg)
@@ -93,6 +95,8 @@ My favourite bit is for community people. A scam result in Discord has a **Warn 
 ## Spot the scam
 
 Five made up messages, some scams and some genuine. You make the call, then see the exact words that give each one away. It's at [/quiz](https://getredflag.vercel.app/quiz) and on the home page. It's there for the people who'd never paste a message into a checker, but might send a quiz to their mum.
+
+![Spot the scam: the answer, with the words that give it away](docs/media/spot-the-scam.jpg)
 
 ## How it works
 
