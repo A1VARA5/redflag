@@ -9,7 +9,7 @@ const POSE: Record<FlagState, {raise: number; wind: number; speed: number}> = {
   scam: {raise: 1, wind: 1.4, speed: 1.45},
   suspicious: {raise: 1, wind: 1.2, speed: 1.25},
   unclear: {raise: .6, wind: .8, speed: .9},
-  safe: {raise: .08, wind: .35, speed: .6},
+  safe: {raise: .32, wind: .4, speed: .6},
 }
 
 // Cloth is fixed along the hoist. The pole and fabric share the same projection.
@@ -35,7 +35,7 @@ vec3 cloth(vec2 uv) {
   z += sin(uv.x * 13.0 + uv.y * 3.5 - uTime * 1.7) * .075 * edge * uWind;
   y += sin(uv.x * 5.5 - uTime * 1.1) * .055 * edge * uWind;
   // Less wind, more droop at the free end.
-  y -= uv.x * (.075 + max(0., 1. - uWind) * .32);
+  y -= uv.x * (.075 + max(0., 1. - uWind) * .2);
   y -= (1. - uRaise) * .85;
   return vec3(x, y, z);
 }
