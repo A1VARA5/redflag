@@ -3,6 +3,8 @@
 import {parse} from 'tldts'
 import {domainToUnicode} from 'node:url'
 import {lookup} from 'node:dns/promises'
+import {lookup as dnsLookup, type LookupAddress} from 'node:dns'
+import {Agent, fetch as guardedFetch} from 'undici'
 import {BlockList, isIP} from 'node:net'
 import brands from '@/data/brands.json'
 import {isKnownPhish} from './feeds'
@@ -215,11 +217,27 @@ async function safeToFetch(host: string): Promise<boolean> {
   try {
     const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('dns timeout')), 3000).unref())
     const ips = isIP(host) ? [host] : (await Promise.race([lookup(host, {all: true}), timeout])).map((a) => a.address)
-    return ips.length > 0 && ips.every((ip) => !PRIVATE.check(ip, isIP(ip) === 6 ? 'ipv6' : 'ipv4'))
+    return ips.length > 0 && ips.every((ip) => !isPrivate(ip))
   } catch {
     return false
   }
 }
+
+const isPrivate = (ip: string) => PRIVATE.check(ip, isIP(ip) === 6 ? 'ipv6' : 'ipv4')
+
+// The check above and the connection would each look the name up. A DNS server that answers a public address
+// first and a private one second (DNS rebinding) would slip between them, so the connection itself only uses
+// addresses that pass the same check, from the lookup it actually connects with.
+export function guardedLookup(hostname: string, opts: {all?: boolean; family?: number} | null, cb: (err: Error | null, address: string | LookupAddress[], family?: number) => void) {
+  dnsLookup(hostname, {all: true, family: opts?.family ?? 0}, (err, addrs) => {
+    if (err) return cb(err, [])
+    if (!addrs.length || addrs.some((a) => isPrivate(a.address))) return cb(Object.assign(new Error(`${hostname} points at a private address`), {code: 'EPRIVATE'}), [])
+    // Node asks for every address when it races IPv4 and IPv6 (autoSelectFamily), otherwise for one.
+    if (opts?.all) cb(null, addrs)
+    else cb(null, addrs[0].address, addrs[0].family)
+  })
+}
+const guarded = new Agent({connect: {lookup: guardedLookup as never}})
 
 // Follows redirects by hand with HEAD (then GET if refused), never reads bodies, max 5 hops.
 async function unwrap(url: string): Promise<{finalUrl: string | null; hops: string[]; error: string | null}> {
@@ -236,11 +254,11 @@ async function unwrap(url: string): Promise<{finalUrl: string | null; hops: stri
       return {finalUrl: null, hops, error: 'bad url'}
     }
     if (!(await safeToFetch(u.hostname))) return {finalUrl: current, hops, error: 'host not resolvable'}
-    let res: Response
+    let res: Awaited<ReturnType<typeof guardedFetch>>
     try {
-      res = await fetch(current, {method: 'HEAD', redirect: 'manual', signal: AbortSignal.timeout(3500), headers: {'user-agent': 'Mozilla/5.0 (RedFlag link check)'}})
+      res = await guardedFetch(current, {dispatcher: guarded, method: 'HEAD', redirect: 'manual', signal: AbortSignal.timeout(3500), headers: {'user-agent': 'Mozilla/5.0 (RedFlag link check)'}})
       if (res.status === 405 || res.status === 403) {
-        res = await fetch(current, {method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(3500), headers: {'user-agent': 'Mozilla/5.0 (RedFlag link check)'}})
+        res = await guardedFetch(current, {dispatcher: guarded, method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(3500), headers: {'user-agent': 'Mozilla/5.0 (RedFlag link check)'}})
         res.body?.cancel().catch(() => {})
       }
     } catch {

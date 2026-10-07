@@ -286,3 +286,38 @@ test('huge or nested hidden HTML is read in well under a second', () => {
   const t = htmlToText('<p>Hi</p><script>alert(1)</script><style>p{}</style><p>there</p>')
   assert.ok(t.includes('Hi') && t.includes('there') && !t.includes('alert') && !t.includes('p{}'), t)
 })
+
+test('a PDF built to be slow is stopped on time and the server keeps running', async () => {
+  const {deflateSync} = await import('node:zlib')
+  const ops = deflateSync(Buffer.from('BT /F1 1 Tf ' + '1 0 0 1 0 0 Tm (A) Tj '.repeat(3_000_000) + 'ET'))
+  const objs = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 600 800] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+    null,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+  ]
+  const parts: Buffer[] = [Buffer.from('%PDF-1.4\n')]
+  objs.forEach((o, i) => {
+    parts.push(Buffer.from(`${i + 1} 0 obj\n`))
+    parts.push(o ? Buffer.from(o) : Buffer.concat([Buffer.from(`<< /Length ${ops.length} /Filter /FlateDecode >>\nstream\n`), ops, Buffer.from('\nendstream')]))
+    parts.push(Buffer.from('\nendobj\n'))
+  })
+  parts.push(Buffer.from('trailer\n<< /Root 1 0 R /Size 6 >>\n%%EOF\n'))
+  const pdf = Buffer.concat(parts)
+  let ticks = 0
+  const tick = setInterval(() => ticks++, 100)
+  const t0 = Date.now()
+  const text = await pdfText(pdf.buffer.slice(pdf.byteOffset, pdf.byteOffset + pdf.length), 20_000, 1500)
+  clearInterval(tick)
+  const ms = Date.now() - t0
+  assert.ok(ms < 3000, `${ms} ms`)
+  assert.ok(ticks >= 8, `event loop ticked ${ticks} times`)
+  assert.ok(text === null || text.length <= 20_000)
+})
+
+test('the connection itself refuses private addresses, so DNS rebinding gets nowhere', async () => {
+  const {guardedLookup} = await import('../src/lib/links')
+  const err = await new Promise<Error | null>((r) => guardedLookup('localhost', {}, (e) => r(e)))
+  assert.match(String(err?.message), /private address/)
+})
