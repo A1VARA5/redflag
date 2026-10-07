@@ -8,6 +8,7 @@ import {External} from './Icons'
 import {DISCORD_INVITE} from '@/lib/public-links'
 
 const pages = [
+  {href: '/quiz', label: 'Spot the scam'},
   {href: '/radar', label: 'Scam radar'},
   {href: '/how', label: 'How it works'},
   {href: '/eval', label: 'Test results'},

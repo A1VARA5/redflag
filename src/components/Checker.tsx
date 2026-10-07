@@ -6,7 +6,9 @@ import type {LinkReport} from '@/lib/links'
 import {SAMPLES} from '@/lib/samples'
 import {VerdictView} from './VerdictView'
 import {LiveLinks} from './LiveLinks'
-import {Check, Image as ImageIcon, Lock, Spinner} from './Icons'
+import {Check, Image as ImageIcon, Lock, ShieldX, Spinner} from './Icons'
+import {evidenceRows} from '@/lib/evidence'
+import {sharedText} from '@/lib/share'
 import {flagState} from './flag-state'
 
 type Img = {
@@ -68,7 +70,7 @@ function Step({state, children}: {state: 'done' | 'active' | 'todo'; children: R
           <span className="h-2 w-2 rounded-full bg-line-2" />
         )}
       </span>
-      <span>{children}</span>
+      <div className="min-w-0 flex-1">{children}</div>
     </li>
   )
 }
@@ -123,6 +125,47 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
     }
     window.addEventListener('paste', onPaste)
     return () => window.removeEventListener('paste', onPaste)
+  }, [])
+
+  // Shared from the phone's share menu: the service worker kept the message or file, so check it straight away.
+  useEffect(() => {
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {})
+    const shared = new URLSearchParams(location.search).get('shared')
+    if (!shared) return
+    history.replaceState(null, '', '/#check')
+    ;(async () => {
+      if (shared !== '1') {
+        setFileNote(shared === 'missing' ? 'Red Flag was still setting up when you shared that. Share it again, or paste it here.' : "That share didn't come through. Share it again, or paste it here.")
+        return
+      }
+      try {
+        const cache = await caches.open('rf-share')
+        const [t, f] = await Promise.all([cache.match('/shared/text'), cache.match('/shared/file')])
+        await Promise.all([cache.delete('/shared/text'), cache.delete('/shared/file')])
+        const msg = sharedText(t ? await t.json() : {})
+        let image: Img | null = null
+        let document: Doc | null = null
+        if (f) {
+          const blob = await f.blob()
+          const file = new File([blob], decodeURIComponent(f.headers.get('x-name') ?? 'shared'), {type: blob.type})
+          if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
+            if (file.size <= MAX_PDF) document = {name: file.name, data: await fileToBase64(file)}
+          } else image = await fileToImg(file)
+        }
+        if (!msg && !image && !document) {
+          setFileNote("Nothing readable came through from the share. Paste the message here instead.")
+          return
+        }
+        setText(msg)
+        if (image) setImg(image)
+        if (document) setDoc(document)
+        run(msg, image ?? undefined, document ?? undefined)
+      } catch {
+        setFileNote("That share didn't come through. Share it again, or paste it here.")
+      }
+    })()
+    // Runs once, on the page the share opened.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -405,16 +448,26 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
                 {links
                   ? linkCount === 0
                     ? wasImage
-                      ? 'Links inside the screenshot will be checked once it has been read'
-                      : 'No links to check'
-                    : `Checked ${linkCount} link${linkCount > 1 ? 's' : ''} against Google Safe Browsing and ${blocklistSize} known phishing sites`
-                  : 'Looking for links and checking them against Google Safe Browsing and known phishing sites'}
+                      ? 'Links inside the screenshot are checked once it has been read'
+                      : 'No links to check, so the words get a closer look'
+                    : `Checked ${linkCount} link${linkCount > 1 ? 's' : ''}`
+                  : 'Finding links and checking each one with six separate checks'}
+                {links && linkCount > 0 && (
+                  <ul className="evidence-list" aria-label="What the link checks found">
+                    {evidenceRows(links, blocklistSize).map((r, i) => (
+                      <li key={r.id} className={`evidence-row evidence-${r.state}`} style={{'--i': i} as React.CSSProperties}>
+                        <span className="evidence-mark" aria-hidden>{r.state === 'flag' ? <ShieldX className="h-4 w-4" /> : r.state === 'clear' ? <Check className="h-3.5 w-3.5" /> : <span className="evidence-dash" />}</span>
+                        <span className="evidence-label">{r.label}</span>
+                        <span className="evidence-detail">{r.state === 'flag' ? 'Flagged: ' : ''}{r.detail}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </Step>
               <Step state={links ? 'active' : 'todo'}>
-                {wasImage ? 'Reading the screenshot and comparing it with ' : 'Reading the message and comparing it with '}
+                {wasImage ? 'Claude is reading the screenshot and comparing it with ' : 'Claude is reading the words and comparing them with '}
                 {patternCount} known scam types
               </Step>
-              <Step state="todo">Marking the warning signs</Step>
             </ol>
           </div>
         )}

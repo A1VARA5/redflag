@@ -46,6 +46,7 @@ This page lists the attacks I thought about, what stops each one, and where to f
 
 - On the website nothing is stored unless the person shares the result. Email and Discord checks are saved so the reply can link to the full report.
 - Real bank and password reset links (any domain on the 141 brand list) are never sent to VirusTotal or urlscan, so genuine one time links stay private.
+- Something shared from a phone's share menu is held in that phone's own browser storage only until the checker opens, then deleted. It never goes into a URL.
 - urlscan scans are unlisted, and its screenshots are proxied so the viewer's browser never contacts urlscan.
 
 ## Known gaps

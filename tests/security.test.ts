@@ -333,8 +333,39 @@ test('the daily budget adds up every server, not just this one', async () => {
     assert.equal(await overBudget(), true)
     // And this instance writes its own total where the others can read it.
     await record({input_tokens: 1000})
-    assert.equal((await readdir(`.data/meter/${day}`)).length, 2)
+    // Other local servers may have written their own totals too; this instance must be among them.
+    assert.ok((await readdir(`.data/meter/${day}`)).length >= 2)
   } finally {
     await rm(`.data/meter/${day}`, {recursive: true, force: true})
   }
+})
+
+test('a phone share becomes one message, without repeating the link', async () => {
+  const {sharedText} = await import('../src/lib/share')
+  assert.equal(sharedText({text: 'Pay at evil.top/x', url: 'https://evil.top/x'}), 'Pay at evil.top/x\n\nhttps://evil.top/x')
+  assert.equal(sharedText({text: 'Pay at https://evil.top/x', url: 'https://evil.top/x'}), 'Pay at https://evil.top/x')
+  assert.equal(sharedText({title: 'Royal Mail', text: 'Royal Mail: fee due', url: ''}), 'Royal Mail: fee due')
+  assert.equal(sharedText({title: null, text: null, url: null}), '')
+})
+
+test('every quiz answer points at words that are really in the message', async () => {
+  const {QUIZ} = await import('../src/lib/quiz')
+  assert.ok(QUIZ.some((q) => q.kind === 'scam') && QUIZ.some((q) => q.kind === 'real'))
+  for (const q of QUIZ) {
+    assert.ok(q.marks.length > 0, q.id)
+    for (const m of q.marks) assert.ok(q.body.includes(m.quote), `${q.id}: "${m.quote}"`)
+    assert.ok(!/[\u2013\u2014]/.test(q.body + q.lesson + q.marks.map((m) => m.why).join('')), `${q.id} has a dash`)
+  }
+})
+
+test('the live check list only says flagged when a check flagged something', async () => {
+  const {evidenceRows} = await import('../src/lib/evidence')
+  const scam = {host: 'royalmail-fee.top', official: false, brand: 'Royal Mail', ageDays: 3, registered: '2026-10-05', vt: {malicious: 19, suspicious: 0, harmless: 50, total: 93, scannedAt: null, link: ''}, scan: null,
+    flags: [{code: 'known-phish', severity: 'high', detail: ''}, {code: 'brand-not-official', severity: 'high', detail: ''}]} as unknown as LinkReport
+  const real = {host: 'www.royalmail.com', official: true, brand: 'Royal Mail', ageDays: 9000, registered: '2001-01-01', vt: null, scan: null, flags: []} as unknown as LinkReport
+  const bad = Object.fromEntries(evidenceRows([scam], '583,341').map((r) => [r.id, r.state]))
+  assert.deepEqual(bad, {blocklist: 'flag', google: 'clear', brand: 'flag', age: 'flag', virustotal: 'flag', sandbox: 'skip'})
+  const good = Object.fromEntries(evidenceRows([real], '583,341').map((r) => [r.id, r.state]))
+  assert.deepEqual(good, {blocklist: 'clear', google: 'clear', brand: 'clear', age: 'clear', virustotal: 'skip', sandbox: 'skip'})
+  assert.deepEqual(evidenceRows([], '1'), [])
 })

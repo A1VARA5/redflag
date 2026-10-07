@@ -39,6 +39,12 @@ export const Image = ({className}: P) => (
     <path d="m20.5 16-4.6-4.6L7 19.5" />
   </svg>
 )
+export const Phone = ({className}: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <rect x="6.5" y="2.8" width="11" height="18.4" rx="2.4" />
+    <path d="M10.5 18h3" />
+  </svg>
+)
 export const Mail = ({className}: P) => (
   <svg viewBox="0 0 24 24" className={className} {...base}>
     <rect x="3" y="5" width="18" height="14" rx="2.5" />

@@ -17,7 +17,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white&style=flat-square)
 ![Claude](https://img.shields.io/badge/Claude-Opus%205.5-D97757?logo=anthropic&logoColor=white&style=flat-square)
 
-Paste a text, DM or email, drop a screenshot or a PDF, forward the email, right click it in Discord, or send it to the Telegram bot. Red Flag marks the exact words that give a scam away, checks every link for real (Google Safe Browsing, VirusTotal, over 550,000 known phishing sites, a sandbox screenshot of the page), reads QR codes and hidden text, and tells you what to do next and who to report it to in the UK, US or EU.
+Paste a text, DM or email, drop a screenshot or a PDF, share it straight from your phone, forward the email, right click it in Discord, or send it to the Telegram bot. Red Flag marks the exact words that give a scam away, checks every link for real (Google Safe Browsing, VirusTotal, over 550,000 known phishing sites, a sandbox screenshot of the page), reads QR codes and hidden text, and tells you what to do next and who to report it to in the UK, US or EU.
 
 **Live:** https://getredflag.vercel.app &nbsp;·&nbsp; [This week's scams](https://getredflag.vercel.app/radar) &nbsp;·&nbsp; [Test results](https://getredflag.vercel.app/eval) &nbsp;·&nbsp; [How it works](https://getredflag.vercel.app/how)
 
@@ -64,6 +64,7 @@ Also try the **Fake invoice PDF** and **Screenshot of a text** examples, type a 
 - The truth about every link. Google Safe Browsing, VirusTotal (70+ engines), over 550,000 phishing sites from five public lists rebuilt daily, the domain's age from its registry, whether it really belongs to the brand it names, and where redirects go. Suspicious links get opened in a urlscan.io sandbox so you can see the fake login page without going near it.
 - The link hiding in any QR code on a screenshot, with the same checks. Fake parking meters and "sorry we missed you" cards love those.
 - Anything hidden from you on purpose: invisible text only an AI can read, file names flipped so a program looks like a PDF, brand names split with invisible spaces, and instructions hidden in an email's HTML.
+- The checks as they happen. While Claude reads, each link check reports in on its own line (phishing lists, Google Safe Browsing, the brand's real sites, domain age, VirusTotal, the sandbox), so you can see what was actually checked and what each one found.
 - What to do now, depending on how far it got (just got it, clicked, typed details, paid, gave a code), with only the reporting channels that fit: 37 official places across 10 countries in the UK, US and EU.
 
 ![See what raised the flag: unpack the message, check where it leads, know your next step](docs/media/steps.jpg)
@@ -74,19 +75,24 @@ Also try the **Fake invoice PDF** and **Screenshot of a text** examples, type a 
 
 ![What to do now, with relevant reporting channels](docs/media/what-to-do.jpg)
 
-## Four ways in, nothing to install
+## Five ways in, nothing you have to install
 
 1. On the website, paste text, drop a screenshot of an SMS or WhatsApp, or drop a PDF. Links get checked while you type.
 2. By email, forward it to **redflag@homingbox.net** and the verdict comes back as a reply, attachments and all.
 3. In Discord, right click any message, Apps, **Red Flag this**, or type **/redflag** with text, a link, a screenshot or a PDF. Only you see the answer, and it works in DMs from strangers (where most Nitro scams live).
 
-4. On Telegram, forward any message, screenshot or PDF to [@redflag_scam_bot](https://t.me/redflag_scam_bot). In a group, reply to a suspicious message with **/check** and the result goes to the whole group.
+4. On Telegram, forward any message, screenshot or PDF to [@redflag_scam_bot](https://t.me/redflag_scam_bot). In a group, reply to a suspicious message with **/check** and if it looks like a scam, the warning goes to the whole group.
+5. On your phone, add Red Flag to your home screen. On Android it then shows up when you tap Share on a message or screenshot, so a check is two taps from WhatsApp, Messages or your gallery. iPhones don't let web apps receive shares yet, so there you paste it in.
 
 My favourite bit is for community people. A scam result in Discord has a **Warn the channel** button: one tap posts a calm public heads up with the report link, no pings, no drama. Mods can protect a whole server in one click instead of typing "DON'T CLICK THAT" in caps for the fifth time this week.
 
 | A fake invoice PDF shared in Discord | A link hidden in a QR code |
 |---|---|
 | ![Discord: fake invoice PDF flagged as a scam](docs/media/discord-invoice-pdf.png) | ![Discord: QR code on a fake delivery card read and flagged](docs/media/discord-qr-card.png) |
+
+## Spot the scam
+
+Five made up messages, some scams and some genuine. You make the call, then see the exact words that give each one away. It's at [/quiz](https://getredflag.vercel.app/quiz) and on the home page. It's there for the people who'd never paste a message into a checker, but might send a quiz to their mum.
 
 ## How it works
 
@@ -168,6 +174,9 @@ On top of that, `npm test` runs 21 tests on the security checks that don't need 
 | [`src/lib/email.ts`](src/lib/email.ts) | Webhook signatures, sender checks, hidden HTML, attachments, the reply |
 | [`src/app/api/discord/route.ts`](src/app/api/discord/route.ts) | Right click, /redflag, and Warn the channel |
 | [`src/app/api/telegram/route.ts`](src/app/api/telegram/route.ts) | The Telegram bot: private chats, and /check as a reply in groups |
+| [`public/sw.js`](public/sw.js), [`src/app/manifest.ts`](src/app/manifest.ts) | Installable app and the phone share target |
+| [`src/lib/evidence.ts`](src/lib/evidence.ts) | The live check list, built only from what each check really found |
+| [`src/lib/quiz.ts`](src/lib/quiz.ts), [`src/components/SpotTheScam.tsx`](src/components/SpotTheScam.tsx) | Spot the scam |
 | [`src/lib/feeds.ts`](src/lib/feeds.ts) | The 550k+ phishing blocklist, sharded and rebuilt daily |
 | [`tests/security.test.ts`](tests/security.test.ts) | The tests above |
 | [`BUILD-LOG.md`](BUILD-LOG.md) | Everything I built, in order, including what broke |

@@ -2,6 +2,8 @@ import {DISCORD_INVITE, TELEGRAM_BOT} from '@/lib/public-links'
 import {HomeIntro} from '@/components/HomeIntro'
 import {Checker} from '@/components/Checker'
 import {EvidenceDemo} from '@/components/EvidenceDemo'
+import {SpotTheScam} from '@/components/SpotTheScam'
+import {InstallApp} from '@/components/InstallApp'
 import {Pipeline} from '@/components/Landing'
 import {External, Mail, Chat, Send} from '@/components/Icons'
 import {blocklistMeta} from '@/lib/feeds'
@@ -35,6 +37,12 @@ export default async function Home() {
         </details>
       </section>
 
+      <section className="home-quiz site-width" aria-labelledby="quiz-title">
+        <div className="compact-heading"><div><h2 id="quiz-title">Would you have spotted it?</h2></div><a href="/quiz" className="text-link">Open it on its own page</a></div>
+        <p className="quiz-intro">Five made up messages, written the way the real ones are. Some are scams, some are genuine. Make the call, then see what gives each one away.</p>
+        <SpotTheScam />
+      </section>
+
       <section className="home-channels site-width" aria-labelledby="channels-title">
         <div className="compact-heading"><div><h2 id="channels-title">Your inbox. Your community.</h2></div></div>
         <div className="compact-channels">
@@ -42,6 +50,7 @@ export default async function Home() {
           <article><div className="channel-heading"><Chat className="h-6 w-6" /><h3>Check it in Discord.</h3></div><p>Right click a message → Apps → Red Flag this. Or use <code>/redflag</code>. The result is private until you choose to warn the channel.</p><a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="text-link">Add to Discord <External className="h-4 w-4" /></a></article>
           <article><div className="channel-heading"><Send className="h-6 w-6" /><h3>Ask it in Telegram.</h3></div><p>Forward a message, screenshot or PDF to the bot. In a group, reply to a message with <code>/check</code> and if it looks like a scam, the whole group gets the warning.</p><a href={TELEGRAM_BOT} target="_blank" rel="noreferrer" className="text-link">Open the bot <External className="h-4 w-4" /></a></article>
         </div>
+        <InstallApp />
         {latest && <a href="/radar" className="radar-brief"><span className="radar-brief-label">Scam radar</span><span>{latest.title}</span><span className="radar-brief-action">See the latest warnings</span></a>}
       </section>
     </main>
