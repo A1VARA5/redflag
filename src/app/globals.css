@@ -27,17 +27,22 @@
 html {color-scheme:dark;scroll-behavior:smooth;scroll-padding-top:100px;background:var(--bg)}
 body {background:var(--bg);color:var(--ink);font-family:var(--font-geist),Arial,sans-serif;-webkit-font-smoothing:antialiased;font-weight:400}
 ::selection {background:var(--accent);color:var(--bg)}
+/* The parts the browser draws carry the palette too. */
+html {scrollbar-color:var(--line-2) var(--bg)}
+input,textarea {caret-color:var(--signal)}
+.tabular,time {font-variant-numeric:tabular-nums}
 button,a,input,select,textarea {-webkit-tap-highlight-color:transparent}
 button:not(:disabled),summary {cursor:pointer}
 button,a {touch-action:manipulation}
 :focus-visible {outline:2px solid var(--focus);outline-offset:4px}
-#main-content:focus {outline:none}
+#main-content:focus,[tabindex="-1"]:focus {outline:none}
 .site-width {width:min(100% - 80px,1200px);margin-inline:auto}
-.eyebrow {font:12px/1.7 var(--font-plex-mono),monospace;letter-spacing:.055em;color:var(--ink-3)}
 .button {display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:46px;padding:12px 18px;border-radius:7px;font-size:14px;font-weight:500;transition:background .2s,border-color .2s}
 .button-red,.button-ink {background:var(--signal);color:var(--on-signal)}
 .button-red:hover,.button-ink:hover {background:var(--signal-hover)}
 .button-outline {border:1px solid var(--line-2);color:var(--ink)}
+.button,.example-chip {transition:background .2s,border-color .2s,transform .16s cubic-bezier(.23,1,.32,1)}
+.button:active:not(:disabled),.example-chip:active {transform:scale(.97)}
 .button-outline:hover {background:var(--surface-raised);border-color:var(--ink-3)}
 .text-link {display:inline-flex;align-items:center;gap:12px;min-height:44px;font-size:15px;color:var(--ink);text-underline-offset:5px}
 .text-link:hover {color:var(--accent);text-decoration:underline}
@@ -68,7 +73,6 @@ button,a {touch-action:manipulation}
 .product-hero {padding-block:48px 35px}
 .product-hero-grid {display:grid;grid-template-columns:.86fr 1.14fr;gap:0 54px;align-items:start}
 .product-intro {padding-top:12px;min-width:0}
-.product-intro>.eyebrow {color:var(--accent)}
 .product-intro h1 {font-size:clamp(48px,5.15vw,72px);font-weight:400;line-height:1.04;letter-spacing:-.062em;margin:20px 0 23px}
 .product-intro h1>span {color:var(--accent)}
 .product-intro>p {font-size:18px;line-height:1.7;max-width:435px;color:var(--ink-2)}
@@ -103,7 +107,7 @@ button,a {touch-action:manipulation}
 .checker-submit:hover:not(:disabled) {background:var(--signal-hover)}
 .example-list {display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:18px}
 .example-label {font-size:13px;color:var(--ink-3);flex-basis:100%;margin-bottom:1px}
-.example-chip {font-size:14px;line-height:1.4;min-height:44px;padding:8px 10px;border:1px solid var(--line-2);border-radius:6px;background:transparent;color:var(--ink-2);transition:background .2s}
+.example-chip {font-size:14px;line-height:1.4;min-height:44px;padding:8px 10px;border:1px solid var(--line-2);border-radius:6px;background:transparent;color:var(--ink-2);transition:background .2s,border-color .2s,transform .16s cubic-bezier(.23,1,.32,1)}
 .example-chip:hover {background:var(--surface-raised);color:var(--ink)}
 .example-chip:disabled {opacity:.5;cursor:wait}
 .more-examples {font-size:14px;color:var(--ink-2);margin-top:3px}
@@ -157,7 +161,7 @@ button,a {touch-action:manipulation}
 .compact-channels code {font-size:14px;color:var(--ink)}
 .compact-channels .text-link {margin-top:14px}
 .radar-brief {display:flex;align-items:center;gap:22px;padding:20px 0;border-block:1px solid var(--line);margin-top:35px;font-size:14px}
-.radar-brief>.eyebrow {white-space:nowrap;color:var(--accent)}
+.radar-brief-label {white-space:nowrap;color:var(--accent);font-weight:500}
 .radar-brief-action {display:flex;gap:12px;align-items:center;margin-left:auto;white-space:nowrap;color:var(--ink-3)}
 .radar-brief:hover .radar-brief-action {color:var(--ink)}
 
@@ -181,7 +185,7 @@ button,a {touch-action:manipulation}
 .how-lead {max-width:800px;font-size:19px;line-height:1.8;color:var(--ink-2)}
 .how-flow {margin:35px 0 55px}
 .how-formats {display:flex;align-items:center;gap:35px;padding-block:20px;border-block:1px solid var(--line)}
-.how-formats>span,.how-flow-note {font:12px/1.8 var(--font-plex-mono),monospace;color:var(--ink-3)}
+.how-formats>span,.how-flow-note {font-size:13px;line-height:1.8;color:var(--ink-3)}
 .how-formats p {font-size:23px;letter-spacing:-.03em}.how-formats i {font-style:normal;color:var(--accent);margin-inline:12px}
 .how-flow-note {margin-top:30px;max-width:640px}
 .how-section {display:grid;grid-template-columns:1fr 2fr;gap:55px;padding:35px 0;border-top:1px solid var(--line);counter-increment:how-section}
@@ -280,3 +284,16 @@ button,a {touch-action:manipulation}
 }
 @media(max-width:360px){.brand{font-size:21px;gap:3px}.brand svg{width:21px}.header-actions{gap:6px}.header-actions .button{padding-inline:9px}.site-width{width:calc(100% - 30px)}.product-intro-actions{gap:13px}.product-intro-actions .button{font-size:12px;padding-inline:10px}.product-intro-actions .text-link{font-size:12px;gap:6px}.checker-composer{padding:15px}.checker-topline{display:block}.checker-topline>span{display:block;margin-top:5px}.checker-toolbar{padding:10px}.advice-region{grid-template-columns:1fr;gap:4px}.reveal-formats{grid-template-columns:1fr 1fr}.reveal-formats button{font-size:14px}.summary-detail{font-size:12px}.example-layout{padding-inline:10px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.art-motion{display:none}}
+
+/* The result's flag: one movement when the result arrives, up the pole for a scam, down for a clean message. */
+.verdict-flag-cloth {transform:translateY(var(--to));animation:verdict-flag-move 900ms cubic-bezier(.77,0,.175,1) both}
+.verdict-flag-flutter {transform-box:fill-box;transform-origin:left center;animation:verdict-flag-flutter 380ms cubic-bezier(.45,0,.55,1) 820ms 3 both}
+@keyframes verdict-flag-move {from {transform:translateY(var(--from))}}
+@keyframes verdict-flag-flutter {
+  0%, 100% {transform:none}
+  35% {transform:skewY(-7deg) scaleX(.95)}
+  70% {transform:skewY(4deg) scaleX(.98)}
+}
+@media (prefers-reduced-motion: reduce) {
+  .verdict-flag-cloth, .verdict-flag-flutter {animation:none}
+}

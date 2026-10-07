@@ -20,7 +20,7 @@ export default async function How() {
   const kinds = (patterns as unknown[]).length
   return (
     <main>
-      <PageHero kicker="The method / 01" title="Behind the second look." />
+      <PageHero title="Behind the second look." />
       <div className="site-width how-body">
         <p className="how-lead">
           Two kinds of checking, and a rule for when they disagree. Code checks the links, because a list of known phishing sites can&apos;t be talked round.
@@ -28,7 +28,7 @@ export default async function How() {
           is scam.
         </p>
 
-        <div className="how-flow"><div className="how-formats"><span>THE INPUT</span><p>Email <i>/</i> PDF <i>/</i> Screenshot <i>/</i> Text</p></div><Pipeline /><p className="how-flow-note">One process, whatever you bring. {sites} known phishing sites and {kinds} scam patterns help inform the result.</p></div>
+        <div className="how-flow"><div className="how-formats"><span>Works with</span><p>Email <i>/</i> PDF <i>/</i> Screenshot <i>/</i> Text</p></div><Pipeline /><p className="how-flow-note">One process, whatever you bring. {sites} known phishing sites and {kinds} scam patterns help inform the result.</p></div>
 
         <Section title="What gets checked">
           <ul className="list-disc space-y-2 pl-5">

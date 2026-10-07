@@ -73,7 +73,7 @@ export default function Eval() {
   const baseMisses = main.filter((r) => r.baseline_correct === false)
   return (
     <main>
-      <PageHero kicker="Test results" title="Test results" />
+      <PageHero title="Test results" />
       <div className="site-width pt-10">
         <p className="mt-4 max-w-3xl text-lg leading-relaxed text-ink-2">
           {summary.n} invented messages, checked by Red Flag and, for comparison, by a capable AI model on its own ({summary.baselineModel}) with no link checks

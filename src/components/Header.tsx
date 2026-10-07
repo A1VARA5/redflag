@@ -4,7 +4,7 @@ import Link from 'next/link'
 import {usePathname} from 'next/navigation'
 import {useState} from 'react'
 import {Flag} from './Flag'
-import {Arrow, External} from './Icons'
+import {External} from './Icons'
 import {DISCORD_INVITE} from '@/lib/public-links'
 
 const pages = [
@@ -32,14 +32,14 @@ export function Header() {
         </nav>
         <div className="header-actions">
           <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="header-discord">Add to Discord <External className="h-4 w-4" /></a>
-          <Link href="/#check" className="button button-ink" onClick={() => setOpen(false)}>Check<span className="header-check-detail"> for scams</span><span className="header-check-short"> now</span> <Arrow className="h-4 w-4" /></Link>
+          <Link href="/#check" className="button button-ink" onClick={() => setOpen(false)}>Check<span className="header-check-detail"> for scams</span><span className="header-check-short"> now</span></Link>
           <button className="menu-toggle" aria-expanded={open} aria-controls="mobile-navigation" aria-label={open ? 'Close menu' : 'Open menu'} onClick={() => setOpen(!open)}>
             <span aria-hidden>{open ? '×' : '☰'}</span>
           </button>
         </div>
       </div>
       {open && <nav id="mobile-navigation" className="mobile-nav" aria-label="Mobile navigation">
-        {pages.map((p) => <Link key={p.href} href={p.href} aria-current={pathname === p.href ? 'page' : undefined} onClick={() => setOpen(false)}>{p.label}<Arrow className="h-4 w-4" /></Link>)}
+        {pages.map((p) => <Link key={p.href} href={p.href} aria-current={pathname === p.href ? 'page' : undefined} onClick={() => setOpen(false)}>{p.label}</Link>)}
         <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" onClick={() => setOpen(false)}>Add to Discord <External className="h-4 w-4" /></a>
       </nav>}
     </header>

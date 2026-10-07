@@ -1,7 +1,6 @@
 'use client'
 
 import {useState, type PointerEvent} from 'react'
-import {Arrow} from './Icons'
 
 type Format = 'email' | 'pdf' | 'screenshot' | 'text'
 const cases = [
@@ -50,7 +49,7 @@ export function EvidenceDemo() {
     <div className="reveal-paper" onPointerDown={event=>{event.currentTarget.setPointerCapture(event.pointerId);dragReveal(event)}} onPointerMove={event=>{if(event.currentTarget.hasPointerCapture(event.pointerId)) dragReveal(event)}} onPointerUp={event=>{if(event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)}}><Document index={selected} marked={false}/><div className="reveal-mask" style={{clipPath:`inset(0 ${100-reveal}% 0 0)`}} aria-hidden><Document index={selected} marked /></div><div className="reveal-divider" data-edge={reveal===0||reveal===100} style={{left:`${reveal}%`}} aria-hidden><span>↔</span></div></div>
     <div className="reveal-control"><label htmlFor="reveal-evidence">Drag to reveal</label><input id="reveal-evidence" aria-valuetext={`${reveal}% revealed`} type="range" min="0" max="100" value={reveal} onChange={e=>setReveal(Number(e.target.value))}/><button type="button" className="reveal-toggle" onClick={()=>setReveal(reveal===100?0:100)}>{reveal===100?'Hide signs':'Show all signs'}</button></div>
     <div className="reveal-findings">{item.clues.map((clue,i)=><div key={clue.title}><span className="finding-index">0{i+1}</span><div><h4>{clue.title}</h4><p>{clue.detail}</p></div></div>)}</div>
-    <div className="reveal-next"><span>NEXT STEP</span><p>{item.action}</p><Arrow className="h-5 w-5" /></div>
+    <div className="reveal-next"><span>Next step</span><p>{item.action}</p></div>
     <p className="illustration-note">Invented example. <a href="#check">Check your own message ↗</a></p>
   </div>
 }

@@ -21,13 +21,6 @@ export const ShieldCheck = ({className}: P) => (
     <path d="m8.8 12.2 2.3 2.3 4.3-4.6" />
   </svg>
 )
-export const ShieldQ = ({className}: P) => (
-  <svg viewBox="0 0 24 24" className={className} {...base}>
-    <path d="M12 2.8 4.5 5.6v5.6c0 4.7 3.1 8.6 7.5 10 4.4-1.4 7.5-5.3 7.5-10V5.6z" />
-    <path d="M9.9 9.6a2.2 2.2 0 0 1 4.2.8c0 1.5-2.1 1.9-2.1 3.1" />
-    <path d="M12 16.3h.01" />
-  </svg>
-)
 export const Check = ({className}: P) => (
   <svg viewBox="0 0 24 24" className={className} {...base}>
     <path d="m5 12.5 4.2 4.2L19 7" />
@@ -57,15 +50,17 @@ export const Chat = ({className}: P) => (
     <path d="M20 12.5a7.5 7.5 0 0 1-11 6.6L4 20l1-4.4A7.5 7.5 0 1 1 20 12.5z" />
   </svg>
 )
+// A paper plane, for Telegram, so it doesn't share Discord's speech bubble.
+export const Send = ({className}: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M20.5 3.5 3.8 10.4c-.8.3-.7 1.4.1 1.6l6.1 1.7 1.7 6.1c.2.8 1.3.9 1.6.1z" />
+    <path d="m10 13.7 4.3-4.3" />
+  </svg>
+)
 export const Lock = ({className}: P) => (
   <svg viewBox="0 0 24 24" className={className} {...base}>
     <rect x="5" y="10.5" width="14" height="10" rx="2.2" />
     <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" />
-  </svg>
-)
-export const Arrow = ({className}: P) => (
-  <svg viewBox="0 0 24 24" className={className} {...base}>
-    <path d="M5 12h14m-5-5 5 5-5 5" />
   </svg>
 )
 export const External = ({className}: P) => (

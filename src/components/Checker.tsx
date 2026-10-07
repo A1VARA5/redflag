@@ -6,7 +6,8 @@ import type {LinkReport} from '@/lib/links'
 import {SAMPLES} from '@/lib/samples'
 import {VerdictView} from './VerdictView'
 import {LiveLinks} from './LiveLinks'
-import {Arrow, Check, Image as ImageIcon, Lock, Spinner} from './Icons'
+import {Check, Image as ImageIcon, Lock, Spinner} from './Icons'
+import {flagState} from './flag-state'
 
 type Img = {
   mediaType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif'
@@ -211,6 +212,7 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
     setWasImage(Boolean(useImg))
     setElapsed(0)
     setPhase('checking')
+    flagState('checking')
     setLinks(null)
     setResult(null)
     setError(null)
@@ -250,6 +252,7 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
           else if (ev.type === 'verdict') {
             gotVerdict = true
             setResult({v: ev.verdict, sig: ev.sig, image: useImg?.preview})
+            flagState(ev.verdict.verdict)
             setPhase('done')
           } else if (ev.type === 'error') throw new Error(ev.error)
         }
@@ -258,6 +261,7 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.')
       setPhase('error')
+      flagState('idle')
     } finally {
       runningRef.current = false
     }
@@ -362,7 +366,7 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
                   <Spinner className="h-4 w-4" /> Checking
                 </>
               ) : (
-                <>Check for scams <Arrow className="h-4 w-4" /></>
+                <>Check for scams</>
               )}
             </button>
           </div>
@@ -372,7 +376,7 @@ export function Checker({blocklistSize, patternCount}: {blocklistSize: string; p
 
         <div className="example-list">
           <span className="example-label">Try a sample:</span>
-          {SAMPLES.slice(0, 3).map((s) => <button type="button" key={s.label} disabled={busy} onClick={() => run(s.text)} className="example-chip">{s.label} <span aria-hidden>↗</span></button>)}
+          {SAMPLES.slice(0, 3).map((s) => <button type="button" key={s.label} disabled={busy} onClick={() => run(s.text)} className="example-chip">{s.label}</button>)}
         </div>
         <details className="more-examples">
           <summary>More sample checks</summary>

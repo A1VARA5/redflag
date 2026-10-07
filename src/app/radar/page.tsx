@@ -19,7 +19,7 @@ export default async function RadarPage() {
   const r = await latestRadar()
   return (
     <main>
-      <PageHero kicker="Going around right now" title="This week's scams" />
+      <PageHero title="This week's scams" />
       <div className="site-width pt-10">
         {r ? (
           <>

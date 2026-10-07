@@ -4,15 +4,16 @@ import {useEffect, useMemo, useRef, useState} from 'react'
 import type {Verdict} from '@/lib/verdict'
 import type {LinkReport} from '@/lib/links'
 import {SITUATIONS, respondFor, type Region, type Situation} from '@/lib/respond'
-import {External, ShieldAlert, ShieldCheck, ShieldQ, ShieldX} from './Icons'
+import {External} from './Icons'
+import {VerdictFlag} from './VerdictFlag'
 import {ScanShot} from './ScanShot'
 import {VERDICT_TITLE, confidenceText} from '@/lib/labels'
 
 const LOOK = {
-  scam: {title: VERDICT_TITLE.scam, sub: "Don't reply, click or pay.", Icon: ShieldX, fg: 'text-danger', bg: 'bg-danger-bg', line: 'border-danger-line', solid: 'bg-danger'},
-  suspicious: {title: VERDICT_TITLE.suspicious, sub: 'Treat it as a scam until you have checked it yourself.', Icon: ShieldAlert, fg: 'text-warn', bg: 'bg-warn-bg', line: 'border-warn-line', solid: 'bg-warn'},
-  unclear: {title: VERDICT_TITLE.unclear, sub: "There isn't enough to go on. Check it the safe way below.", Icon: ShieldQ, fg: 'text-ink-2', bg: 'bg-muted-bg', line: 'border-line-2', solid: 'bg-ink-2'},
-  safe: {title: VERDICT_TITLE.safe, sub: 'Nothing here looks like a scam. No checker can promise that, so stay alert.', Icon: ShieldCheck, fg: 'text-safe', bg: 'bg-safe-bg', line: 'border-safe-line', solid: 'bg-safe'},
+  scam: {title: VERDICT_TITLE.scam, sub: "Don't reply, click or pay.", fg: 'text-danger', bg: 'bg-danger-bg', line: 'border-danger-line', solid: 'bg-danger'},
+  suspicious: {title: VERDICT_TITLE.suspicious, sub: 'Treat it as a scam until you have checked it yourself.', fg: 'text-warn', bg: 'bg-warn-bg', line: 'border-warn-line', solid: 'bg-warn'},
+  unclear: {title: VERDICT_TITLE.unclear, sub: "There isn't enough to go on. Check it the safe way below.", fg: 'text-ink-2', bg: 'bg-muted-bg', line: 'border-line-2', solid: 'bg-ink-2'},
+  safe: {title: VERDICT_TITLE.safe, sub: 'Nothing here looks like a scam. No checker can promise that, so stay alert.', fg: 'text-safe', bg: 'bg-safe-bg', line: 'border-safe-line', solid: 'bg-safe'},
 } as const
 
 const KIND: Record<string, string> = {
@@ -146,11 +147,11 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
       {/* Verdict */}
       <div className={`rounded-xl border ${look.line} ${look.bg} p-5 sm:p-6`}>
         <div className="flex items-start gap-4">
-          <look.Icon className={`h-11 w-11 shrink-0 ${look.fg}`} />
+          <VerdictFlag kind={v.verdict} className={`size-11 shrink-0 ${look.fg}`} />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <h2 ref={titleRef} tabIndex={-1} className={`text-2xl font-bold tracking-tight outline-none sm:text-[28px] ${look.fg}`}>{look.title}</h2>
-              {confidenceText(v) && <span className="text-sm font-medium text-ink-2">{confidenceText(v)}</span>}
+              {confidenceText(v) && <span className="tabular text-sm font-medium text-ink-2">{confidenceText(v)}</span>}
             </div>
             <p className="mt-1.5 text-[17px] font-medium text-ink">{v.headline}</p>
             <p className="mt-1 text-[15px] text-ink-2">{look.sub}</p>
@@ -171,7 +172,7 @@ export function VerdictView({v, sig, shared = false, image}: {v: Verdict; sig?: 
       </div>
 
       {/* Message and warning signs */}
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="rounded-xl border border-line bg-card p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-lg font-semibold">{v.inputHadImage ? 'Text from your screenshot' : 'Your message'}</h3>

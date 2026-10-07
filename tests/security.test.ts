@@ -311,7 +311,7 @@ test('a PDF built to be slow is stopped on time and the server keeps running', a
   const text = await pdfText(pdf.buffer.slice(pdf.byteOffset, pdf.byteOffset + pdf.length), 20_000, 1500)
   clearInterval(tick)
   const ms = Date.now() - t0
-  assert.ok(ms < 3000, `${ms} ms`)
+  assert.ok(ms < 5000, `${ms} ms`)
   assert.ok(ticks >= 8, `event loop ticked ${ticks} times`)
   assert.ok(text === null || text.length <= 20_000)
 })

@@ -1,6 +1,16 @@
 'use client'
 
 import {useEffect, useRef, useState} from 'react'
+import {FLAG_EVENT, type FlagState} from './flag-state'
+
+const POSE: Record<FlagState, {raise: number; wind: number; speed: number}> = {
+  idle: {raise: 1, wind: 1, speed: 1},
+  checking: {raise: .55, wind: .75, speed: 1},
+  scam: {raise: 1, wind: 1.4, speed: 1.45},
+  suspicious: {raise: 1, wind: 1.2, speed: 1.25},
+  unclear: {raise: .6, wind: .8, speed: .9},
+  safe: {raise: .08, wind: .35, speed: .6},
+}
 
 // Cloth is fixed along the hoist. The pole and fabric share the same projection.
 const vertex = `#version 300 es
@@ -11,6 +21,9 @@ in float aMaterial;
 uniform float uTime;
 uniform float uAspect;
 uniform vec2 uPointer;
+// How high the flag sits on the pole (1 raised, 0 lowered) and how hard the wind blows.
+uniform float uRaise;
+uniform float uWind;
 out vec3 vPosition;
 out vec2 vUv;
 flat out float vMaterial;
@@ -18,10 +31,12 @@ vec3 cloth(vec2 uv) {
   float edge = pow(uv.x, 1.15);
   float x = -1.65 + uv.x * 3.28;
   float y = (uv.y - .5) * 1.83 + .2;
-  float z = sin(uv.x * 6.8 - uTime * 1.4) * .33 * edge;
-  z += sin(uv.x * 13.0 + uv.y * 3.5 - uTime * 1.7) * .075 * edge;
-  y += sin(uv.x * 5.5 - uTime * 1.1) * .055 * edge;
-  y -= uv.x * .075;
+  float z = sin(uv.x * 6.8 - uTime * 1.4) * .33 * edge * uWind;
+  z += sin(uv.x * 13.0 + uv.y * 3.5 - uTime * 1.7) * .075 * edge * uWind;
+  y += sin(uv.x * 5.5 - uTime * 1.1) * .055 * edge * uWind;
+  // Less wind, more droop at the free end.
+  y -= uv.x * (.075 + max(0., 1. - uWind) * .32);
+  y -= (1. - uRaise) * .85;
   return vec3(x, y, z);
 }
 void main() {
@@ -170,6 +185,10 @@ export function FlagScene({paused}: {paused: boolean}) {
     const timeUniform = gl.getUniformLocation(program, 'uTime')
     const aspectUniform = gl.getUniformLocation(program, 'uAspect')
     const pointerUniform = gl.getUniformLocation(program, 'uPointer')
+    const raiseUniform = gl.getUniformLocation(program, 'uRaise')
+    const windUniform = gl.getUniformLocation(program, 'uWind')
+    const pose = {...POSE.idle}
+    let target = POSE.idle
     let width = 1, height = 1, inView = true, frame = 0, last = 0, time = 1.8, dirty = true, contextLost = false
     const pointer = {x: 0, y: 0}, smooth = {x: 0, y: 0}
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -185,6 +204,12 @@ export function FlagScene({paused}: {paused: boolean}) {
     }
     wakeRef.current = wake
     const mediaChanged = () => {reduced = media.matches; wake()}
+    const onState = (event: Event) => {
+      target = POSE[(event as CustomEvent<FlagState>).detail] ?? POSE.idle
+      if (reduced) Object.assign(pose, target)
+      wake()
+    }
+    window.addEventListener(FLAG_EVENT, onState)
     const onContextLost = (event: Event) => {event.preventDefault(); contextLost = true; setReady(false)}
     canvas.addEventListener('webglcontextlost', onContextLost)
     document.addEventListener('visibilitychange', wake)
@@ -210,6 +235,14 @@ export function FlagScene({paused}: {paused: boolean}) {
     function render(now: number) {
       const delta = Math.min((now-last)/1000, .04)
       last = now
+      // Ease the pose towards the checker's state, fast at first and settling softly.
+      const ease = 1-Math.exp(-delta*2.6)
+      let moving = false
+      for (const k of ['raise', 'wind', 'speed'] as const) {
+        const gap = target[k]-pose[k]
+        if (Math.abs(gap) > .002) {pose[k] += reduced ? gap : gap*ease; moving = true} else pose[k] = target[k]
+      }
+      if (moving) dirty = true
       const still = pauseRef.current || reduced
       if (!inView || document.hidden || contextLost || !gl || width === 0 || height === 0 || (still && !dirty)) {
         running = false
@@ -217,13 +250,15 @@ export function FlagScene({paused}: {paused: boolean}) {
       }
       frame = requestAnimationFrame(render)
       dirty = false
-      if (!pauseRef.current && !reduced) time += delta
+      if (!pauseRef.current && !reduced) time += delta*pose.speed
       smooth.x += (pointer.x-smooth.x)*.045; smooth.y += (pointer.y-smooth.y)*.045
       gl.clearColor(0, 0, 0, 0)
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
       gl.enable(gl.DEPTH_TEST)
       gl.uniform1f(timeUniform, time)
       gl.uniform1f(aspectUniform, width/height)
+      gl.uniform1f(raiseUniform, pose.raise)
+      gl.uniform1f(windUniform, pose.wind)
       gl.uniform2f(pointerUniform, reduced || pauseRef.current ? 0 : smooth.x, reduced || pauseRef.current ? 0 : smooth.y)
       gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0)
     }
@@ -235,6 +270,7 @@ export function FlagScene({paused}: {paused: boolean}) {
       canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerleave', leave)
       canvas.removeEventListener('webglcontextlost', onContextLost)
       document.removeEventListener('visibilitychange', wake)
+      window.removeEventListener(FLAG_EVENT, onState)
       wakeRef.current = () => {}
       gl.deleteBuffer(vertexBuffer); gl.deleteBuffer(indexBuffer); gl.deleteTexture(texture)
       shaders.forEach(shader => gl.deleteShader(shader)); gl.deleteProgram(program)
