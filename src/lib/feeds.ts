@@ -3,12 +3,13 @@
 //    and split into 64 hashed shards in private storage. A lookup loads only the one shard it needs.
 // 2. The OpenPhish feed fetched live (every 30 min per server), so the last few hours are covered too.
 import {createHash} from 'node:crypto'
+import {parse} from 'tldts'
 import {loadJson, saveJson} from './store'
 import brands from '@/data/brands.json'
 
 // Platforms where one host serves many people's content: only the exact URL can be blocked.
 const PATH_PLATFORMS =
-  /^(google\.com|docs\.google\.com|sites\.google\.com|drive\.google\.com|forms\.gle|storage\.googleapis\.com|firebasestorage\.googleapis\.com|dropbox\.com|dl\.dropboxusercontent\.com|onedrive\.live\.com|1drv\.ms|ipfs\.io|telegra\.ph|linktr\.ee|bit\.ly|tinyurl\.com|t\.co|is\.gd|cutt\.ly|rebrand\.ly|ow\.ly|s3\.amazonaws\.com|raw\.githubusercontent\.com|github\.com|gitlab\.com|vercel\.app|netlify\.app|pages\.dev|workers\.dev|web\.app|firebaseapp\.com|github\.io|blogspot\.com|wixsite\.com|weebly\.com|webflow\.io|glitch\.me|replit\.app|framer\.app|notion\.site|canva\.site|r2\.dev|wordpress\.com|square\.site|azurewebsites\.net|000webhostapp\.com|godaddysites\.com|mystrikingly\.com|jimdosite\.com)$/
+  /^(google\.com|docs\.google\.com|sites\.google\.com|drive\.google\.com|forms\.gle|storage\.googleapis\.com|firebasestorage\.googleapis\.com|dropbox\.com|dl\.dropboxusercontent\.com|onedrive\.live\.com|1drv\.ms|ipfs\.io|telegra\.ph|linktr\.ee|bit\.ly|tinyurl\.com|t\.co|is\.gd|cutt\.ly|rebrand\.ly|ow\.ly|goo\.gl|buff\.ly|shorturl\.at|rb\.gy|t\.ly|tiny\.cc|bl\.ink|lnkd\.in|s\.id|v\.gd|qrco\.de|shorturl\.gg|urlz\.fr|surl\.li|s3\.amazonaws\.com|raw\.githubusercontent\.com|github\.com|gitlab\.com|vercel\.app|netlify\.app|pages\.dev|workers\.dev|web\.app|firebaseapp\.com|github\.io|blogspot\.com|wixsite\.com|weebly\.com|webflow\.io|glitch\.me|replit\.app|framer\.app|notion\.site|canva\.site|r2\.dev|wordpress\.com|square\.site|azurewebsites\.net|000webhostapp\.com|godaddysites\.com|mystrikingly\.com|jimdosite\.com)$/
 // Platforms that hand each customer their own subdomain (name.vercel.app): that subdomain belongs to one person, so it can be blocked whole.
 const SUBDOMAIN_PLATFORMS =
   /\.(vercel\.app|netlify\.app|pages\.dev|workers\.dev|web\.app|firebaseapp\.com|github\.io|blogspot\.com|wixsite\.com|weebly\.com|webflow\.io|glitch\.me|replit\.app|framer\.app|notion\.site|canva\.site|r2\.dev|wordpress\.com|square\.site|azurewebsites\.net|000webhostapp\.com|godaddysites\.com|mystrikingly\.com|jimdosite\.com|herokuapp\.com|onrender\.com|fly\.dev|surge\.sh|translate\.goog)$/
@@ -37,7 +38,7 @@ const isOfficial = (host: string) => {
 function keysForUrl(raw: string): string[] {
   try {
     const u = new URL(raw.trim())
-    const host = u.hostname.toLowerCase().replace(/^www\./, '')
+    const host = u.hostname.toLowerCase().replace(/^www\./, '').replace(/\.$/, '')
     if (urlOnly(host) || isOfficial(host)) {
       const rest = `${u.pathname.replace(/\/$/, '')}${u.search}`
       return rest ? [`${host}${rest}`] : []
@@ -99,6 +100,13 @@ export async function buildBlocklist(): Promise<BlocklistMeta> {
       }
     }),
   )
+  // A feed that fails for a day must not wipe its entries: if the new list is much smaller than the last one,
+  // keep the last one and try again tomorrow.
+  const before = await loadJson<BlocklistMeta>('blocklist/meta.json')
+  if (before && map.size < before.total * 0.7) {
+    console.error('[blocklist] kept the previous build:', map.size, 'entries now vs', before.total, JSON.stringify(sources))
+    return {...before, sources: sources.sort((a, b) => a.id.localeCompare(b.id))}
+  }
   const shards: string[][] = Array.from({length: SHARDS}, () => [])
   for (const [k, srcs] of map) shards[shardOf(k)].push(`${k}\t${[...srcs].join(',')}`)
   for (let i = 0; i < SHARDS; i += 8) {
@@ -114,10 +122,16 @@ const shardCache = new Map<number, {at: number; map: Map<string, string>}>()
 async function shard(i: number): Promise<Map<string, string>> {
   const hit = shardCache.get(i)
   if (hit && Date.now() - hit.at < 6 * 3_600_000) return hit.map
-  const lines = (await loadJson<string[]>(`blocklist/${String(i).padStart(2, '0')}.json`)) ?? []
-  const map = new Map(lines.map((l) => l.split('\t') as [string, string]))
-  shardCache.set(i, {at: Date.now(), map})
-  return map
+  try {
+    const lines = (await loadJson<string[]>(`blocklist/${String(i).padStart(2, '0')}.json`, {strict: true})) ?? []
+    const map = new Map(lines.map((l) => l.split('\t') as [string, string]))
+    shardCache.set(i, {at: Date.now(), map})
+    return map
+  } catch (e) {
+    // Not cached, so the next check tries again instead of missing this shard for hours.
+    console.error('[blocklist] shard', i, 'unreadable:', e instanceof Error ? e.message : e)
+    return hit?.map ?? new Map()
+  }
 }
 
 // Live OpenPhish, for anything newer than last night's build.
@@ -135,9 +149,24 @@ async function liveOpenPhish(): Promise<Set<string>> {
 
 const NAMES = Object.fromEntries(SOURCES.map((s) => [s.id, s.name]))
 
+// A listed scam domain covers its subdomains too (login.scam.xyz), except on shared platforms and real brands.
+function parentKeys(raw: string): string[] {
+  try {
+    const host = new URL(raw.trim()).hostname.toLowerCase().replace(/^www\./, '').replace(/\.$/, '')
+    const domain = parse(host).domain
+    if (!domain || domain === host || urlOnly(host) || isOfficial(host) || SUBDOMAIN_PLATFORMS.test(host)) return []
+    const parts = host.split('.')
+    const out: string[] = []
+    for (let i = 1; parts.slice(i).join('.').length >= domain.length; i++) out.push(parts.slice(i).join('.'))
+    return out.filter((k) => !urlOnly(k))
+  } catch {
+    return []
+  }
+}
+
 // Returns the names of the lists that know this URL, or null.
 export async function isKnownPhish(urls: string[]): Promise<string | null> {
-  const keys = [...new Set(urls.filter(Boolean).flatMap(keysForUrl))]
+  const keys = [...new Set(urls.filter(Boolean).flatMap((u) => [...keysForUrl(u), ...parentKeys(u)]))]
   if (!keys.length) return null
   const lv = await liveOpenPhish()
   const found = new Set<string>()

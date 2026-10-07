@@ -19,7 +19,7 @@ const SHAPE = `Reply with ONLY one JSON object, no code fences, with exactly the
 
 export async function askBackup(system: string, userText: string, image: {mediaType: string; data: string} | null): Promise<unknown> {
   if (!process.env.FEATHERLESS_API_KEY) return null
-  const client = new OpenAI({baseURL: 'https://api.featherless.ai/v1', apiKey: process.env.FEATHERLESS_API_KEY, timeout: 45_000, maxRetries: 1})
+  const client = new OpenAI({baseURL: 'https://api.featherless.ai/v1', apiKey: process.env.FEATHERLESS_API_KEY, timeout: 18_000, maxRetries: 0})
   const content: OpenAI.Chat.ChatCompletionContentPart[] = []
   if (image) content.push({type: 'image_url', image_url: {url: `data:${image.mediaType};base64,${image.data}`}})
   content.push({type: 'text', text: userText})

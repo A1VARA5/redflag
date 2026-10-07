@@ -8,6 +8,7 @@ import {check, type Verdict} from '@/lib/verdict'
 import {saveVerdict} from '@/lib/store'
 import {VERDICT_TITLE, confidenceText} from '@/lib/labels'
 import {pdfText} from '@/lib/pdf'
+import {botLimited} from '@/lib/ratelimit'
 
 export const maxDuration = 60
 
@@ -27,6 +28,25 @@ type TgMessage = {
   document?: TgDocument
   reply_to_message?: TgMessage
   forward_origin?: unknown
+  entities?: TgEntity[]
+  caption_entities?: TgEntity[]
+  reply_markup?: {inline_keyboard?: {text?: string; url?: string}[][]}
+}
+type TgEntity = {type: string; offset: number; length: number; url?: string}
+
+// Telegram text can show one thing and open another: a "text_link" shows a label and opens its own URL, and
+// buttons under a message carry links too. Those targets are only in the message's metadata, so they're added
+// to the text here, or the checks would only ever see the label.
+function hiddenLinks(t: TgMessage): string {
+  const shown = t.text ?? t.caption ?? ''
+  const out: string[] = []
+  for (const e of [...(t.entities ?? []), ...(t.caption_entities ?? [])]) {
+    if (e.type === 'text_link' && e.url) out.push(`[The words "${shown.slice(e.offset, e.offset + e.length).slice(0, 100)}" link to: ${e.url}]`)
+  }
+  for (const row of t.reply_markup?.inline_keyboard ?? []) {
+    for (const b of row) if (b.url) out.push(`[Button "${(b.text ?? '').slice(0, 60)}" links to: ${b.url}]`)
+  }
+  return out.slice(0, 12).join('\n')
 }
 
 function secretOk(req: Request): boolean {
@@ -60,25 +80,46 @@ function regionFor(lang = ''): 'UK' | 'US' | 'EU' {
   return ['de', 'fr', 'nl', 'es', 'it', 'lt', 'pl', 'pt', 'da', 'fi', 'sv', 'cs', 'ro', 'hu', 'el', 'bg', 'hr', 'sk', 'sl', 'lv', 'et'].includes(lang.slice(0, 2)) ? 'EU' : 'UK'
 }
 
+// Each piece is cut before escaping and the message is trimmed by whole lines, so a cut can never land inside
+// a tag or an entity (Telegram refuses the whole message if it does).
 function verdictText(v: Verdict): string {
   const sure = confidenceText(v)
-  const signs = v.red_flags.slice(0, 5).map((f, n) => `${n + 1}. "${esc(f.quote)}": ${esc(f.why)}`)
-  const links = [...new Set(v.links.flatMap((l) => l.flags.filter((f) => f.severity === 'high').map((f) => `• <code>${esc(l.host)}</code>: ${esc(f.detail)}`)))].slice(0, 3)
-  return [
+  const cut = (s: string, n: number) => esc(s.length > n ? `${s.slice(0, n - 1)}…` : s)
+  const signs = v.red_flags.slice(0, 5).map((f, n) => `${n + 1}. "${cut(f.quote, 200)}": ${cut(f.why, 300)}`)
+  const links = [
+    ...new Set(
+      v.links.flatMap((l) => [
+        ...(l.fromQr ? [`• <code>${cut(l.host, 100)}</code>: read from a QR code in the image.`] : []),
+        ...(l.flags.some((f) => f.severity === 'high') ? l.flags.filter((f) => f.severity === 'high') : l.flags.filter((f) => f.severity === 'medium' && f.code !== 'qr-code')).map(
+          (f) => `• <code>${cut(l.host, 100)}</code>: ${cut(f.detail, 300)}`,
+        ),
+      ]),
+    ),
+  ].slice(0, 4)
+  const lines = [
     `<b>${VERDICT_TITLE[v.verdict]}</b>${sure ? ` · ${sure}` : ''}`,
     '',
-    `<b>${esc(v.headline)}</b>`,
-    esc(v.summary),
+    `<b>${cut(v.headline, 300)}</b>`,
+    cut(v.summary, 800),
+    ...(v.overrides.length ? ['', `<b>Our checks overruled the AI:</b> ${cut(v.overrides.join(' '), 600)}`] : []),
     ...(signs.length ? ['', '<b>Warning signs</b>', ...signs] : []),
     ...(links.length ? ['', '<b>Link checks</b>', ...links] : []),
-    ...(v.hidden?.length ? ['', `<b>Hidden from you:</b> ${esc(v.hidden.join(' '))}`] : []),
+    ...(v.hidden?.length ? ['', `<b>Hidden from you:</b> ${cut(v.hidden.join(' '), 500)}`] : []),
     '',
-    `<b>Check it yourself:</b> ${esc(v.check_it_yourself)}`,
+    `<b>Check it yourself:</b> ${cut(v.check_it_yourself, 500)}`,
     '',
     '<i>Red Flag can be wrong. If money is involved, call your bank on the number on the back of your card.</i>',
   ]
-    .join('\n')
-    .slice(0, 4000)
+  // Too long: drop detail lines from the middle, keeping the verdict at the top and the advice at the bottom.
+  while (lines.join('\n').length > 4000 && lines.length > 8) lines.splice(lines.length - 5, 1)
+  return lines.join('\n')
+}
+
+// In a group the answer is public. "No red flags" posted under a message reads like Red Flag vouching for it,
+// and a scammer could tune a message until it gets one, so groups only get a warning or a neutral pointer.
+function groupText(v: Verdict, report: string): string | null {
+  if (v.verdict === 'scam' || v.verdict === 'suspicious') return null
+  return `Red Flag didn't find clear warning signs in this message. That doesn't make it safe: <a href="${esc(report)}">see the full report</a>, and if it asks for money, codes or logins, check with the sender another way.`
 }
 
 const HELP = [
@@ -113,12 +154,26 @@ export async function POST(req: Request) {
     return new Response('ok')
   }
   const t: TgMessage = target
+  if (botLimited('telegram', msg.from?.id)) {
+    after(() => tg('sendMessage', {chat_id: msg.chat.id, reply_parameters: {message_id: msg.message_id, allow_sending_without_reply: true}, text: "That's a lot of checks in a few minutes. Please wait a bit and try again."}).then(() => undefined))
+    return new Response('ok')
+  }
 
   after(async () => {
-    const send = (body: object) => tg('sendMessage', {chat_id: msg.chat.id, reply_to_message_id: t.message_id, ...body})
+    // Replies still go out if the checked message was deleted meanwhile. A refused HTML message is resent as
+    // plain text, and a failure is logged, so a finished verdict is never dropped without a trace.
+    const send = async (body: {text: string; parse_mode?: string; [k: string]: unknown}) => {
+      const base = {chat_id: msg.chat.id, reply_parameters: {message_id: t.message_id, allow_sending_without_reply: true}}
+      let res = await tg('sendMessage', {...base, ...body})
+      if (!res.ok && body.parse_mode) {
+        console.error('[telegram] HTML reply refused:', res.status, (await res.text()).slice(0, 200))
+        res = await tg('sendMessage', {...base, ...body, parse_mode: undefined, text: body.text.replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')})
+      }
+      if (!res.ok) throw new Error(`Telegram refused the reply (${res.status})`)
+    }
     try {
       await tg('sendChatAction', {chat_id: msg.chat.id, action: 'typing'})
-      let body = (t.text ?? t.caption ?? '').replace(/^\/check(@\w+)?\s*/i, '').trim()
+      let body = [(t.text ?? t.caption ?? '').replace(/^\/check(@\w+)?\s*/i, '').trim(), hiddenLinks(t)].filter(Boolean).join('\n\n')
       let image: {mediaType: 'image/jpeg' | 'image/png'; data: string} | null = null
       const photo = t.photo?.at(-1)
       if (photo) {
@@ -141,6 +196,8 @@ export async function POST(req: Request) {
       const v = await check({text: body, image, source: 'telegram', region: regionFor(msg.from?.language_code)})
       await saveVerdict(v)
       const site = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(req.url).origin
+      const neutral = isPrivate ? null : groupText(v, `${site}/v/${v.id}`)
+      if (neutral) return await send({text: neutral, parse_mode: 'HTML', link_preview_options: {is_disabled: true}})
       await send({
         text: verdictText(v),
         parse_mode: 'HTML',
@@ -149,7 +206,8 @@ export async function POST(req: Request) {
       })
     } catch (e) {
       const why = e instanceof Error ? e.message.replace(/\.$/, '') : 'something went wrong'
-      await send({text: `Red Flag couldn't check that: ${why}. If in doubt, don't click and don't log in through any link.`}).catch(() => {})
+      console.error('[telegram]', why)
+      await send({text: `Red Flag couldn't check that: ${why}. If in doubt, don't click and don't log in through any link.`}).catch((e2) => console.error('[telegram] error reply failed:', e2 instanceof Error ? e2.message : e2))
     }
   })
   return new Response('ok')

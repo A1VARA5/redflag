@@ -82,8 +82,8 @@ export function extractUrls(text: string): string[] {
   const withScheme = /\bhttps?:\/\/[^\s<>"'`)\]]+/gi
   for (const m of refanged.matchAll(withScheme)) found.add(trimUrl(m[0]))
   // Unicode letters too, so a look-alike like "аррle.com" (Cyrillic) is read whole, not as "le.com".
-  // The ending must be all lowercase or all capitals, so "phone.New number" (a missing space) is not a link.
-  const bare = /(?<![\p{L}\p{N}-])(?:[\p{L}\p{N}-]+\.)+(?:[a-z]{2,24}|[A-Z]{2,24})(?![\p{L}\p{N}])(?:\/[^\s<>"'`)\]]*)?/gu
+  // A capitalised ending (Secure-PayPal.Com) needs a path or a hyphen, so "phone.New number" (a missing space) is not a link.
+  const bare = /(?<![\p{L}\p{N}-])(?:[\p{L}\p{N}-]+\.)+(?:[a-z]{2,24}|[A-Z]{2,24}|[A-Z][a-z]{1,23})(?![\p{L}\p{N}])(?:\/[^\s<>"'`)\]]*)?/gu
   const stripped = refanged.replace(withScheme, ' ')
   for (const m of stripped.matchAll(bare)) {
     const candidate = trimUrl(m[0])
@@ -93,9 +93,12 @@ export function extractUrls(text: string): string[] {
     if (!p.domain || !p.isIcann || /\.(txt|png|jpe?g|pdf|docx?|zip|exe)$/i.test(candidate)) continue
     // An all capitals ending only counts when the whole address is in capitals (WWW.EXAMPLE.COM).
     if (/[A-Z]$/.test(host) && /[a-z]/.test(host)) continue
-    // Endings that are also everyday words (.live, .love, .fun, .me) need something link-like around them.
     const label = (p.domainWithoutSuffix ?? '').toLowerCase()
-    const linkLike = /^www\./i.test(host) || path.length > 0 || /[-\d]/.test(label) || COMMON_TLDS.has(p.publicSuffix ?? '') || host.split('.').length > 2
+    if (/\.[A-Z][a-z]+$/.test(host) && !path.length && !/[-\d]/.test(label)) continue
+    // Endings that are also everyday words (.live, .love, .fun, .me) need something link-like around them.
+    // On the cheap endings scammers use, a name of four letters or more is enough (hmrc.help, but not fun.live).
+    const risky = RISKY_TLDS.has(p.publicSuffix ?? '') && label.length >= 4
+    const linkLike = risky || /^www\./i.test(host) || path.length > 0 || /[-\d]/.test(label) || COMMON_TLDS.has(p.publicSuffix ?? '') || host.split('.').length > 2
     if (linkLike) found.add('https://' + candidate)
   }
   // Scammers pad messages with decoy links. With more than MAX_LINKS, the most suspicious looking ones are
@@ -136,7 +139,7 @@ export const MAX_LINKS = 12
 
 function isOfficialUrl(u: string) {
   try {
-    const host = new URL(u).hostname.toLowerCase()
+    const host = new URL(u).hostname.toLowerCase().replace(/\.$/, '')
     return BRANDS.some((b) => b.domains.some((d) => host === d || host.endsWith('.' + d)))
   } catch {
     return false
@@ -146,6 +149,12 @@ function isOfficialUrl(u: string) {
 function trimUrl(u: string) {
   return u.replace(/[.,;:!?)'"\]]+$/, '')
 }
+
+const GLUE = new Set(
+  ['my', 'parcel', 'parcels', 'delivery', 'redelivery', 'deliveries', 'refund', 'refunds', 'fine', 'fines', 'pay', 'payment', 'payments', 'secure', 'security', 'login', 'signin', 'verify', 'verification', 'support', 'help', 'account', 'accounts', 'track', 'tracking', 'uk', 'gov', 'tax', 'online', 'service', 'services', 'update', 'billing', 'alert', 'claim', 'post', 'fee', 'fees', 'customs'].map(skeleton),
+)
+
+export const brandOfHost = (host: string) => brandFor(host, parse(host).domain ?? null).brand?.brand ?? null
 
 function brandFor(host: string, domain: string | null): {brand: Brand | null; official: boolean; flags: LinkFlag[]} {
   const flags: LinkFlag[] = []
@@ -164,8 +173,10 @@ function brandFor(host: string, domain: string | null): {brand: Brand | null; of
     for (const kw of b.keywords) {
       const k = skeleton(kw)
       if (k.length < 3) continue
-      // Short names (ups, meta, apple) must be a whole word, or "metal.com" and "applebees.com" would match.
-      const hit = k.length <= 5 ? tokens.includes(k) : starts.some((s) => s.startsWith(k))
+      // Short names (ups, meta, apple) must be a whole word, or "metal.com" and "applebees.com" would match,
+      // unless they're glued to a word scams use (evriparcel, hmrcrefund, parcelevri).
+      const glued = (t: string) => (t.startsWith(k) && GLUE.has(t.slice(k.length))) || (t.endsWith(k) && GLUE.has(t.slice(0, -k.length)))
+      const hit = k.length <= 5 ? tokens.includes(k) || tokens.some(glued) : starts.some((s) => s.startsWith(k))
       if (hit) {
         flags.push({
           code: 'brand-not-official',
@@ -202,7 +213,8 @@ async function safeToFetch(host: string): Promise<boolean> {
   host = host.replace(/^\[|\]$/g, '')
   if (host === 'localhost' || host.endsWith('.local') || host.endsWith('.internal')) return false
   try {
-    const ips = isIP(host) ? [host] : (await lookup(host, {all: true})).map((a) => a.address)
+    const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('dns timeout')), 3000).unref())
+    const ips = isIP(host) ? [host] : (await Promise.race([lookup(host, {all: true}), timeout])).map((a) => a.address)
     return ips.length > 0 && ips.every((ip) => !PRIVATE.check(ip, isIP(ip) === 6 ? 'ipv6' : 'ipv4'))
   } catch {
     return false
@@ -213,7 +225,10 @@ async function safeToFetch(host: string): Promise<boolean> {
 async function unwrap(url: string): Promise<{finalUrl: string | null; hops: string[]; error: string | null}> {
   const hops: string[] = []
   let current = url
+  // A site that answers each hop slowly must not use up the whole time budget, so the walk has its own limit.
+  const deadline = Date.now() + 8000
   for (let i = 0; i < 5; i++) {
+    if (Date.now() > deadline) return {finalUrl: current, hops, error: 'too slow'}
     let u: URL
     try {
       u = new URL(current)
@@ -233,7 +248,12 @@ async function unwrap(url: string): Promise<{finalUrl: string | null; hops: stri
     }
     const loc = res.headers.get('location')
     if (res.status >= 300 && res.status < 400 && loc) {
-      const next = new URL(loc, current).toString()
+      let next: string
+      try {
+        next = new URL(loc, current).toString()
+      } catch {
+        return {finalUrl: current, hops, error: 'bad redirect'}
+      }
       hops.push(next)
       current = next
       continue
@@ -279,16 +299,12 @@ async function domainAge(domain: string): Promise<{ageDays: number | null; regis
   }
 }
 
-// deep = also ask VirusTotal and urlscan.io (rationed APIs), used by the full check, not the instant one.
-export async function inspectUrl(input: string, deep = false): Promise<LinkReport> {
+// What can be told from the address alone, with no network: tricks in the address and a borrowed brand name.
+// These never depend on a site answering, so a slow site can't make them disappear.
+function addressChecks(url: URL) {
   const flags: LinkFlag[] = []
-  let url: URL
-  try {
-    url = new URL(input)
-  } catch {
-    return {input, url: input, host: '', domain: null, finalUrl: null, hops: [], ageDays: null, registered: null, brand: null, official: false, flags: [{code: 'unparseable', severity: 'low', detail: 'Could not read this link.'}]}
-  }
-  const host = url.hostname.toLowerCase()
+  // "evil.com." is the same site as evil.com, so the trailing dot goes before any comparison.
+  const host = url.hostname.toLowerCase().replace(/\.$/, '')
   const unicodeHost = domainToUnicode(host)
   if (host.startsWith('xn--') || host.includes('.xn--')) {
     flags.push({code: 'punycode', severity: 'high', detail: `The address is encoded (${host}) and displays as "${unicodeHost}". Look-alike letters from other alphabets.`})
@@ -309,25 +325,16 @@ export async function inspectUrl(input: string, deep = false): Promise<LinkRepor
   }
   const isShort = domain ? SHORTENERS.has(domain) || SHORTENERS.has(host) : false
   if (isShort) flags.push({code: 'shortener', severity: 'medium', detail: `Shortened link (${host}) hides where it really goes.`})
+  const brand = brandFor(host, domain)
+  flags.push(...brand.flags)
+  return {host, domain, isShort, brand, flags}
+}
 
-  const [{finalUrl, hops, error}, age] = await Promise.all([unwrap(url.toString()), domain ? domainAge(domain) : Promise.resolve({ageDays: null, registered: null})])
-
-  let finalHost = host
-  let finalDomain = domain
-  if (finalUrl && finalUrl !== url.toString()) {
-    try {
-      finalHost = new URL(finalUrl).hostname.toLowerCase()
-      finalDomain = parse(finalHost).domain ?? null
-      if (finalDomain && finalDomain !== domain) flags.push({code: 'redirects-elsewhere', severity: isShort ? 'info' : 'low', detail: `Redirects to a different site: ${finalHost}.`})
-    } catch {}
-  }
-  if (error === 'host not resolvable') flags.push({code: 'dead-domain', severity: 'low', detail: "This address doesn't load right now. Scam sites are often taken down within days, but it could also just be offline."})
-
-  const b = brandFor(finalHost, finalDomain)
-  flags.push(...b.flags)
-  // A look-alike name on a domain that has existed for years (model.com vs Yodel, post.de vs bpost) is a coincidence,
-  // not a fresh fake. Keep the note, drop the alarm.
-  if (age.ageDays !== null && age.ageDays > 3 * 365) {
+// A look-alike name on a domain that has existed for years (model.com vs Yodel, post.de vs bpost) is a coincidence,
+// not a fresh fake. Keep the note, drop the alarm. New and young domains are flagged unless they are a brand's own.
+function ageFlags(flags: LinkFlag[], age: {ageDays: number | null; registered: string | null}, official: boolean, host: string, named: boolean) {
+  if (age.ageDays === null) return
+  if (age.ageDays > 3 * 365) {
     for (const f of flags) {
       if (f.code === 'lookalike-domain') {
         f.severity = 'low'
@@ -335,23 +342,65 @@ export async function inspectUrl(input: string, deep = false): Promise<LinkRepor
       }
     }
   }
-  if (age.ageDays !== null && !b.official) {
-    if (age.ageDays < 30) flags.push({code: 'new-domain', severity: 'high', detail: `Registered ${age.ageDays} days ago (${age.registered}). Real companies' sites are years old.`})
-    else if (age.ageDays < 180) flags.push({code: 'young-domain', severity: 'medium', detail: `Registered ${age.ageDays} days ago (${age.registered}).`})
+  if (official) return
+  const which = named ? `${host} was registered` : 'Registered'
+  if (age.ageDays < 30) flags.push({code: 'new-domain', severity: 'high', detail: `${which} ${age.ageDays} days ago (${age.registered}). Real companies' sites are years old.`})
+  else if (age.ageDays < 180) flags.push({code: 'young-domain', severity: 'medium', detail: `${which} ${age.ageDays} days ago (${age.registered}).`})
+}
+
+const noAge = {ageDays: null, registered: null}
+
+// deep = also ask VirusTotal and urlscan.io (rationed APIs), used by the full check, not the instant one.
+export async function inspectUrl(input: string, deep = false): Promise<LinkReport> {
+  let url: URL
+  try {
+    url = new URL(input)
+  } catch {
+    return {input, url: input, host: '', domain: null, finalUrl: null, hops: [], ageDays: null, registered: null, brand: null, official: false, flags: [{code: 'unparseable', severity: 'low', detail: 'Could not read this link.'}]}
   }
+  const {host, domain, isShort, brand: start, flags} = addressChecks(url)
+
+  const [{finalUrl, hops, error}, age] = await Promise.all([unwrap(url.toString()), domain ? domainAge(domain) : Promise.resolve(noAge)])
+
+  let finalHost = host
+  let finalDomain = domain
+  if (finalUrl && finalUrl !== url.toString()) {
+    try {
+      finalHost = new URL(finalUrl).hostname.toLowerCase().replace(/\.$/, '')
+      finalDomain = parse(finalHost).domain ?? null
+      if (finalDomain && finalDomain !== domain) flags.push({code: 'redirects-elsewhere', severity: isShort ? 'info' : 'low', detail: `Redirects to a different site: ${finalHost}.`})
+    } catch {}
+  }
+  if (error === 'host not resolvable') flags.push({code: 'dead-domain', severity: 'low', detail: "This address doesn't load right now. Scam sites are often taken down within days, but it could also just be offline."})
+
+  // Both ends of a redirect are judged. A scam domain that forwards to the real paypal.com (often only for
+  // checkers like this one) is still a scam domain, so only a brand's own address, or a shortener that
+  // leads to one, counts as official.
+  const moved = finalDomain !== domain && finalDomain !== null
+  const end = moved ? brandFor(finalHost, finalDomain) : start
+  const official = start.official || (isShort && end.official)
+  ageFlags(flags, age, start.official, host, moved)
+  if (moved) {
+    const endFlags = [...end.flags]
+    ageFlags(endFlags, await domainAge(finalDomain!), end.official, finalHost, true)
+    flags.push(...endFlags)
+  }
+  const b = start.brand ? start : end
+
   const [phish, google] = await Promise.all([isKnownPhish([url.toString(), finalUrl ?? '']), safeBrowsing([url.toString(), finalUrl ?? ''])])
   const g = google.get(url.toString()) ?? (finalUrl ? google.get(finalUrl) : undefined)
   if (g) flags.push({code: 'google-safe-browsing', severity: 'high', detail: `Google Safe Browsing lists this as ${g}. Chrome would show a red warning page.`})
   if (phish) flags.push({code: 'known-phish', severity: 'high', detail: `On a public phishing blocklist (${phish}).`})
-  if (b.official && flags.every((f) => f.severity !== 'high')) {
+  if (official && flags.every((f) => f.severity !== 'high')) {
     flags.push({code: 'official-domain', severity: 'info', detail: `${finalHost} really belongs to ${b.brand?.brand}.`})
   }
 
   let vt: VtResult | null = null
   let scan: Scan | null = null
   const dead = flags.some((f) => f.code === 'dead-domain')
-  if (deep && !b.official) {
-    const target = finalUrl ?? url.toString()
+  if (deep && !official) {
+    // When a link forwards to a real brand site, the address worth scanning is the one in the message.
+    const target = end.official ? url.toString() : finalUrl ?? url.toString()
     ;[vt, scan] = await Promise.all([virusTotal(target), recentScan(target)])
     if (!scan && !dead) scan = await submitScan(target)
     if (vt) {
@@ -362,24 +411,29 @@ export async function inspectUrl(input: string, deep = false): Promise<LinkRepor
     if (scan?.malicious) flags.push({code: 'urlscan', severity: 'high', detail: 'urlscan.io opened this page in a sandbox and judged it malicious.'})
   }
 
-  return {input, url: url.toString(), host, domain, finalUrl, hops, ageDays: age.ageDays, registered: age.registered, brand: b.brand?.brand ?? null, official: b.official, flags, vt, scan}
+  return {input, url: url.toString(), host, domain, finalUrl, hops, ageDays: age.ageDays, registered: age.registered, brand: b.brand?.brand ?? null, official, flags, vt, scan}
 }
 
-// A slow or stalling site must not hold up the verdict, so each link gets a fixed time budget.
+// A slow or stalling site must not hold up the verdict, so each link gets a fixed time budget. When it runs out,
+// the address checks and the blocklists still count; only the checks that needed the site are skipped.
 const LINK_BUDGET_MS = 15_000
 
 function withBudget(u: string, deep: boolean): Promise<LinkReport> {
   let timer: ReturnType<typeof setTimeout> | undefined
+  const listed = isKnownPhish([u]).catch(() => null)
   const slow = new Promise<LinkReport>((resolve) => {
-    timer = setTimeout(() => {
-      let host = ''
+    timer = setTimeout(async () => {
+      let url: URL
       try {
-        host = new URL(u).hostname.toLowerCase()
-      } catch {}
-      resolve({
-        input: u, url: u, host, domain: parse(host).domain ?? null, finalUrl: null, hops: [], ageDays: null, registered: null, brand: null, official: false,
-        flags: [{code: 'slow', severity: 'low', detail: 'This site was too slow to check in time, so some checks were skipped.'}],
-      })
+        url = new URL(u)
+      } catch {
+        return resolve({input: u, url: u, host: '', domain: null, finalUrl: null, hops: [], ageDays: null, registered: null, brand: null, official: false, flags: [{code: 'unparseable', severity: 'low', detail: 'Could not read this link.'}]})
+      }
+      const {host, domain, brand, flags} = addressChecks(url)
+      const phish = await Promise.race([listed, new Promise<null>((r) => setTimeout(() => r(null), 1000))])
+      if (phish) flags.push({code: 'known-phish', severity: 'high', detail: `On a public phishing blocklist (${phish}).`})
+      flags.push({code: 'slow', severity: 'low', detail: 'This site was too slow to check in time, so some checks were skipped.'})
+      resolve({input: u, url: url.toString(), host, domain, finalUrl: null, hops: [], ageDays: null, registered: null, brand: brand.brand?.brand ?? null, official: brand.official, flags})
     }, LINK_BUDGET_MS)
   })
   return Promise.race([inspectUrl(u, deep), slow]).finally(() => clearTimeout(timer))

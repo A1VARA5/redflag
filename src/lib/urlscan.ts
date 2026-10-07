@@ -45,7 +45,9 @@ export async function submitScan(url: string): Promise<Scan | null> {
 
 export async function scanStatus(uuid: string): Promise<{ready: boolean; malicious: boolean | null}> {
   try {
-    const res = await fetch(`https://urlscan.io/api/v1/result/${uuid}/`, {signal: AbortSignal.timeout(5000)})
+    // Since May 2026 urlscan needs a key to read results; without it every scan looked unfinished forever.
+    const key = KEY()
+    const res = await fetch(`https://urlscan.io/api/v1/result/${encodeURIComponent(uuid)}/`, {headers: key ? {'API-Key': key} : {}, signal: AbortSignal.timeout(5000)})
     if (res.status === 404) return {ready: false, malicious: null}
     if (!res.ok) return {ready: false, malicious: null}
     const j = (await res.json()) as {verdicts?: {overall?: {malicious?: boolean}}}

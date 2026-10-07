@@ -10,9 +10,12 @@ export type HiddenReport = {
   cleaned: string
 }
 
-// Zero width space, word joiner, Mongolian vowel separator, BOM. The zero width joiner (U+200D) is left alone:
-// emoji like families and flags are built with it.
-const ZERO_WIDTH = /[\u200B\u2060\u180E\uFEFF]/g
+// Zero width space, word joiner, Mongolian vowel separator, BOM, soft hyphen, combining grapheme joiner,
+// Mongolian variation selectors and the invisible maths operators. All render as nothing inside a word.
+const ZERO_WIDTH = /[\u200B\u2060\u180E\uFEFF\u00AD\u034F\u180B-\u180D\u2061-\u2064]/g
+// Joiners, direction marks and variation selectors are normal in emoji (families, red hearts) and in Arabic or
+// Hebrew, so they are not counted. Inside a word or an address they only split it, so there they are removed.
+const IN_WORD = /(?<=[\p{L}\p{N}.\-/])[\u200C-\u200F\uFE00-\uFE0F]+(?=[\p{L}\p{N}.\-/])/gu
 // Direction overrides (U+202D, U+202E) are what flip "fdp.exe" into "exe.pdf". Embeddings and isolates
 // (U+202A to U+202C, U+2066 to U+2069) are added by Windows, Outlook and Android around copied phone numbers and
 // names, so they are removed but not counted. Plain left/right marks are normal in Arabic and Hebrew.
@@ -32,7 +35,7 @@ export function scanHidden(text: string): HiddenReport {
       .map((n) => String.fromCharCode(n))
       .join('')
       .trim() || null
-  const cleaned = text.replace(TAGS, '').replace(BIDI, '').replace(BIDI_HARMLESS, '').replace(ZERO_WIDTH, '')
+  const cleaned = text.replace(TAGS, '').replace(BIDI, '').replace(BIDI_HARMLESS, '').replace(ZERO_WIDTH, '').replace(IN_WORD, '')
   return {zeroWidth, bidi, tags: tagChars.length, decoded, cleaned}
 }
 

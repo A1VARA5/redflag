@@ -61,7 +61,7 @@ export async function POST(req: Request) {
 
       // The full text, not extracted_text: a forward's whole point is the quoted original underneath.
       const html = m.html?.slice(0, HTML_LIMIT) ?? null
-      const body = (m.text?.trim() || (html ? htmlToText(html) : '') || m.extracted_text || '').slice(0, 60_000)
+      const body = (m.text?.trim() || (html ? htmlToText(html) : '') || m.extracted_text || '').slice(0, 200_000)
       if (!body && !m.attachments?.length) {
         console.error('[email] no readable content', JSON.stringify(m.id), JSON.stringify(heldReason))
         return

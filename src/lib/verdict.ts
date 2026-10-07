@@ -91,7 +91,19 @@ Rules:
 Known scam patterns (id: name - summary | tells):
 ${PATTERNS.map((p) => `- ${p.id}: ${p.name} - ${p.summary} | ${p.tells.join('; ')}`).join('\n')}`
 
-const client = new Anthropic()
+// Every route has 60 seconds. Links take up to 15, so Claude gets 25 including one retry, and the backup the rest.
+const client = new Anthropic({timeout: 25_000, maxRetries: 1})
+
+// String.slice counts UTF-16 units, so a cut can split an emoji in half, and the API refuses a lone half.
+export function safeSlice(s: string, start: number, end?: number): string {
+  const fix = (i: number) => {
+    if (i < 0) i += s.length
+    i = Math.max(0, Math.min(s.length, i))
+    const c = s.charCodeAt(i)
+    return c >= 0xdc00 && c <= 0xdfff ? i + 1 : i
+  }
+  return s.slice(fix(start), end === undefined ? s.length : fix(end))
+}
 
 export function findHighlights(text: string, flags: ModelVerdictT['red_flags']): Highlight[] {
   const out: Highlight[] = []
@@ -121,7 +133,7 @@ export function applyOverrides(v: ModelVerdictT, links: LinkReport[], hostileHid
     verdict = 'scam'
     confidence = Math.max(confidence, 95)
   }
-  const fake = high.find((f) => ['brand-not-official', 'lookalike-domain', 'punycode', 'userinfo-trick'].includes(f.code))
+  const fake = high.find((f) => ['brand-not-official', 'lookalike-domain', 'punycode', 'userinfo-trick', 'raw-ip', 'new-domain'].includes(f.code))
   if (fake && (verdict === 'safe' || verdict === 'unclear')) {
     overrides.push(`The link checks found a fake-looking address (${fake.host}), so this cannot be marked safe.`)
     verdict = 'suspicious'
@@ -198,7 +210,9 @@ export async function check(input: CheckInput): Promise<Verdict> {
   if (input.image) input = {...input, image: await normaliseImage(input.image)}
   if (!input.image && !input.text.trim()) throw new Error("That image couldn't be read. Try a smaller screenshot")
   // Invisible characters are counted and removed first, so they can't split a link or hide words from the checks.
-  const hidden = scanHidden(input.text.slice(0, 60_000))
+  // Cut after cleaning, not before: 60k invisible characters must not push the real text (or an attachment) out.
+  const hidden = scanHidden(input.text.slice(0, 400_000))
+  hidden.cleaned = hidden.cleaned.slice(0, 100_000)
   const hiddenNotes = [
     ...hiddenFindings(hidden),
     ...(input.hiddenText ?? []).map((t) => `Hidden in the email's HTML, so your mail app doesn't show it, but an AI would read it: "${t}"`),
@@ -206,7 +220,7 @@ export async function check(input: CheckInput): Promise<Verdict> {
   const hostileHidden = hiddenIsHostile(hidden) || (input.hiddenText?.length ?? 0) > 0
   const full = hidden.cleaned
   const truncated = full.length > 8000
-  const text = truncated ? `${full.slice(0, 5000)}\n\n[… ${full.length - 8000} characters in the middle not shown …]\n\n${full.slice(-3000)}` : full
+  const text = truncated ? `${safeSlice(full, 0, 5000)}\n\n[… ${full.length - 8000} characters in the middle not shown …]\n\n${safeSlice(full, -3000)}` : full
 
   // A QR code in a screenshot hides its link from the reader, so read it and check that link too.
   const qr = input.image ? await readQr(input.image.data) : null
@@ -255,7 +269,7 @@ export async function check(input: CheckInput): Promise<Verdict> {
         output_config: {effort: 'low', format: betaZodOutputFormat(ModelVerdict)},
         system: [{type: 'text', text: SYSTEM, cache_control: {type: 'ephemeral'}}],
         messages: [{role: 'user', content}],
-      })
+      }, {signal: AbortSignal.timeout(25_000)})
       record(res.usage)
       if (res.stop_reason !== 'refusal' && res.parsed_output) {
         mv = res.parsed_output

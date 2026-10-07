@@ -20,17 +20,38 @@ export function verifyMailroom(raw: string, ts: string | null, sig: string | nul
 // Anyone can put any address in "From". Before replying, check that the sending server proved it may send for
 // that address: DMARC pass, or a DKIM or SPF pass for the same domain as the From address. A pass for some other
 // domain proves nothing. Otherwise a forged sender would let a stranger make Red Flag email someone else.
-export function senderVerified(m: {headers?: Record<string, string>; labels?: string[]; from?: MailMessage['from']}): boolean {
+export function senderVerified(m: {headers?: Record<string, string | string[]>; labels?: string[]; from?: MailMessage['from']}): boolean {
   if (m.labels?.some((l) => /spoof/i.test(l))) return false
-  const auth = Object.entries(m.headers ?? {}).find(([k]) => k.toLowerCase() === 'authentication-results')?.[1] ?? ''
-  if (/\bdmarc=fail\b/i.test(auth)) return false
-  if (/\bdmarc=pass\b/i.test(auth)) return true
   const fromDomain = parse(senderOf(m).split('@')[1] ?? '').domain
   if (!fromDomain) return false
+  // Only the top Authentication-Results header is from our mail server; any below it came with the email.
+  const header = Object.entries(m.headers ?? {}).find(([k]) => k.toLowerCase() === 'authentication-results')?.[1]
+  const auth = (Array.isArray(header) ? header[0] : header) ?? ''
+  // It must be the one our mail server wrote (it names itself first), not one the sender added.
+  if (!/^\s*mx\.agentboxd\.com\s*(;|$)/i.test(auth)) {
+    if (auth) console.warn('[email] Authentication-Results not from mx.agentboxd.com:', JSON.stringify(auth.slice(0, 80)))
+    return false
+  }
+  // One result per ";" section, after the server's name. Comments in brackets are dropped, and each section is
+  // read from its start, so "smtp.mailfrom=dmarc=pass@x" or "(dmarc=pass)" can't pose as a result.
+  const results = auth
+    .replace(/\([^()]*\)/g, ' ')
+    .split(';')
+    .map((r) => r.trim())
+    .filter((r, i) => i > 0 || r.includes('='))
+  const result = (method: string) => results.find((r) => r.toLowerCase().startsWith(method + '='))
+  const passes = (r: string | undefined) => Boolean(r && /^\w+=pass\b/i.test(r))
   const aligned = (d: string | undefined) => Boolean(d) && parse(d!.toLowerCase()).domain === fromDomain
-  const dkim = /\bdkim=pass\b[^;]*?\bheader\.(?:d=|i=[^@\s;]*@)([^\s;]+)/i.exec(auth)?.[1]
-  const spf = /\bspf=pass\b[^;]*?\bsmtp\.mailfrom=(?:[^@\s;]*@)?([^\s;]+)/i.exec(auth)?.[1]
-  return aligned(dkim) || aligned(spf)
+  const dmarc = result('dmarc')
+  if (dmarc && /^dmarc=fail\b/i.test(dmarc)) return false
+  if (passes(dmarc)) {
+    const headerFrom = /\bheader\.from=([^\s;]+)/i.exec(dmarc!)?.[1]
+    return !headerFrom || aligned(headerFrom)
+  }
+  const dkim = results.filter((r) => passes(r) && /^dkim=/i.test(r)).map((r) => /\bheader\.(?:d=|i=[^@\s;]*@)([^\s;]+)/i.exec(r)?.[1])
+  const spf = result('spf')
+  const spfDomain = passes(spf) ? /\bsmtp\.mailfrom=(?:[^@\s;]*@)?([^\s;]+)/i.exec(spf!)?.[1] : undefined
+  return dkim.some(aligned) || aligned(spfDomain)
 }
 
 export type MailMessage = {
@@ -51,7 +72,7 @@ export type MailMessage = {
     local_screen?: {flagged?: boolean; reasons?: string[]; hidden_chars?: number}
   }
   labels?: string[]
-  headers?: Record<string, string>
+  headers?: Record<string, string | string[]>
   attachments?: {id: string; filename?: string; content_type?: string; size?: number}[]
 }
 
@@ -76,12 +97,18 @@ export async function getMessage(messageId: string): Promise<MailMessage | null>
   return (j.id ? j : j.data) as MailMessage
 }
 
+// A failed download means no screenshot, not no check: the email text is still checked.
 export async function downloadAttachment(id: string): Promise<{data: string; type: string} | null> {
-  const res = await fetch(`${API}/attachments/${idPath(id)}`, {headers: auth(), signal: AbortSignal.timeout(10_000)})
-  if (!res.ok) return null
-  const buf = Buffer.from(await res.arrayBuffer())
-  if (buf.length > 4 * 1024 * 1024) return null
-  return {data: buf.toString('base64'), type: res.headers.get('content-type') ?? ''}
+  try {
+    const res = await fetch(`${API}/attachments/${idPath(id)}`, {headers: auth(), signal: AbortSignal.timeout(10_000)})
+    if (!res.ok) return null
+    const buf = Buffer.from(await res.arrayBuffer())
+    if (buf.length > 4 * 1024 * 1024) return null
+    return {data: buf.toString('base64'), type: res.headers.get('content-type') ?? ''}
+  } catch (e) {
+    console.error('[email] attachment download failed:', e instanceof Error ? e.message : e)
+    return null
+  }
 }
 
 // Text of a document attachment (PDF, Word, Excel, scans), read by Agentboxd. Fake invoices and "payment
@@ -118,7 +145,8 @@ export function senderOf(m: Pick<MailMessage, 'from'>): string {
   if (!f) return ''
   if (typeof f === 'string') {
     const s = f.slice(0, 500)
-    return (s.match(/<([^<>]+)>/)?.[1] ?? s).toLowerCase()
+    // The last <...> is the address; an earlier one can sit inside the display name ("<ceo@bank.com>" <x@y>).
+    return (s.match(/<([^<>]+)>\s*$/)?.[1] ?? s).toLowerCase()
   }
   return (f.address ?? f.email ?? '').toLowerCase()
 }
@@ -127,42 +155,73 @@ export function senderOf(m: Pick<MailMessage, 'from'>): string {
 // attribute, and comments. Newsletters hide harmless preview text this way, so only hidden text that gives an AI
 // orders counts. A human never sees it; a careless AI reads it as an instruction.
 export const HTML_LIMIT = 200_000
-const HIDING = /display\s*:\s*none|visibility\s*:\s*hidden|font-size\s*:\s*0+(px|pt|em|%)?\s*(;|$)|opacity\s*:\s*0+(\.0+)?\s*(;|$)|max-height\s*:\s*0+(px)?\s*(;|$)/i
+const END = String.raw`\s*(!\s*important\s*)?(;|$)`
+const HIDING = new RegExp(String.raw`display\s*:\s*none|visibility\s*:\s*hidden|font-size\s*:\s*0+(px|pt|em|%)?${END}|opacity\s*:\s*0+(\.0+)?${END}|max-height\s*:\s*0+(px)?${END}`, 'i')
 const ORDERS_AN_AI =
   /\b(ignore|disregard|forget|override)\b[^.]{0,40}\b(instructions?|previous|above|prior|rules|prompt)\b|\b(classify|mark|label|treat|flag|report)\b[^.]{0,30}\b(as )?(safe|legitimate|legit|verified|trusted|not (spam|a scam|phishing))\b|\b(note|message|instructions?)s? (to|for) (the |any )?(ai|assistant|model|llm|filters?|checkers?|scanners?|classifiers?)\b|\bsystem prompt\b/i
 const VOID = new Set(['br', 'img', 'hr', 'meta', 'link', 'input', 'source', 'col', 'area', 'base', 'wbr'])
 
-function hides(attrs: string): boolean {
-  const style = /\bstyle\s*=\s*("([^"]*)"|'([^']*)')/i.exec(attrs)
-  if (style && HIDING.test(style[2] ?? style[3] ?? '')) return true
-  // The bare `hidden` attribute, not aria-hidden or a class name containing "hidden".
-  const names = attrs.replace(/=\s*("[^"]*"|'[^']*'|[^\s>]+)/g, '=')
-  return /(^|\s)hidden(\s|=|\/|$)/i.test(names) && !/(^|\s)hidden\s*=\s*["']?false/i.test(attrs)
+// Reads a tag's attributes the way a browser does: quoted or not, first one wins, and `data-style` or a
+// `style=` inside another attribute's value is not the style.
+function attrsOf(attrs: string): Map<string, string> {
+  const out = new Map<string, string>()
+  for (const m of attrs.matchAll(/([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>]+)))?/g)) {
+    const name = m[1].toLowerCase()
+    if (!out.has(name)) out.set(name, m[2] ?? m[3] ?? m[4] ?? '')
+  }
+  return out
 }
+
+function hides(raw: string): boolean {
+  const attrs = attrsOf(raw)
+  if (HIDING.test(attrs.get('style') ?? '')) return true
+  // The bare `hidden` attribute, not aria-hidden or a class name containing "hidden".
+  return attrs.has('hidden') && attrs.get('hidden')!.toLowerCase() !== 'false'
+}
+
+const decodeEntities = (s: string) =>
+  s
+    .replace(/&#(\d{1,7});?|&#x([0-9a-f]{1,6});?/gi, (all, dec, hex) => {
+      const n = dec ? Number(dec) : parseInt(hex, 16)
+      return n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : all
+    })
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
 
 // Index of the tag that closes the element opened just before `from`, counting nested tags of the same name.
 function closeOf(html: string, name: string, from: number): number {
+  // Never look further than 20k characters, so nested hidden elements can't make this quadratic.
+  const limit = Math.min(html.length, from + 20_000)
   if (!/^[a-z][a-z0-9]*$/.test(name)) return Math.min(html.length, from + 2000)
   const re = new RegExp(`<(/?)${name}\\b[^<>]*>`, 'gi')
   re.lastIndex = from
   let depth = 1
-  for (let m = re.exec(html); m; m = re.exec(html)) {
+  for (let m = re.exec(html); m && m.index < limit; m = re.exec(html)) {
     depth += m[1] ? -1 : 1
     if (depth === 0) return m.index
   }
-  return Math.min(html.length, from + 2000)
+  return Math.min(limit, from + 2000)
 }
 
 export function hiddenHtmlText(raw: string): string[] {
   const html = raw.slice(0, HTML_LIMIT)
   const found: string[] = []
   // [^<>] rather than [^>]: a stray "<" with no ">" must not make every later match scan to the end.
+  // Only hidden text that gives orders counts towards the cap, so empty or harmless hidden wrappers (MJML layouts
+  // use font-size:0 everywhere) can't push the real one out. Capped in work too, for huge emails.
+  let examined = 0
   for (const m of html.matchAll(/<([a-z][a-z0-9]*)\b([^<>]*)>/gi)) {
-    if (found.length >= 30) break
+    if (found.length >= 5 || examined >= 2000) break
     const name = m[1].toLowerCase()
     if (VOID.has(name) || !hides(m[2])) continue
+    examined++
     const start = m.index! + m[0].length
-    found.push(htmlToText(html.slice(start, closeOf(html, name, start))))
+    const t = htmlToText(html.slice(start, closeOf(html, name, start)))
+    if (t.length >= 8 && ORDERS_AN_AI.test(t)) found.push(t)
   }
   for (let i = html.indexOf('<!--'); i >= 0 && found.length < 40; ) {
     const j = html.indexOf('-->', i + 4)
@@ -176,20 +235,41 @@ export function hiddenHtmlText(raw: string): string[] {
     .map((t) => t.slice(0, 300))
 }
 
+// Drops <script> and <style> blocks in one pass. Once a closing tag is known to be missing it isn't searched for
+// again, so thousands of unclosed <script> tags stay linear instead of rescanning the rest of the email each time.
+function stripScripts(html: string): string {
+  const lower = html.toLowerCase()
+  const open = /<(script|style)\b[^<>]*>/gi
+  const missing = new Set<string>()
+  let out = ''
+  let from = 0
+  for (let m = open.exec(html); m; m = open.exec(html)) {
+    const name = m[1].toLowerCase()
+    const close = missing.has(name) ? -1 : lower.indexOf(`</${name}>`, open.lastIndex)
+    if (close < 0) {
+      missing.add(name)
+      continue
+    }
+    out += html.slice(from, m.index) + ' '
+    from = close + name.length + 3
+    open.lastIndex = from
+  }
+  return out + html.slice(from)
+}
+
 export function htmlToText(html: string) {
   return html
     .slice(0, HTML_LIMIT)
-    .replace(/<(script|style)\b[^<>]*>[^<]*(?:<(?!\/\1>)[^<]*)*<\/\1>/gi, ' ')
+    .replace(/^[^]*$/, stripScripts)
     .replace(/<br\s*\/?>|<\/p>|<\/div>|<\/li>|<\/tr>/gi, '\n')
     // The link target goes in front of the link text, so a fake "paypal.com" label can't hide where it points.
-    .replace(/<a\b[^<>]*?\bhref="([^"<>]+)"[^<>]*>/gi, ' ($1) ')
+    .replace(/<a\b([^<>]*)>/gi, (_, attrs: string) => {
+      const href = attrsOf(attrs).get('href')
+      return href ? ` (${href}) ` : ' '
+    })
     .replace(/<[^<>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&#39;|&apos;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
+    // Entities last, so an encoded "&lt;b&gt;" stays text and "evil&#46;xyz" reads as the address it is.
+    .replace(/&[#a-z0-9]+;?/gi, (e) => decodeEntities(e))
     .replace(/[ \t]+/g, ' ')
     .replace(/\n\s*\n\s*\n+/g, '\n\n')
     .trim()

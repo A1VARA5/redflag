@@ -10,7 +10,9 @@ export async function normaliseImage(img: Img): Promise<Img | null> {
     const buf = Buffer.from(img.data, 'base64')
     const meta = await sharp(buf, {limitInputPixels: MAX_PIXELS}).metadata()
     const big = buf.length > 3_500_000 || (meta.width ?? 0) > 4000 || (meta.height ?? 0) > 7500
-    if (!big) return img
+    // Use the format the bytes really are, not the one the sender claimed (a JPEG saved as .png is common).
+    const real = ({png: 'image/png', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif'} as const)[meta.format as 'png']
+    if (!big && real) return {...img, mediaType: real}
     const out = await sharp(buf, {limitInputPixels: MAX_PIXELS})
       .resize({width: 1600, height: 7000, fit: 'inside', withoutEnlargement: true})
       .jpeg({quality: 85})

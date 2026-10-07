@@ -26,7 +26,9 @@ export async function saveJson(key: string, value: unknown) {
   }
 }
 
-export async function loadJson<T>(key: string): Promise<T | null> {
+// Missing files come back as null. With strict, any other failure (storage down, a cut-off file) throws instead,
+// so a caller can tell "not there" from "couldn't read it" and not cache an empty answer.
+export async function loadJson<T>(key: string, {strict = false} = {}): Promise<T | null> {
   try {
     if (blobEnabled()) {
       const res = await get(key, {access: 'private', useCache: false})
@@ -34,7 +36,8 @@ export async function loadJson<T>(key: string): Promise<T | null> {
       return (await new Response(res.stream).json()) as T
     }
     return JSON.parse(await fs.readFile(localPath(key), 'utf8')) as T
-  } catch {
+  } catch (e) {
+    if (strict && (e as NodeJS.ErrnoException).code !== 'ENOENT') throw e
     return null
   }
 }

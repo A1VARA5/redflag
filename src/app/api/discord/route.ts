@@ -9,6 +9,7 @@ import {check, type Verdict} from '@/lib/verdict'
 import {loadVerdict, saveVerdict} from '@/lib/store'
 import {VERDICT_COLOR, VERDICT_TITLE, confidenceText} from '@/lib/labels'
 import {pdfText} from '@/lib/pdf'
+import {botLimited} from '@/lib/ratelimit'
 
 export const maxDuration = 60
 
@@ -31,7 +32,25 @@ function verifyDiscord(raw: string, sig: string | null, ts: string | null): bool
 }
 
 type Attachment = {url: string; content_type?: string; size: number; filename?: string}
-type Msg = {content: string; attachments?: Attachment[]; embeds?: {title?: string; description?: string; url?: string}[]}
+type Embed = {title?: string; description?: string; url?: string; fields?: {name?: string; value?: string}[]; author?: {name?: string; url?: string}; footer?: {text?: string}}
+type Component = {url?: string; label?: string; components?: Component[]}
+type Msg = {content: string; attachments?: Attachment[]; embeds?: Embed[]; components?: Component[]; message_snapshots?: {message?: Msg}[]}
+
+// Everything a message shows, including what Discord keeps outside its text: embeds (fields, author, footer),
+// link buttons, and for a forwarded message the original inside message_snapshots.
+function readMessage(msg: Msg): {text: string; attachments: Attachment[]} {
+  const embedText = (msg.embeds ?? [])
+    .map((e) => [e.author?.name, e.author?.url, e.title, e.description, e.url, ...(e.fields ?? []).flatMap((f) => [f.name, f.value]), e.footer?.text].filter(Boolean).join('\n'))
+    .join('\n')
+  const buttons: string[] = []
+  const walk = (cs?: Component[]) => cs?.forEach((c) => (c.url ? buttons.push(`[Button "${(c.label ?? '').slice(0, 60)}" links to: ${c.url}]`) : walk(c.components)))
+  walk(msg.components)
+  const forwarded = (msg.message_snapshots ?? []).flatMap((s) => (s.message ? [readMessage(s.message)] : []))
+  return {
+    text: [msg.content, embedText, buttons.slice(0, 12).join('\n'), ...forwarded.map((f) => f.text)].filter(Boolean).join('\n\n'),
+    attachments: [...(msg.attachments ?? []), ...forwarded.flatMap((f) => f.attachments)],
+  }
+}
 type Input = {text: string; image: Attachment | null; pdf: Attachment | null; other: boolean}
 
 // Attachment links come inside a signed interaction, but only Discord's own file servers are fetched.
@@ -132,10 +151,9 @@ export async function POST(req: Request) {
   if (i.type === 2 && i.data?.type === 3) {
     const msg: Msg | undefined = i.data.resolved?.messages?.[i.data.target_id]
     if (msg) {
-      const embedText = (msg.embeds ?? []).map((e) => [e.title, e.description, e.url].filter(Boolean).join('\n')).join('\n')
-      const atts = msg.attachments ?? []
+      const {text, attachments: atts} = readMessage(msg)
       input = {
-        text: [msg.content, embedText].filter(Boolean).join('\n\n'),
+        text,
         image: atts.find((a) => IMAGE.test(a.content_type ?? '') && a.size < 4_000_000) ?? null,
         pdf: atts.find((a) => isPdf(a) && a.size < 10_000_000) ?? null,
         other: atts.length > 0,
@@ -160,6 +178,10 @@ export async function POST(req: Request) {
   const token = String(i.token ?? '')
   if ((process.env.DISCORD_APPLICATION_ID && appId !== process.env.DISCORD_APPLICATION_ID) || !/^\d{5,25}$/.test(appId) || !/^[\w.:=-]{20,1000}$/.test(token)) {
     return new Response('bad interaction', {status: 400})
+  }
+  const userId = i.member?.user?.id ?? i.user?.id
+  if (botLimited('discord', userId)) {
+    return Response.json({type: 4, data: {content: "That's a lot of checks in a few minutes. Please wait a bit and try again.", flags: EPHEMERAL}})
   }
   after(async () => {
     const edit = (body: object) =>
